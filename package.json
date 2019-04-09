@@ -1,0 +1,21 @@
+{
+  "name": "videocms-backend",
+  "version": "1.0.0",
+  "description": "Description",
+  "main": "server.js",
+  "dependencies": {
+    "dotenv": "^7.0.0",
+    "fastify": "^2.0.0-rc.6"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com-PavelKg:PavelKg/Video-CMS-backend.git"
+  },
+  "author": "Pavel",
+  "license": "ISC"
+}
