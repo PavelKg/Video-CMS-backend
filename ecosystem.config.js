@@ -24,7 +24,7 @@ module.exports = {
       user : 'videocms',
       host : 'vcms.pepex.kg',
       ref  : 'origin/development',
-      repo : 'git@github.com:PavelKg/Video-CMS-back.git',
+      repo : 'git@github.com:PavelKg/Video-CMS-backend.git',
       path : '~/services/videocms-backend',
       'post-deploy' : 'npm i &&  pm2 startOrRestart ecosystem.config.js --env development'
     }
