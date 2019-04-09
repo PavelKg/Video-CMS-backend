@@ -17,7 +17,7 @@ console.log(process.env.DB_USER)
 //app.register(require('./app.js'))
 
 // Start listening.
-app.listen(process.env.PORT || 3000, err => {
+app.listen(process.env.PORT || 8769, err => {
   if (err) {
     app.log.error(err)
     process.exit(1)
