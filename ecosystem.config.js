@@ -1,14 +1,14 @@
 module.exports = {
   apps : [{
-    name      : 'Video-CMS-back',
+    name      : 'Video-CMS-backend',
     script    : 'server.js',
     env: {
-      NODE_ENV: 'development',
-      NODE_PORT: 8769
+      NODE_ENV: 'emphy',
+      PORT: 8769
     },
     env_production : {
       NODE_ENV: 'production',
-      NODE_PORT: 8769
+      PORT: 8769
     }
   }],
   deploy : {

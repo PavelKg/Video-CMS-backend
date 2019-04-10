@@ -1,25 +1,25 @@
 'use strict'
-
+/* global require */
 // Read the .env file.
 require('dotenv').config()
 
 // Require the framework
-const Fastify = require('fastify')
-
-// Instantiate Fastify with some config
-const app = Fastify({
+const fastify = require('fastify')({
   logger: true,
   pluginTimeout: 10000
 })
 
-console.log(process.env.DB_USER)
-// Register your application as a normal plugin.
-//app.register(require('./app.js'))
+// Register application as a normal plugin.
+const app = require('./app')
+fastify.register(app)
 
 // Start listening.
-app.listen(process.env.PORT || 8769, err => {
-  if (err) {
-    app.log.error(err)
+const start = async () => {
+  try {
+    await fastify.listen(process.env.PORT || 8769)
+  } catch (err) {
+    fastify.log.error(err)
     process.exit(1)
   }
-})
+}
+start()
