@@ -4,6 +4,7 @@ const path = require('path')
 
 const fp = require('fastify-plugin')
 const jwt = require('fastify-jwt')
+const cors = require('fastify-cors')
 const pg = require('fastify-postgres')
 
 const User = require('./user')
@@ -18,6 +19,7 @@ async function connectToDatabase(fastify) {
       max: 20
     })
 }
+
 
 async function authenticator(fastify) {
   fastify
@@ -61,6 +63,10 @@ module.exports = async function(fastify, opts) {
     .register(fp(authenticator))
     .register(fp(connectToDatabase))
     .register(fp(decorateFastifyInstance))
+    .register(cors, { 
+      method: '*',
+      path: '*'
+    })    
     // APIs modules
     .register(User, {prefix: '/api/users'})
 }
