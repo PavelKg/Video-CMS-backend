@@ -64,7 +64,7 @@ module.exports = async function(fastify, opts) {
     .register(fp(connectToDatabase))
     .register(fp(decorateFastifyInstance))
     .register(cors, { 
-      method: '*',
+      origin: false,
       path: '*'
     })    
     // APIs modules
