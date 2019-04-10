@@ -2,10 +2,14 @@
 
 const userProfileOutput = {
   type: 'object',
-  require: [ '_id', 'username' ],
+  require: ['uid', 'username'],
   properties: {
-    _id: { type: 'string' },
-    username: { type: 'string' }
+    uid: {type: 'string'},
+    role: {type: 'string'},
+    email: {type: 'string'},
+    company_id: {type: 'string'},
+    irole: {type: 'string'},
+    username: {type: 'string'}
   }
 }
 
@@ -13,7 +17,7 @@ const registration = {
   // This jsonschema will be used for data validation
   body: {
     type: 'object',
-    required: [ 'username', 'password' ],
+    required: ['username', 'password'],
     properties: {
       username: {
         type: 'string'
@@ -29,9 +33,9 @@ const registration = {
     // by the following schema
     200: {
       type: 'object',
-      required: [ 'userId' ],
+      required: ['userId'],
       properties: {
-        userId: { type: 'string' }
+        userId: {type: 'string'}
       },
       additionalProperties: false
     }
@@ -41,48 +45,48 @@ const registration = {
 const login = {
   body: {
     type: 'object',
-    require: [ 'username', 'password' ],
+    require: ['username', 'password'],
     properties: {
-      username: { type: 'string' },
-      password: { type: 'string' }
+      username: {type: 'string'},
+      password: {type: 'string'}
     },
     additionalProperties: false
   },
   response: {
     200: {
       type: 'object',
-      require: [ 'token' ],
+      require: ['token'],
       properties: {
-        token: { type: 'string' }
+        token: {type: 'string'}
       },
       additionalProperties: false
     }
   }
 }
 
-const search = {
-  querystring: {
-    type: 'object',
-    require: [ 'search' ],
-    properties: {
-      search: { type: 'string' }
-    },
-    additionalProperties: false
-  },
-  response: {
-    200: {
-      type: 'array',
-      items: userProfileOutput
-    }
-  }
-}
+// const search = {
+//   querystring: {
+//     type: 'object',
+//     require: [ 'search' ],
+//     properties: {
+//       search: { type: 'string' }
+//     },
+//     additionalProperties: false
+//   },
+//   response: {
+//     200: {
+//       type: 'array',
+//       items: userProfileOutput
+//     }
+//   }
+// }
 
 const getProfile = {
   params: {
     type: 'object',
-    required: ['userId'],
+    required: ['uid'],
     properties: {
-      userId: {
+      uid: {
         type: 'string',
         pattern: '^[0-9a-fA-F]{24}'
       }
@@ -96,6 +100,5 @@ const getProfile = {
 module.exports = {
   registration,
   login,
-  search,
   getProfile
 }

@@ -62,5 +62,5 @@ module.exports = async function(fastify, opts) {
     .register(fp(connectToDatabase))
     .register(fp(decorateFastifyInstance))
     // APIs modules
-    .register(User, {prefix: '/api/user'})
+    .register(User, {prefix: '/api/users'})
 }

@@ -57,8 +57,9 @@ async function loginHandler(req, reply) {
 }
 
 async function meHandler(req, reply) {
-  const userId = req.user._id
-  return this.userService.getProfile(this.transformStringIntoObjectId(userId))
+  console.log('req.user=', req.user.user.uid)
+  const userId = req.user.user.uid
+  return this.userService.getProfile(userId, userId)
 }
 
 async function userHandler(req, reply) {

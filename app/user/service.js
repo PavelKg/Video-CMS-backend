@@ -20,8 +20,7 @@ class UserService {
       }
       throw e
     }
-
-    return writeResult.insertedId
+      return writeResult.insertedId
   }
 
   async login(username, password) {
@@ -41,19 +40,17 @@ class UserService {
     return user
   }
 
-  getProfile(_id) {
-    return this.userCollection.findOne({_id}, {projection: {password: 0}})
-  }
+  async getProfile(myUid, uid) {
+    const client = await this.db.connect()
+    const {rows} = await client.query(
+      `select user_profile($1::jsonb, $2) as uProfile;`,
+      [JSON.stringify({userId: myUid}), uid]
+    )
+    client.release()
 
-  async search(searchString) {
-    const query = {
-      username: {$regex: searchString}
-    }
-    const users = await this.userCollection
-      .find(query, {projection: {password: 0}})
-      .limit(5)
-      .toArray()
-    return users
+    const user_profile = rows[0].uprofile
+    if (!user_profile) throw new Error(errors.WRONG_USER_ID)
+    return user_profile
   }
 }
 
