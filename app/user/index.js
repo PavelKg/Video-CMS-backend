@@ -22,8 +22,8 @@ module.exports = async function(fastify, opts) {
   fastify.register(async function(fastify) {
     fastify.addHook('preHandler', fastify.authPreHandler)
     fastify.get('/me', meHandler)
-    fastify.get('/:userId', {schema: getProfileSchema}, userHandler)
-    fastify.get('/search', {schema: searchSchema}, searchHandler)
+    //fastify.get('/:userId', {schema: getProfileSchema}, userHandler)
+    //fastify.get('/search', {schema: searchSchema}, searchHandler)
   })
 
   fastify.setErrorHandler(function(error, request, reply) {
@@ -62,13 +62,13 @@ async function meHandler(req, reply) {
   return this.userService.getProfile(userId, userId)
 }
 
-async function userHandler(req, reply) {
-  return this.userService.getProfile(
-    this.transformStringIntoObjectId(req.params.userId)
-  )
-}
+// async function userHandler(req, reply) {
+//   return this.userService.getProfile(
+//     this.transformStringIntoObjectId(req.params.userId)
+//   )
+// }
 
-async function searchHandler(req, reply) {
-  const {search} = req.query
-  return this.userService.search(search)
-}
+// async function searchHandler(req, reply) {
+//   const {search} = req.query
+//   return this.userService.search(search)
+// }

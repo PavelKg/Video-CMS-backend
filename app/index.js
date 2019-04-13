@@ -10,6 +10,9 @@ const pg = require('fastify-postgres')
 const User = require('./user')
 const UserService = require('./user/service')
 
+const Role = require('./companies/roles')
+const RoleService = require('./companies/roles/service')
+
 async function connectToDatabase(fastify) {
   const {DB_HOST, DB_USER, DB_PASS, DB_NAME} = process.env
   fastify
@@ -40,14 +43,15 @@ async function authenticator(fastify) {
 
 
 
-
 async function decorateFastifyInstance(fastify) {
   const db = fastify.pg
 
   // const userCollection = await db.createCollection('users')
   const userService = new UserService(db)
-  //await userService.ensureIndexes(db)
+  const roleService = new RoleService(db)
+
   fastify.decorate('userService', userService)
+  fastify.decorate('roleService', roleService)
 
   fastify.decorate('authPreHandler', async function auth(request, reply) {
     try {
@@ -69,4 +73,5 @@ module.exports = async function(fastify, opts) {
     })    
     // APIs modules
     .register(User, {prefix: '/api/users'})
+    .register(Role, {prefix: '/api/companies/:cid/roles'})
 }
