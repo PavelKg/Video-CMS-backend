@@ -8,6 +8,7 @@ const userProfileOutput = {
     role: {type: 'string'},
     email: {type: 'string'},
     company_id: {type: 'string'},
+    company_name: {type: 'string'},
     irole: {type: 'string'},
     username: {type: 'string'}
   }
