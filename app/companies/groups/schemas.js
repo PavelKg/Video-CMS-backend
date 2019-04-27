@@ -1,27 +1,25 @@
 'use strict'
 
-const roleObject = {
+const groupObject = {
   type: 'object',
   properties: {
-    rid: {type: 'string'},
+    gid: {type: 'string'},
     name: {type: 'string'},
-    is_admin: {type: 'boolean'},
     deleted_at: {type: 'string'}
   }
 }
 
-const role = {
+const group = {
   type: 'object',
   properties: {
-    rid: {type: 'string'},
-    name: {type: 'string'},
-    is_admin: {type: 'boolean'}
+    gid: {type: 'string'},
+    name: {type: 'string'}
   },
-  required: ['rid', 'name'],
+  required: ['gid', 'name'],
   additionalProperties: false
 }
 
-const getCompanyRoles = {
+const getCompanyGroups = {
   params: {
     type: 'object',
     required: ['cid'],
@@ -36,12 +34,12 @@ const getCompanyRoles = {
   response: {
     200: {
       type: 'array',
-      items: roleObject
+      items: groupObject
     }
   }
 }
 
-const addRole = {
+const addGroup = {
   params: {
     type: 'object',
     required: ['cid'],
@@ -53,51 +51,49 @@ const addRole = {
     },
     additionalProperties: false
   },
-  body: role
+  body: group
 }
 
-const updRole = {
+const updGroup = {
   params: {
     type: 'object',
-    required: ['cid', 'rid'],
+    required: ['cid', 'gid'],
     properties: {
       cid: {
         type: 'string',
         pattern: '^[0-9]?'
       },
-      rid: {type: 'string'}
+      gid: {type: 'string'}
     },
     additionalProperties: false
   },
   body: {
     type: 'object',
     properties: {
-      name: {type: 'string'},
-      is_admin: {type: 'boolean'}
+      name: {type: 'string'}
     },
     required: ['name']
   }
 }
 
-const delRole = {
+const delGroup = {
   params: {
     type: 'object',
-    required: ['cid', 'rid'],
+    required: ['cid', 'gid'],
     properties: {
       cid: {
         type: 'string',
         pattern: '^[0-9]?'
       },
-      rid: {type: 'string'}
+      gid: {type: 'string'}
     },
     additionalProperties: false
   }
 }
 
-
 module.exports = {
-  getCompanyRoles,
-  addRole,
-  updRole,
-  delRole
+  getCompanyGroups,
+  addGroup,
+  updGroup,
+  delGroup
 }

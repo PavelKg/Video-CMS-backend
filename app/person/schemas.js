@@ -85,7 +85,7 @@ const login = {
 const getProfile = {
   params: {
     type: 'object',
-    required: ['uid'],
+    //required: ['uid'],
     properties: {
       uid: {
         type: 'string',

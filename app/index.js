@@ -7,22 +7,25 @@ const jwt = require('fastify-jwt')
 const cors = require('fastify-cors')
 const pg = require('fastify-postgres')
 
-const User = require('./user')
-const UserService = require('./user/service')
+const Person = require('./person')
+const PersonService = require('./person/service')
 
 const Role = require('./companies/roles')
 const RoleService = require('./companies/roles/service')
 
+const Group = require('./companies/groups')
+const GroupService = require('./companies/groups/service')
+
+const User = require('./companies/users')
+const UserService = require('./companies/users/service')
+
 async function connectToDatabase(fastify) {
   const {DB_HOST, DB_USER, DB_PASS, DB_NAME} = process.env
-  fastify
-    .register(pg, {
-      //connectionString: `postgres://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}`,
-      connectionString: `postgres://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}`,
-      max: 20
-    })
+  fastify.register(pg, {
+    connectionString: `postgres://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}`,
+    max: 20
+  })
 }
-
 
 async function authenticator(fastify) {
   fastify
@@ -36,22 +39,23 @@ async function authenticator(fastify) {
         expiresIn: '4h'
       },
       verify: {
-        issuer: 'vcms.pepex.kg/api',
+        issuer: 'vcms.pepex.kg/api'
       }
     })
 }
 
-
-
 async function decorateFastifyInstance(fastify) {
   const db = fastify.pg
 
-  // const userCollection = await db.createCollection('users')
-  const userService = new UserService(db)
+  const personService = new PersonService(db)
   const roleService = new RoleService(db)
+  const groupService = new GroupService(db)
+  const userService = new UserService(db)
 
-  fastify.decorate('userService', userService)
+  fastify.decorate('personService', personService)
   fastify.decorate('roleService', roleService)
+  fastify.decorate('groupService', groupService)
+  fastify.decorate('userService', userService)
 
   fastify.decorate('authPreHandler', async function auth(request, reply) {
     try {
@@ -60,6 +64,7 @@ async function decorateFastifyInstance(fastify) {
       reply.send(err)
     }
   })
+  //console.log('constructor GroupService1=', groupService)
 }
 
 module.exports = async function(fastify, opts) {
@@ -67,11 +72,13 @@ module.exports = async function(fastify, opts) {
     .register(fp(authenticator))
     .register(fp(connectToDatabase))
     .register(fp(decorateFastifyInstance))
-    .register(cors, { 
+    .register(cors, {
       origin: false,
       path: '*'
-    })    
+    })
     // APIs modules
-    .register(User, {prefix: '/api/users'})
+    .register(Person, {prefix: '/api/users'})
     .register(Role, {prefix: '/api/companies/:cid/roles'})
+    .register(Group, {prefix: '/api/companies/:cid/groups'})
+    .register(User, {prefix: '/api/companies/:cid/users'})
 }

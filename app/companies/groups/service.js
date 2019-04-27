@@ -1,48 +1,49 @@
 'use strict'
 const errors = require('../../errors')
 
-class RoleService {
+class GroupService {
   constructor(db) {
     this.db = db
   }
 
-  async companyRoles(payload) {
+  async companyGroups(payload) {
     const {acc, cid} = payload
     const client = await this.db.connect()
     const {rows} = await client.query(
-      `select companyroles($1::jsonb, $2) as roles;`,
-      [acc, cid]
+      `SELECT group_gid as gid, group_name as name, deleted_at
+      FROM "groups"
+      WHERE group_company_id=$1;`,
+      [cid]
     )
 
     client.release()
-    const cRoles = rows[0].roles
-
-    if (!cRoles) throw new Error(errors.WRONG_LOAD_ROLES)
-    return cRoles
+    return rows
   }
 
-  async addRole(payload) {
-    const {acc, role} = payload
-    const {rid, cid, name, is_admin = false} = role
+  async addGroup(payload) {
+    const {acc, group} = payload
+    const {gid, cid, name} = group
+
+    console.log('group=', group, acc)
     if (acc.company_id !== cid || acc.role !== 'admin') {
       throw Error(errors.WRONG_ACCESS)
     }
 
     const client = await this.db.connect()
     const {rows} = await client.query(
-      `INSERT INTO roles (role_rid, role_company_id, role_name, role_is_admin) 
-      VALUES ($1, $2, $3, $4) 
-      RETURNING role_rid;`,
-      [rid, cid, name, is_admin]
+      `INSERT INTO groups (group_gid, group_company_id, group_name) 
+      VALUES ($1, $2, $3) 
+      RETURNING group_gid;`,
+      [gid, cid, name]
     )
 
     client.release()
-    return rows[0].role_rid
+    return rows[0].group_gid
   }
 
-  async updRole(payload) {
-    const {acc, role} = payload
-    const {rid, cid, name, is_admin = false} = role
+  async updGroup(payload) {
+    const {acc, group} = payload
+    const {gid, cid, name} = group
 
     if (acc.company_id !== cid || acc.role !== 'admin') {
       throw Error(errors.WRONG_ACCESS)
@@ -51,22 +52,23 @@ class RoleService {
     const client = await this.db.connect()
     const {rows} = await client.query(
       `with updated AS(
-        UPDATE roles 
-        SET role_name=$3, role_is_admin=$4 
-        WHERE role_company_id=$2 and role_rid =$1 
+        UPDATE groups 
+        SET group_name=$3 
+        WHERE group_company_id=$2 and group_gid =$1
+        and deleted_at is null 
         RETURNING 1
         )
         SELECT count(*) upd FROM updated;`,
-      [rid, cid, name, is_admin]
+      [gid, cid, name]
     )
 
     client.release()
     return +rows[0].upd
   }
 
-  async delRole(payload) {
-    const {acc, role} = payload
-    const {rid, cid} = role
+  async delGroup(payload) {
+    const {acc, group} = payload
+    const {gid, cid} = group
 
     if (acc.company_id !== cid || acc.role !== 'admin') {
       throw Error(errors.WRONG_ACCESS)
@@ -75,14 +77,14 @@ class RoleService {
     const client = await this.db.connect()
     const {rows} = await client.query(
       `with deleted AS(
-        UPDATE roles 
+        UPDATE groups 
         SET deleted_at = now()::timestamp without time zone 
-        WHERE role_company_id=$2 and role_rid =$1 
+        WHERE group_company_id=$2 and group_gid =$1 
         and deleted_at is null
         RETURNING 1
         )
         SELECT count(*) del FROM deleted;`,
-      [rid, cid]
+      [gid, cid]
     )
 
     client.release()
@@ -90,4 +92,4 @@ class RoleService {
   }
 }
 
-module.exports = RoleService
+module.exports = GroupService

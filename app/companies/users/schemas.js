@@ -1,27 +1,32 @@
 'use strict'
 
-const roleObject = {
+const userObject = {
   type: 'object',
   properties: {
-    rid: {type: 'string'},
-    name: {type: 'string'},
-    is_admin: {type: 'boolean'},
+    uid: {type: 'string'},
+    fullname: {type: 'string'},
+    gid:{type: 'string'},
+    rid:{type: 'string'},
+    email:{type: 'string'},    
     deleted_at: {type: 'string'}
   }
 }
 
-const role = {
+const user = {
   type: 'object',
   properties: {
+    uid: {type: 'string'},
+    fullname: {type: 'string'},
+    gid: {type: 'string'},
     rid: {type: 'string'},
-    name: {type: 'string'},
-    is_admin: {type: 'boolean'}
+    email: {type: 'string'},
+		password: {type: 'string'}
   },
-  required: ['rid', 'name'],
+  required: ['uid', 'fullname', 'gid', 'rid', 'email', 'password'],
   additionalProperties: false
 }
 
-const getCompanyRoles = {
+const getCompanyUsers = {
   params: {
     type: 'object',
     required: ['cid'],
@@ -36,12 +41,12 @@ const getCompanyRoles = {
   response: {
     200: {
       type: 'array',
-      items: roleObject
+      items: userObject
     }
   }
 }
 
-const addRole = {
+const addUser = {
   params: {
     type: 'object',
     required: ['cid'],
@@ -53,19 +58,19 @@ const addRole = {
     },
     additionalProperties: false
   },
-  body: role
+  body: user
 }
 
-const updRole = {
+const updUser = {
   params: {
     type: 'object',
-    required: ['cid', 'rid'],
+    required: ['cid', 'uid'],
     properties: {
       cid: {
         type: 'string',
         pattern: '^[0-9]?'
       },
-      rid: {type: 'string'}
+      uid: {type: 'string'}
     },
     additionalProperties: false
   },
@@ -79,16 +84,16 @@ const updRole = {
   }
 }
 
-const delRole = {
+const delUser = {
   params: {
     type: 'object',
-    required: ['cid', 'rid'],
+    required: ['cid', 'uid'],
     properties: {
       cid: {
         type: 'string',
         pattern: '^[0-9]?'
       },
-      rid: {type: 'string'}
+      uid: {type: 'string'}
     },
     additionalProperties: false
   }
@@ -96,8 +101,8 @@ const delRole = {
 
 
 module.exports = {
-  getCompanyRoles,
-  addRole,
-  updRole,
-  delRole
+  getCompanyUsers,
+  addUser,
+  updUser,
+  delUser
 }

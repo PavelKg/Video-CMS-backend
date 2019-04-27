@@ -5,23 +5,23 @@ const DUPLICATE_KEY_ERROR_CODE = 11000
 
 const errors = require('../errors')
 
-class UserService {
+class PersonService {
   constructor(db) {
     this.db = db
   }
 
-  async register(username, password) {
-    let writeResult
-    try {
-      writeResult = await this.userCollection.insertOne({username, password})
-    } catch (e) {
-      if (e.code === DUPLICATE_KEY_ERROR_CODE) {
-        throw new Error(errors.USERNAME_IS_NOT_AVAILABLE)
-      }
-      throw e
-    }
-      return writeResult.insertedId
-  }
+  // async register(username, password) {
+  //   let writeResult
+  //   try {
+  //     writeResult = await this.userCollection.insertOne({username, password})
+  //   } catch (e) {
+  //     if (e.code === DUPLICATE_KEY_ERROR_CODE) {
+  //       throw new Error(errors.USERNAME_IS_NOT_AVAILABLE)
+  //     }
+  //     throw e
+  //   }
+  //     return writeResult.insertedId
+  // }
 
   async login(username, password) {
     const client = await this.db.connect()
@@ -54,4 +54,4 @@ class UserService {
   }
 }
 
-module.exports = UserService
+module.exports = PersonService

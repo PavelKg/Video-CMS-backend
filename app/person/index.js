@@ -2,8 +2,8 @@
 
 const {
   login: loginSchema,
-  registration: registrationSchema,
-  search: searchSchema,
+  //registration: registrationSchema,
+  //search: searchSchema,
   getProfile: getProfileSchema
 } = require('./schemas')
 
@@ -21,13 +21,12 @@ module.exports = async function(fastify, opts) {
   // Logged APIs
   fastify.register(async function(fastify) {
     fastify.addHook('preHandler', fastify.authPreHandler)
-    fastify.get('/me', meHandler)
+    fastify.get('/me', {schema: getProfileSchema}, meHandler)
     //fastify.get('/:userId', {schema: getProfileSchema}, userHandler)
     //fastify.get('/search', {schema: searchSchema}, searchHandler)
   })
 
   fastify.setErrorHandler(function(error, request, reply) {
-    console.log('error.message=', error)
     const message = error.message
     if (errors[message]) {
       reply.code(412)
@@ -39,11 +38,7 @@ module.exports = async function(fastify, opts) {
 // Fastify checks the existance of those decorations before registring `user.js`
 module.exports[Symbol.for('plugin-meta')] = {
   decorators: {
-    fastify: [
-      'authPreHandler',
-      'userService',
-      'jwt'
-    ]
+    fastify: ['authPreHandler', 'personService', 'jwt']
   }
 }
 
@@ -52,14 +47,13 @@ module.exports[Symbol.for('plugin-meta')] = {
 
 async function loginHandler(req, reply) {
   const {username, password} = req.body
-  const user = await this.userService.login(username, password)
-  return {token: this.jwt.sign({user})}
+  const person = await this.personService.login(username, password)
+  return {token: this.jwt.sign({user: person})}
 }
 
 async function meHandler(req, reply) {
-  console.log('req.user=', req.user.user.uid)
   const userId = req.user.user.uid
-  return this.userService.getProfile(userId, userId)
+  return this.personService.getProfile(userId, userId)
 }
 
 // async function userHandler(req, reply) {
