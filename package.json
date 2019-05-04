@@ -9,6 +9,8 @@
     "fastify-cors": "^2.1.2",
     "fastify-jwt": "^0.9.6",
     "fastify-postgres": "^2.0.0",
+    "fastify-swagger": "^2.3.2",
+    "fastify-swagger-ui": "^1.0.1",
     "pg": "^7.9.0"
   },
   "devDependencies": {},

@@ -40,7 +40,7 @@ async function addGroupHandler(req, reply) {
   const cid = +req.params.cid
   let url = req.raw.url
   const group = {...req.body, cid}
- 
+
   let acc
   req.jwtVerify(function(err, decoded) {
     if (!err) {

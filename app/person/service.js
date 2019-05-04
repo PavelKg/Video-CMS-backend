@@ -25,13 +25,9 @@ class PersonService {
 
   async login(username, password) {
     const client = await this.db.connect()
-    const hash = await crypto
-      .createHash('sha256')
-      .update(password)
-      .digest('hex')
     const {rows} = await client.query(
-      `select login($1, decode($2::text, 'hex')) as user;`,
-      [username, hash]
+      `select login($1, $2) as user;`,
+      [username, password]
     )
     client.release()
     const user = rows[0].user

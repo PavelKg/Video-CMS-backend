@@ -6,6 +6,8 @@ const fp = require('fastify-plugin')
 const jwt = require('fastify-jwt')
 const cors = require('fastify-cors')
 const pg = require('fastify-postgres')
+const swagger = require('fastify-swagger')
+//const swagger = require('../config/swagger')
 
 const Person = require('./person')
 const PersonService = require('./person/service')
@@ -64,8 +66,7 @@ async function decorateFastifyInstance(fastify) {
       reply.send(err)
     }
   })
-  //console.log('constructor GroupService1=', groupService)
-}
+  }
 
 module.exports = async function(fastify, opts) {
   fastify
@@ -76,6 +77,23 @@ module.exports = async function(fastify, opts) {
       origin: false,
       path: '*'
     })
+    // .register(swagger, {
+    //   routePrefix: '/documentation',
+    //   swagger: {
+    //     info: {
+    //       title: String,
+    //       description: String,
+    //       version: String
+    //     },
+    //     externalDocs: Object,
+    //     host: String,
+    //     schemes: [String],
+    //     consumes: [String],
+    //     produces: [String],
+    //     tags: [Object],
+    //     securityDefinitions: Object
+    //   }
+    // })
     // APIs modules
     .register(Person, {prefix: '/api/users'})
     .register(Role, {prefix: '/api/companies/:cid/roles'})

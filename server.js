@@ -5,9 +5,12 @@ require('dotenv').config()
 
 // Require the framework
 const fastify = require('fastify')({
-  logger: true,
-  pluginTimeout: 10000
+  logger: true
 })
+
+// Register swagger.
+const swagger = require('./config/swagger')
+fastify.register(require('fastify-swagger'), swagger.options)
 
 // Register application as a normal plugin.
 const app = require('./app')
@@ -17,6 +20,7 @@ fastify.register(app)
 const start = async () => {
   try {
     await fastify.listen(process.env.PORT || 8769)
+    fastify.swagger()
   } catch (err) {
     fastify.log.error(err)
     process.exit(1)

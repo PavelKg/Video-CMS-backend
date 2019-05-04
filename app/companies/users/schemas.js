@@ -5,9 +5,9 @@ const userObject = {
   properties: {
     uid: {type: 'string'},
     fullname: {type: 'string'},
-    gid:{type: 'string'},
-    rid:{type: 'string'},
-    email:{type: 'string'},    
+    gid: {type: 'string'},
+    rid: {type: 'string'},
+    email: {type: 'string'},
     deleted_at: {type: 'string'}
   }
 }
@@ -20,7 +20,7 @@ const user = {
     gid: {type: 'string'},
     rid: {type: 'string'},
     email: {type: 'string'},
-		password: {type: 'string'}
+    password: {type: 'string'}
   },
   required: ['uid', 'fullname', 'gid', 'rid', 'email', 'password'],
   additionalProperties: false
@@ -43,6 +43,27 @@ const getCompanyUsers = {
       type: 'array',
       items: userObject
     }
+  }
+}
+
+const getCompanyUserInfo = {
+  params: {
+    type: 'object',
+    required: ['cid', 'uid'],
+    properties: {
+      cid: {
+        type: 'string',
+        pattern: '^[0-9]?'
+      },
+      uid: {
+        type: 'string',
+        pattern: '^[0-9]?'
+      }
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: userObject
   }
 }
 
@@ -77,10 +98,13 @@ const updUser = {
   body: {
     type: 'object',
     properties: {
-      name: {type: 'string'},
-      is_admin: {type: 'boolean'}
+      fullname: {type: 'string'},
+      gid: {type: 'string'},
+      rid: {type: 'string'},
+      email: {type: 'string'},
+      password: {type: 'string'}
     },
-    required: ['name']
+    required: ['fullname', 'gid', 'rid', 'email']
   }
 }
 
@@ -99,9 +123,9 @@ const delUser = {
   }
 }
 
-
 module.exports = {
   getCompanyUsers,
+  getCompanyUserInfo,
   addUser,
   updUser,
   delUser
