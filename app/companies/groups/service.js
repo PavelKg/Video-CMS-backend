@@ -1,5 +1,6 @@
 'use strict'
 const errors = require('../../errors')
+const db_api = require('../../db_api')
 
 class GroupService {
   constructor(db) {
@@ -8,12 +9,17 @@ class GroupService {
 
   async companyGroups(payload) {
     const {acc, cid} = payload
+    const {limit='ALL' , offset=0, sort='group_gid', filter=''} = payload.query
+
+    const qSort = db_api.sorting(sort, 'groups')
+    const qFilter = filter !== '' ? db_api.filtration(filter, 'groups') : ''
+
     const client = await this.db.connect()
     const {rows} = await client.query(
       `SELECT group_gid as gid, group_name as name, deleted_at
       FROM "groups"
-      WHERE group_company_id=$1;`,
-      [cid]
+      WHERE group_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
+      [cid, offset]
     )
 
     client.release()
@@ -24,7 +30,6 @@ class GroupService {
     const {acc, group} = payload
     const {gid, cid, name} = group
 
-    console.log('group=', group, acc)
     if (acc.company_id !== cid || acc.role !== 'admin') {
       throw Error(errors.WRONG_ACCESS)
     }

@@ -1,5 +1,12 @@
 'use strict'
 
+const queryStringJsonSchema = {
+  sort: {description: 'Fields sorting', type: 'string'},
+  limit: {type: 'integer'},
+  offset: {type: 'integer'},
+  filter: {type: 'string'}
+}
+
 const roleObject = {
   type: 'object',
   properties: {
@@ -22,6 +29,7 @@ const role = {
 }
 
 const getCompanyRoles = {
+  tags: ['roles'],
   params: {
     type: 'object',
     required: ['cid'],
@@ -33,6 +41,7 @@ const getCompanyRoles = {
     },
     additionalProperties: false
   },
+  querystring: queryStringJsonSchema,
   response: {
     200: {
       type: 'array',
@@ -42,6 +51,7 @@ const getCompanyRoles = {
 }
 
 const addRole = {
+  tags: ['roles'],  
   params: {
     type: 'object',
     required: ['cid'],
@@ -57,6 +67,7 @@ const addRole = {
 }
 
 const updRole = {
+  tags: ['roles'],  
   params: {
     type: 'object',
     required: ['cid', 'rid'],
@@ -80,6 +91,7 @@ const updRole = {
 }
 
 const delRole = {
+  tags: ['roles'],  
   params: {
     type: 'object',
     required: ['cid', 'rid'],

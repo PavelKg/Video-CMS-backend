@@ -1,5 +1,12 @@
 'use strict'
 
+const queryStringJsonSchema = {
+  sort: {description: 'Fields sorting', type: 'string'},
+  limit: {type: 'integer'},
+  offset: {type: 'integer'},
+  filter: {type: 'string'}
+}
+
 const groupObject = {
   type: 'object',
   properties: {
@@ -20,6 +27,7 @@ const group = {
 }
 
 const getCompanyGroups = {
+  tags: ['groups'],  
   params: {
     type: 'object',
     required: ['cid'],
@@ -31,6 +39,7 @@ const getCompanyGroups = {
     },
     additionalProperties: false
   },
+  querystring: queryStringJsonSchema,
   response: {
     200: {
       type: 'array',
@@ -40,6 +49,7 @@ const getCompanyGroups = {
 }
 
 const addGroup = {
+  tags: ['groups'],    
   params: {
     type: 'object',
     required: ['cid'],
@@ -55,6 +65,7 @@ const addGroup = {
 }
 
 const updGroup = {
+  tags: ['groups'],    
   params: {
     type: 'object',
     required: ['cid', 'gid'],
@@ -77,6 +88,7 @@ const updGroup = {
 }
 
 const delGroup = {
+  tags: ['groups'],    
   params: {
     type: 'object',
     required: ['cid', 'gid'],

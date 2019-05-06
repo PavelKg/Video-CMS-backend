@@ -1,5 +1,6 @@
 'use strict'
 const errors = require('../../errors')
+const db_api = require('../../db_api')
 
 class RoleService {
   constructor(db) {
@@ -8,14 +9,22 @@ class RoleService {
 
   async companyRoles(payload) {
     const {acc, cid} = payload
+    const {limit='ALL' , offset=0, sort='role_rid', filter=''} = payload.query
+
+    const qSort = db_api.sorting(sort, 'roles')
+    const qFilter = filter !== '' ? db_api.filtration(filter, 'roles') : ''
+    
     const client = await this.db.connect()
     const {rows} = await client.query(
-      `select companyroles($1::jsonb, $2) as roles;`,
-      [acc, cid]
+      `select role_rid as rid, role_name as name, 
+      role_is_admin as is_admin, deleted_at
+      from roles
+      where role_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
+      [cid, offset]
     )
 
     client.release()
-    const cRoles = rows[0].roles
+    const cRoles = rows
 
     if (!cRoles) throw new Error(errors.WRONG_LOAD_ROLES)
     return cRoles

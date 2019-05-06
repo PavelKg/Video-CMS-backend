@@ -1,6 +1,7 @@
 'use strict'
-const crypto = require('crypto')
+//const crypto = require('crypto')
 const errors = require('../../errors')
+const db_api = require('../../db_api')
 
 class UserService {
   constructor(db) {
@@ -9,25 +10,26 @@ class UserService {
 
   async companyUsers(payload) {
     const {acc, cid} = payload
-    const {limit='ALL' , offset=0, order_by='uid'} = payload.query
+    const {limit='ALL' , offset=0, sort='uid', filter=''} = payload.query
 
-    const q_order_by = order_by.replace(';', '')
+    const qSort = db_api.sorting(sort, 'users')
+    const qFilter = filter !== '' ? db_api.filtration(filter, 'users') : ''
 
     const client = await this.db.connect()
     const {rows} = await client.query(
       `SELECT 
-        users.user_uid as uid, 
-        users.user_fullname as fullname, 
-        roles.role_rid as rid, 
-        "groups".group_gid as gid, 
-        users.user_email email, 
+        user_uid as uid, 
+        user_fullname as fullname, 
+        role_rid as rid, 
+        group_gid as gid, 
+        user_email email, 
         users.deleted_at
       FROM users
       LEFT OUTER JOIN roles
       ON users.user_role_id = roles.role_id
       LEFT OUTER JOIN "groups"
       ON users.user_group_id = "groups".group_id
-      WHERE user_company_id=$1 ORDER BY ${q_order_by} ASC LIMIT ${limit} OFFSET $2;`,
+      WHERE user_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
       [cid, offset]
     )
 
@@ -162,3 +164,4 @@ class UserService {
 }
 
 module.exports = UserService
+

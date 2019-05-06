@@ -24,6 +24,19 @@ module.exports[Symbol.for('plugin-meta')] = {
   }
 }
 
+async function getCompanyRolesHandler(req, reply) {
+  const cid = req.params.cid
+  const query =  req.query
+  let acc = null
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+  return await this.roleService.companyRoles({acc, cid, query})
+}
+
+
 async function addRoleHandler(req, reply) {
   const cid = +req.params.cid
   let url = req.raw.url
@@ -80,13 +93,3 @@ async function delRoleHandler(req, reply) {
 }
 
 
-async function getCompanyRolesHandler(req, reply) {
-  const cid = req.params.cid
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-  return await this.roleService.companyRoles({acc, cid})
-}

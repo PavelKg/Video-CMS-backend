@@ -26,6 +26,7 @@ module.exports[Symbol.for('plugin-meta')] = {
 
 async function getCompanyGroupsHandler(req, reply) {
   const cid = req.params.cid
+  const query =  req.query
   let acc = null
   req.jwtVerify(function(err, decoded) {
     if (!err) {
@@ -33,7 +34,7 @@ async function getCompanyGroupsHandler(req, reply) {
     }
   })
 
-  return await this.groupService.companyGroups({acc, cid})
+  return await this.groupService.companyGroups({acc, cid, query})
 }
 
 async function addGroupHandler(req, reply) {

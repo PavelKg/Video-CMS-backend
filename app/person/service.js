@@ -26,11 +26,11 @@ class PersonService {
   async login(username, password) {
     const client = await this.db.connect()
     const {rows} = await client.query(
-      `select login($1, $2) as user;`,
+      `select login($1, $2);`,
       [username, password]
     )
     client.release()
-    const user = rows[0].user
+    const user = rows[0].login
 
     if (!user) throw new Error(errors.WRONG_CREDENTIAL)
     return user

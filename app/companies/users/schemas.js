@@ -1,4 +1,11 @@
 'use strict'
+/** description */
+const queryStringJsonSchema = {
+  sort: {description: 'Fields sorting', type: 'string'},
+  limit: {type: 'integer'},
+  offset: {type: 'integer'},
+  filter: {type: 'string'}
+}
 
 const userObject = {
   type: 'object',
@@ -27,6 +34,7 @@ const user = {
 }
 
 const getCompanyUsers = {
+  tags: ['users'],
   params: {
     type: 'object',
     required: ['cid'],
@@ -38,6 +46,7 @@ const getCompanyUsers = {
     },
     additionalProperties: false
   },
+  querystring: queryStringJsonSchema,
   response: {
     200: {
       type: 'array',
@@ -47,6 +56,7 @@ const getCompanyUsers = {
 }
 
 const getCompanyUserInfo = {
+  tags: ['users'],
   params: {
     type: 'object',
     required: ['cid', 'uid'],
@@ -68,6 +78,7 @@ const getCompanyUserInfo = {
 }
 
 const addUser = {
+  tags: ['users'],
   params: {
     type: 'object',
     required: ['cid'],
@@ -83,6 +94,7 @@ const addUser = {
 }
 
 const updUser = {
+  tags: ['users'],
   params: {
     type: 'object',
     required: ['cid', 'uid'],
@@ -109,6 +121,7 @@ const updUser = {
 }
 
 const delUser = {
+  tags: ['users'],
   params: {
     type: 'object',
     required: ['cid', 'uid'],
