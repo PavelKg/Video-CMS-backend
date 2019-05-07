@@ -75,7 +75,8 @@ module.exports = async function(fastify, opts) {
     .register(fp(decorateFastifyInstance))
     .register(cors, {
       origin: false,
-      path: '*'
+      path: '*',
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE'
     })
     // .register(swagger, {
     //   routePrefix: '/documentation',
