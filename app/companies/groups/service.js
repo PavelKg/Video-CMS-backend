@@ -30,7 +30,7 @@ class GroupService {
     const {acc, group} = payload
     const {cid, name} = group
 
-    if (acc.company_id !== cid || acc.is_admin) {
+    if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
@@ -50,7 +50,7 @@ class GroupService {
     const {acc, group} = payload
     const {gid, cid, name} = group
 
-    if (acc.company_id !== cid || acc.is_admin) {
+    if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
@@ -75,7 +75,7 @@ class GroupService {
     const {acc, group} = payload
     const {gid, cid} = group
 
-    if (acc.company_id !== cid || acc.is_admin) {
+    if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
