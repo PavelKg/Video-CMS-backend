@@ -33,7 +33,7 @@ class RoleService {
   async addRole(payload) {
     const {acc, role} = payload
     const {rid, cid, name, is_admin = false} = role
-    if (acc.company_id !== cid || acc.role !== 'admin') {
+    if (acc.company_id !== cid || acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
@@ -53,7 +53,7 @@ class RoleService {
     const {acc, role} = payload
     const {rid, cid, name, is_admin = false} = role
 
-    if (acc.company_id !== cid || acc.role !== 'admin') {
+    if (acc.company_id !== cid || acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
@@ -77,7 +77,7 @@ class RoleService {
     const {acc, role} = payload
     const {rid, cid} = role
 
-    if (acc.company_id !== cid || acc.role !== 'admin') {
+    if (acc.company_id !== cid || acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
