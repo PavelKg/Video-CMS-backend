@@ -19,15 +19,14 @@ const groupObject = {
 const group = {
   type: 'object',
   properties: {
-    gid: {type: 'string'},
     name: {type: 'string'}
   },
-  required: ['gid', 'name'],
+  required: ['name'],
   additionalProperties: false
 }
 
 const getCompanyGroups = {
-  tags: ['groups'],  
+  tags: ['groups'],
   params: {
     type: 'object',
     required: ['cid'],
@@ -49,7 +48,7 @@ const getCompanyGroups = {
 }
 
 const addGroup = {
-  tags: ['groups'],    
+  tags: ['groups'],
   params: {
     type: 'object',
     required: ['cid'],
@@ -65,7 +64,7 @@ const addGroup = {
 }
 
 const updGroup = {
-  tags: ['groups'],    
+  tags: ['groups'],
   params: {
     type: 'object',
     required: ['cid', 'gid'],
@@ -74,7 +73,7 @@ const updGroup = {
         type: 'string',
         pattern: '^[0-9]?'
       },
-      gid: {type: 'string'}
+      gid: {type: 'string', pattern: '^[0-9]?'}
     },
     additionalProperties: false
   },
@@ -88,7 +87,7 @@ const updGroup = {
 }
 
 const delGroup = {
-  tags: ['groups'],    
+  tags: ['groups'],
   params: {
     type: 'object',
     required: ['cid', 'gid'],

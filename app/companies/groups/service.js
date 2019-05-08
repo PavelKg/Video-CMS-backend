@@ -28,7 +28,7 @@ class GroupService {
 
   async addGroup(payload) {
     const {acc, group} = payload
-    const {gid, cid, name} = group
+    const {cid, name} = group
 
     if (acc.company_id !== cid || acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
@@ -36,10 +36,10 @@ class GroupService {
 
     const client = await this.db.connect()
     const {rows} = await client.query(
-      `INSERT INTO groups (group_gid, group_company_id, group_name) 
-      VALUES ($1, $2, $3) 
+      `INSERT INTO groups (group_company_id, group_name) 
+      VALUES ($1, $2) 
       RETURNING group_gid;`,
-      [gid, cid, name]
+      [cid, name]
     )
 
     client.release()
