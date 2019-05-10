@@ -28,7 +28,7 @@ class UserService {
       LEFT OUTER JOIN roles
       ON users.user_role_id = roles.role_id
       LEFT OUTER JOIN "groups"
-      ON users.user_group_id = "groups".group_id
+      ON users.user_group_id = "groups".group_gid
       WHERE user_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
       [cid, offset]
     )
