@@ -10,7 +10,7 @@ class UserService {
 
   async companyUsers(payload) {
     const {acc, cid} = payload
-    const {limit='ALL' , offset=0, sort='uid', filter=''} = payload.query
+    const {limit='ALL' , offset=0, sort='user_uid', filter=''} = payload.query
 
     const qSort = db_api.sorting(sort, 'users')
     const qFilter = filter !== '' ? db_api.filtration(filter, 'users') : ''
