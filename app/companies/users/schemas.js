@@ -15,7 +15,8 @@ const userObject = {
     gid: {type: 'string'},
     rid: {type: 'string'},
     email: {type: 'string'},
-    deleted_at: {type: 'string'}
+    deleted_at: {type: 'string'},
+    last_login: {type: 'string'}
   }
 }
 
