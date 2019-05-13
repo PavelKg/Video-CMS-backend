@@ -10,7 +10,12 @@ class UserService {
 
   async companyUsers(payload) {
     const {acc, cid} = payload
-    const {limit='ALL' , offset=0, sort='user_uid', filter=''} = payload.query
+    const {
+      limit = 'ALL',
+      offset = 0,
+      sort = 'user_uid',
+      filter = ''
+    } = payload.query
 
     const qSort = db_api.sorting(sort, 'users')
     const qFilter = filter !== '' ? db_api.filtration(filter, 'users') : ''
@@ -24,14 +29,14 @@ class UserService {
         group_gid as gid, 
         user_email email, 
         users.deleted_at,
-        max(userhist_date) as last_login
+        (select max(userhist_date)  
+         from "userHistoryLog" 
+         where userhist_user_id = users.user_id and userhist_action='login' ) as last_login
       FROM users
       LEFT OUTER JOIN roles
       ON users.user_role_id = roles.role_id
       LEFT OUTER JOIN "groups"
       ON users.user_group_id = "groups".group_gid
-      LEFT OUTER JOIN "userHistoryLog"
-      ON userhist_user_id = users.user_id and userhist_action='login' 
       WHERE user_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
       [cid, offset]
     )
@@ -105,17 +110,8 @@ class UserService {
 
   async updUser(payload) {
     const {acc, user} = payload
-    const {
-      uid,
-      cid,
-      fullname,
-      gid,
-      rid,
-      email = '',
-      password = ''
-    } = user
+    const {uid, cid, fullname, gid, rid, email = '', password = ''} = user
 
-    
     if (acc.company_id !== cid || acc.role !== 'admin') {
       throw Error(errors.WRONG_ACCESS)
     }
@@ -167,4 +163,3 @@ class UserService {
 }
 
 module.exports = UserService
-
