@@ -24,14 +24,14 @@ class UserService {
         group_gid as gid, 
         user_email email, 
         users.deleted_at,
-        max(userhist_date) last_login
+        max(userhist_date) as last_login
       FROM users
       LEFT OUTER JOIN roles
       ON users.user_role_id = roles.role_id
       LEFT OUTER JOIN "groups"
       ON users.user_group_id = "groups".group_gid
       LEFT OUTER JOIN "userHistoryLog"
-      ON userhist_user_id = users.user_uid and userhist_action='login' 
+      ON userhist_user_id = users.user_id and userhist_action='login' 
       WHERE user_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
       [cid, offset]
     )
