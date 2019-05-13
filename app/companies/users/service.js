@@ -27,6 +27,7 @@ class UserService {
         user_fullname as fullname, 
         role_rid as rid, 
         group_gid as gid, 
+        group_name as group_name, 
         user_email email, 
         users.deleted_at,
         (select max(userhist_date)  
