@@ -85,11 +85,8 @@ class UserService {
 
     const client = await this.db.connect()
     const {rows} = await client.query(
-      `with ugroup as (
-        select group_id id from groups where group_company_id=$2 and group_gid=$4
-        ), urole as (
+      `with urole as (
         select role_id id from roles where role_company_id=$2 and role_rid=$5)
-        --select id from ugroup
         
         INSERT INTO users (
                 user_uid, 
@@ -99,7 +96,7 @@ class UserService {
                 user_email, 
                 user_password,
                 user_company_id) 
-              VALUES ($1, $3, (select id from ugroup), (select id from urole), $6, crypt($7, gen_salt('bf')), $2) 
+              VALUES ($1, $3, $4, (select id from urole), $6, crypt($7, gen_salt('bf')), $2) 
               RETURNING user_uid
         ;`,
       [uid, cid, fullname, gid, rid, email, password]
@@ -122,7 +119,7 @@ class UserService {
       `with updated AS(
         UPDATE users 
         SET user_fullname=$3, 
-          user_group_id = (select group_id from groups where group_gid=$4 and group_company_id=$2),
+          user_group_id = $4,
           user_role_id = (select role_id from roles where role_rid=$5 and role_company_id=$2),
           user_email = $6,
           user_password = CASE WHEN $7<>'' THEN crypt($7, gen_salt('bf')) ELSE user_password END
