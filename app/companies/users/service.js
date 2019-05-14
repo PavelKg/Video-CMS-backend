@@ -79,7 +79,7 @@ class UserService {
     const {acc, user} = payload
     const {uid, cid, fullname, gid, rid, email = '', password} = user
 
-    if (acc.company_id !== cid || acc.role !== 'admin') {
+    if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
@@ -113,7 +113,7 @@ class UserService {
     const {acc, user} = payload
     const {uid, cid, fullname, gid, rid, email = '', password = ''} = user
 
-    if (acc.company_id !== cid || acc.role !== 'admin') {
+    if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
@@ -141,7 +141,7 @@ class UserService {
     const {acc, user} = payload
     const {uid, cid} = user
 
-    if (acc.company_id !== cid || acc.role !== 'admin') {
+    if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
