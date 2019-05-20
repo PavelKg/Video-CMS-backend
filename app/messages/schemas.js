@@ -33,7 +33,7 @@ const message = {
   required: ['receiver_cid', 'receiver_uid','subject', 'text'],
 }
 
-const getMessages = {
+const getUserMessages = {
   tags: ['messages'],
   params: {
     type: 'object',
@@ -79,7 +79,7 @@ const delMessage = {
 }
 
 module.exports = {
-  getMessages,
+  getUserMessages,
   addMessage,
   delMessage
 }
