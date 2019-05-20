@@ -50,8 +50,12 @@ const login = {
     type: 'object',
     require: ['username', 'password'],
     properties: {
-      username: {type: 'string'},
-      password: {type: 'string'}
+      username: {
+        type: 'string'
+      },
+      password: {
+        type: 'string'
+      }
     },
     additionalProperties: false
   },
@@ -85,7 +89,7 @@ const login = {
 // }
 
 const getProfile = {
-  tags: ['person'],    
+  tags: ['person'],
   params: {
     type: 'object',
     //required: ['uid'],

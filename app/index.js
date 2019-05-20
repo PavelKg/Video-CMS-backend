@@ -21,6 +21,9 @@ const GroupService = require('./companies/groups/service')
 const User = require('./companies/users')
 const UserService = require('./companies/users/service')
 
+const Message = require('./messages')
+const MessageService = require('./messages/service')
+
 async function connectToDatabase(fastify) {
   const {DB_HOST, DB_USER, DB_PASS, DB_NAME} = process.env
   fastify.register(pg, {
@@ -53,11 +56,13 @@ async function decorateFastifyInstance(fastify) {
   const roleService = new RoleService(db)
   const groupService = new GroupService(db)
   const userService = new UserService(db)
+  const messageService = new MessageService(db)
 
   fastify.decorate('personService', personService)
   fastify.decorate('roleService', roleService)
   fastify.decorate('groupService', groupService)
   fastify.decorate('userService', userService)
+  fastify.decorate('messageService', messageService)
 
   fastify.decorate('authPreHandler', async function auth(request, reply) {
     try {
@@ -66,7 +71,7 @@ async function decorateFastifyInstance(fastify) {
       reply.send(err)
     }
   })
-  }
+}
 
 module.exports = async function(fastify, opts) {
   fastify
@@ -100,4 +105,5 @@ module.exports = async function(fastify, opts) {
     .register(Role, {prefix: '/api/companies/:cid/roles'})
     .register(Group, {prefix: '/api/companies/:cid/groups'})
     .register(User, {prefix: '/api/companies/:cid/users'})
+    .register(Message, {prefix: '/api/messages'})
 }

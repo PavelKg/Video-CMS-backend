@@ -18,7 +18,8 @@ exports.options = {
       {name: 'companies', description: 'Companies related end-points'},
       {name: 'users', description: 'Companies users related end-points'},
       {name: 'roles', description: 'Companies roles related end-points'},
-      {name: 'groups', description: 'Companies groups related end-points'}
+      {name: 'groups', description: 'Companies groups related end-points'},
+      {name: 'messages', description: 'Messages related end-points'}
     ],
     securityDefinitions: Object
   }
