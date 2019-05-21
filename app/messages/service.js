@@ -4,7 +4,6 @@ const db_api = require('../db_api')
 
 class MessageService {
   constructor(db) {
-    console.log('message-constructor')
     this.db = db
   }
 
@@ -45,6 +44,23 @@ class MessageService {
 
     client.release()
     return rows
+  }
+
+  async userMessagesReceivers(payload) {
+    const {acc} = payload
+    const cid = acc.company_id
+
+    const client = await this.db.connect()
+    const {rows} = await client.query(
+      `SELECT user_uid as uid, user_company_id as cid 
+      FROM users 
+      WHERE user_company_id=$1 and users.deleted_at is null 
+      ORDER BY user_company_id, user_uid;`,
+      [cid]
+    )
+
+    client.release()
+    return rows    
   }
 
   async addMessage(payload) {

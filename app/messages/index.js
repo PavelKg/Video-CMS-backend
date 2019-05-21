@@ -3,6 +3,7 @@
 const {
   message: messageSchema,
   getUserMessages: getUserMessagesSchema,
+  getMessagesReceivers: getMessagesReceiversSchema,
   addMessage: addMessageSchema,
   delMessage: delMessageSchema
 } = require('./schemas')
@@ -12,6 +13,7 @@ module.exports = async function(fastify, opts) {
   fastify.addHook('preHandler', fastify.authPreHandler)
 
   fastify.get('/', {schema: getUserMessagesSchema}, getUserMessagesHandler)
+  fastify.get('/receivers', {schema: getMessagesReceiversSchema}, getMessagesReceiversHandler)
   fastify.post('/', {schema: addMessageSchema}, addMessageHandler)
   //fastify.put('/:gid', {schema: updMessageSchema}, updMessageHandler)
   fastify.delete('/:mid', {schema: delMessageSchema}, delMessageHandler)
@@ -32,6 +34,17 @@ async function getUserMessagesHandler(req, reply) {
     }
   })
   return await this.messageService.userMessages({acc, query})
+}
+
+async function getMessagesReceiversHandler(req, reply) {
+  const query =  req.query
+  let acc = null
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+  return await this.messageService.userMessagesReceivers({acc, query})
 }
 
 async function addMessageHandler(req, reply) {

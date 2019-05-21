@@ -13,10 +13,10 @@ const messageObject = {
     mid: {type: 'integer'},
     sender_uid: {type: 'string'},
     sender_cid: {type: 'string'},
-    sender_cname: {type: 'string'},    
+    sender_cname: {type: 'string'},
     receiver_uid: {type: 'string'},
     receiver_cid: {type: 'string'},
-    receiver_cname: {type: 'string'},    
+    receiver_cname: {type: 'string'},
     subject: {type: 'string'},
     text: {type: 'string'},
     important: {type: 'boolean'},
@@ -34,7 +34,7 @@ const message = {
     text: {type: 'string'},
     important: {type: 'boolean'}
   },
-  required: ['receiver_cid', 'receiver_uid','subject', 'text'],
+  required: ['receiver_cid', 'receiver_uid', 'subject', 'text']
 }
 
 const getUserMessages = {
@@ -57,6 +57,36 @@ const getUserMessages = {
     200: {
       type: 'array',
       items: messageObject
+    }
+  }
+}
+
+const getMessagesReceivers = {
+  tags: ['messages'],
+  params: {
+    type: 'object',
+    properties: {
+      cid: {
+        type: 'string',
+        pattern: '^[0-9]?'
+      },
+      uid: {
+        type: 'string'
+      }
+    },
+    additionalProperties: false
+  },
+  querystring: queryStringJsonSchema,
+  response: {
+    200: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          uid: {type: 'string'},
+          cid: {type: 'string'}
+        }
+      }
     }
   }
 }
@@ -84,6 +114,7 @@ const delMessage = {
 
 module.exports = {
   getUserMessages,
+  getMessagesReceivers,
   addMessage,
   delMessage
 }
