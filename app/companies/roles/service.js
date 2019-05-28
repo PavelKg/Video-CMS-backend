@@ -87,7 +87,7 @@ class RoleService {
       `select count(users.user_id) cnt 
        from roles, users 
        where role_company_id=$2 and role_rid=$1 
-        and user_role_id = role_id;`, 
+        and user_role_id = role_id and users.deleted_at is null;`, 
         [rid, cid]
     )
     if (Array.isArray(usrs) && usrs[0].cnt > 0) {

@@ -84,7 +84,7 @@ class GroupService {
       `select count(users.user_id) cnt 
        from groups, users 
        where group_company_id=$2 and group_gid=$1 
-        and user_group_id = group_gid;`, 
+        and user_group_id = group_gid and users.deleted_at is null;`, 
         [gid, cid]
     )
     if (Array.isArray(usrs) && usrs[0].cnt > 0) {
