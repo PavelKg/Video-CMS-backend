@@ -77,7 +77,8 @@ class UserService {
 
   async addUser(payload) {
     const {acc, user} = payload
-    const {uid, cid, fullname, gid, rid, email = '', password} = user
+    const {uid, cid, fullname, rid, email = '', password} = user
+    const gid = user.gid ? user.gid : null
 
     if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
@@ -96,11 +97,13 @@ class UserService {
                 user_email, 
                 user_password,
                 user_company_id) 
-              VALUES ($1, $3, $4, (select id from urole), $6, crypt($7, gen_salt('bf')), $2) 
+              VALUES ($1, $3, $4::integer, (select id from urole), $6, crypt($7, gen_salt('bf')), $2) 
               RETURNING user_uid
         ;`,
       [uid, cid, fullname, gid, rid, email, password]
     )
+
+   console.log('rows=', rows)
 
     client.release()
     return rows[0].user_uid
@@ -108,7 +111,8 @@ class UserService {
 
   async updUser(payload) {
     const {acc, user} = payload
-    const {uid, cid, fullname, gid, rid, email = '', password = ''} = user
+    const {uid, cid, fullname, rid, email = '', password = ''} = user
+    const gid = user.gid ? user.gid : null
 
     if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
@@ -119,7 +123,7 @@ class UserService {
       `with updated AS(
         UPDATE users 
         SET user_fullname=$3, 
-          user_group_id = $4,
+          user_group_id = $4::integer,
           user_role_id = (select role_id from roles where role_rid=$5 and role_company_id=$2),
           user_email = $6,
           user_password = CASE WHEN $7<>'' THEN crypt($7, gen_salt('bf')) ELSE user_password END

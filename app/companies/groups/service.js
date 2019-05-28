@@ -80,6 +80,18 @@ class GroupService {
     }
 
     const client = await this.db.connect()
+    const {rows: usrs} = await client.query(
+      `select count(users.user_id) cnt 
+       from groups, users 
+       where group_company_id=$2 and group_gid=$1 
+        and user_group_id = group_gid;`, 
+        [gid, cid]
+    )
+    console.log('usrs=', usrs, gid, cid)
+    if (Array.isArray(usrs) && usrs[0].cnt > 0) {
+      throw Error(errors.CANNOT_DELETE_A_GROUP_WITH_EXISTING_USERS)
+    }
+
     const {rows} = await client.query(
       `with deleted AS(
         UPDATE groups 

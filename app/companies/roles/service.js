@@ -82,6 +82,19 @@ class RoleService {
     }
 
     const client = await this.db.connect()
+
+    const {rows: usrs} = await client.query(
+      `select count(users.user_id) cnt 
+       from roles, users 
+       where role_company_id=$2 and role_rid=$1 
+        and user_role_id = role_id;`, 
+        [rid, cid]
+    )
+    if (Array.isArray(usrs) && usrs[0].cnt > 0) {
+      throw Error(errors.CANNOT_DELETE_A_ROLE_WITH_EXISTING_USERS)
+    }
+
+
     const {rows} = await client.query(
       `with deleted AS(
         UPDATE roles 

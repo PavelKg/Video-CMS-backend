@@ -25,10 +25,12 @@ class PersonService {
 
   async login(username, password) {
     const client = await this.db.connect()
+    console.log('before select login($1, $2)')
     const {rows} = await client.query(
       `select login($1, $2);`,
       [username, password]
     )
+    console.log('after select login($1, $2)')
     client.release()
     const user = rows[0].login
 
