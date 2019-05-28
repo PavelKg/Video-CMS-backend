@@ -87,7 +87,6 @@ class GroupService {
         and user_group_id = group_gid;`, 
         [gid, cid]
     )
-    console.log('usrs=', usrs, gid, cid)
     if (Array.isArray(usrs) && usrs[0].cnt > 0) {
       throw Error(errors.CANNOT_DELETE_A_GROUP_WITH_EXISTING_USERS)
     }
