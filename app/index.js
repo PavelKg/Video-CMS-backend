@@ -56,7 +56,7 @@ async function fastifyGoogleCloudStorage(fastify) {
     console.log('Connect to GCS success')
   } catch (err) {
     console.log('Connect to GCS error:', err)
-  }
+  } 
 
   console.log('Finish GCS Connecting.')
 }
@@ -83,13 +83,14 @@ async function authenticator(fastify) {
 async function decorateFastifyInstance(fastify) {
   console.log('Decorate Loading...')
   const db = fastify.pg
+  const storage = fastify.googleCloudStorage
 
   const personService = new PersonService(db)
   const roleService = new RoleService(db)
   const groupService = new GroupService(db)
   const userService = new UserService(db)
   const messageService = new MessageService(db)
-  const videoService = new VideoService(db)
+  const videoService = new VideoService(db, storage)
 
   fastify.decorate('personService', personService)
   fastify.decorate('roleService', roleService)
