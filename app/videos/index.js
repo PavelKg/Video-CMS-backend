@@ -22,7 +22,7 @@ module.exports = async function(fastify, opts) {
 
 module.exports[Symbol.for('plugin-meta')] = {
   decorators: {
-    fastify: ['authPreHandler', 'messageService']
+    fastify: ['authPreHandler', 'videoService']
   }
 }
 

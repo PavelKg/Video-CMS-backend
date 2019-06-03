@@ -1,5 +1,24 @@
 'use strict'
 
+const uploadFileObject = {
+  data: {
+    type: 'object',
+    properties: {
+      name: {type: 'string'},
+      size: {type: 'integer'},
+      type: {type: 'string'}
+    }
+  }
+}
+
+const queryStringJsonSchema = {
+  files: {
+    description: 'Files list',
+    type: 'array',
+    items: uploadFileObject
+  }
+}
+
 const gcsUploadSignedUrl = {
   tags: ['videos'],
   params: {
@@ -15,12 +34,11 @@ const gcsUploadSignedUrl = {
     },
     additionalProperties: false
   },
+  querystring: queryStringJsonSchema,
   response: {
     200: {
-      type: 'object',
-      properties: {
-        url: {type: 'string'}
-      }
+      type: 'array',
+      items: {type: 'string'}
     }
   }
 }
