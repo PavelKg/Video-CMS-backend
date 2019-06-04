@@ -22,15 +22,15 @@ class VideoService {
     const {acc, query} = payload
     const {company_id: cid} = acc
     const storage_type = 'gcs'
-    const {files} = query
+    const {name, size, type} = query
 
-    files.forEach((element, i) => {
-      try {
-        files[i] = JSON.parse(element)
-      } catch (err) {
-        console.log('parse=', err)
-      }
-    })
+    // files.forEach((element, i) => {
+    //   try {
+    //     files[i] = JSON.parse(element)
+    //   } catch (err) {
+    //     console.log('parse=', err)
+    //   }
+    // })
 
     if (!this.gcs) {
       throw Error(errors.WRONG_CONNECT_TO_GCS)
@@ -48,21 +48,16 @@ class VideoService {
     const {storage_bucket, storage_content_limit} = rows[0]
 
     const options = {
-      action: 'write1',
+      action: 'write',
       expires: Date.now() + 1000 * 60 * 60, // One hour
-      contentType: ''
+      contentType: type
     }
 
     const bucket = this.gcs.bucket(storage_bucket)
 
-    const result = await Promise.all(
-      files.map(async file => {
-        const c_options = {...options, contentType: file.type}
-        const gcs_file = bucket.file(file.name)
-        return (await gcs_file.getSignedUrl(c_options))[0]
-      })
-    )
-    return result
+    const gcs_file = bucket.file(name)
+    const url = (await gcs_file.getSignedUrl(options))[0]
+    return {name, url}
   }
 
   /**

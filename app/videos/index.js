@@ -28,7 +28,7 @@ module.exports[Symbol.for('plugin-meta')] = {
 
 async function gcsUploadSignedUrlHandler(req, reply) {
   const query = req.query
-
+  
   let acc = null
   req.jwtVerify(function(err, decoded) {
     if (!err) {
