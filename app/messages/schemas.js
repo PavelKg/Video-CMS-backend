@@ -19,7 +19,7 @@ const messageObject = {
     receiver_cname: {type: 'string'},
     subject: {type: 'string'},
     text: {type: 'string'},
-    important: {type: 'boolean'},
+    starred: {type: 'boolean'},
     created_at: {type: 'string'},
     deleted_at: {type: 'string'}
   }
@@ -32,7 +32,7 @@ const message = {
     receiver_uid: {type: 'string'},
     subject: {type: 'string'},
     text: {type: 'string'},
-    important: {type: 'boolean'}
+    starred: {type: 'boolean'}
   },
   required: ['receiver_cid', 'receiver_uid', 'subject', 'text']
 }
@@ -97,6 +97,21 @@ const addMessage = {
   body: message
 }
 
+const starMessage = {
+  tags: ['messages'],
+  params: {
+    type: 'object',
+    required: ['mid'],
+    properties: {
+      mid: {
+        type: 'string',
+        pattern: '^[0-9]?'
+      }
+    },
+    additionalProperties: false
+  }
+}
+
 const delMessage = {
   tags: ['messages'],
   params: {
@@ -116,5 +131,6 @@ module.exports = {
   getUserMessages,
   getMessagesReceivers,
   addMessage,
-  delMessage
+  delMessage,
+  starMessage
 }

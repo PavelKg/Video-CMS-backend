@@ -5,7 +5,8 @@ const {
   getUserMessages: getUserMessagesSchema,
   getMessagesReceivers: getMessagesReceiversSchema,
   addMessage: addMessageSchema,
-  delMessage: delMessageSchema
+  delMessage: delMessageSchema,
+  starMessage: starMessageSchema
 } = require('./schemas')
 
 module.exports = async function(fastify, opts) {
@@ -13,10 +14,19 @@ module.exports = async function(fastify, opts) {
   fastify.addHook('preHandler', fastify.authPreHandler)
 
   fastify.get('/', {schema: getUserMessagesSchema}, getUserMessagesHandler)
-  fastify.get('/receivers', {schema: getMessagesReceiversSchema}, getMessagesReceiversHandler)
+  fastify.get(
+    '/receivers',
+    {schema: getMessagesReceiversSchema},
+    getMessagesReceiversHandler
+  )
   fastify.post('/', {schema: addMessageSchema}, addMessageHandler)
-  //fastify.put('/:gid', {schema: updMessageSchema}, updMessageHandler)
   fastify.delete('/:mid', {schema: delMessageSchema}, delMessageHandler)
+  fastify.post('/:mid/star', {schema: starMessageSchema}, addStarMessageHandler)
+  fastify.delete(
+    '/:mid/star',
+    {schema: starMessageSchema},
+    delStarMessageHandler
+  )
 }
 
 module.exports[Symbol.for('plugin-meta')] = {
@@ -26,7 +36,7 @@ module.exports[Symbol.for('plugin-meta')] = {
 }
 
 async function getUserMessagesHandler(req, reply) {
-  const query =  req.query
+  const query = req.query
   let acc = null
   req.jwtVerify(function(err, decoded) {
     if (!err) {
@@ -37,7 +47,7 @@ async function getUserMessagesHandler(req, reply) {
 }
 
 async function getMessagesReceiversHandler(req, reply) {
-  const query =  req.query
+  const query = req.query
   let acc = null
   req.jwtVerify(function(err, decoded) {
     if (!err) {
@@ -48,7 +58,6 @@ async function getMessagesReceiversHandler(req, reply) {
 }
 
 async function addMessageHandler(req, reply) {
-
   let url = req.raw.url
   const message = {...req.body}
 
@@ -82,5 +91,38 @@ async function delMessageHandler(req, reply) {
 
   const deleted = await this.messageService.delMessage({acc, message})
   const _code = deleted === 1 ? 204 : 404
+  reply.code(_code).send()
+}
+
+async function addStarMessageHandler(req, reply) {
+  const {mid} = req.params
+  let url = req.raw.url
+
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  await this.messageService.addStarredMessage({acc, mid})
+  reply
+    .code(201)
+    .header('Location', `${url}`)
+    .send()
+}
+
+async function delStarMessageHandler(req, reply) {
+  const {mid} = req.params
+
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  const unstarred = await this.messageService.delStarredMessage({acc, mid})
+  const _code = unstarred === 1 ? 204 : 404
   reply.code(_code).send()
 }
