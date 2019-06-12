@@ -87,7 +87,7 @@ class MessageService {
       )
 
       INSERT INTO messages ( message_sender, message_receiver,
-          message_subject, message_text, message_important) 
+          message_subject, message_text) 
       SELECT sender.user_id, receiver.user_id, $5, $6, $7 FROM sender, receiver  
       RETURNING message_id;`,
       [
@@ -96,8 +96,7 @@ class MessageService {
         sender_cid,
         sender_uid,
         subject,
-        text,
-        important
+        text
       ]
     )
     client.release()
@@ -140,9 +139,9 @@ class MessageService {
     try {
       const {rowCount} = await client.query(
         `INSERT INTO messages_starred 
-      (starred_messages_id, starred_user_id, starred_company_id) 
-      SELECT $1, user_id, user_company_id FROM users 
-      WHERE user_uid=$2 AND user_company_id=$3;`,
+          (starred_messages_id, starred_user_id, starred_company_id) 
+          SELECT $1, user_id, user_company_id FROM users 
+          WHERE user_uid=$2 AND user_company_id=$3;`,
         [mid, uid, company_id]
       )
       return rowCount
