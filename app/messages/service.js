@@ -88,7 +88,7 @@ class MessageService {
 
       INSERT INTO messages ( message_sender, message_receiver,
           message_subject, message_text) 
-      SELECT sender.user_id, receiver.user_id, $5, $6, $7 FROM sender, receiver  
+      SELECT sender.user_id, receiver.user_id, $5, $6 FROM sender, receiver  
       RETURNING message_id;`,
       [
         receiver_cid,
