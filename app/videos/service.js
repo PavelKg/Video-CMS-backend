@@ -22,7 +22,7 @@ class VideoService {
     const {acc, query} = payload
     const {company_id: cid} = acc
     const storage_type = 'gcs'
-    const {name, size, type} = query
+    const {name, size, type, uuid} = query
 
     // files.forEach((element, i) => {
     //   try {
@@ -37,15 +37,31 @@ class VideoService {
     }
 
     const client = await this.db.connect()
-    const {rows} = await client.query(
-      `SELECT storage_bucket, storage_content_limit 
+    let storage_bucket
+    try {
+      const {rows} = await client.query(
+        `SELECT storage_bucket, storage_content_limit 
         FROM storages
         WHERE storage_cid=$1 and upper(storage_type)=upper($2)`,
-      [cid, storage_type]
-    )
+        [cid, storage_type]
+      )
 
-    client.release()
-    const {storage_bucket, storage_content_limit} = rows[0]
+      storage_bucket = rows[0].storage_bucket
+      const storage_content_limit = rows[0].storage_content_limit
+      console.log('rows=', rows)
+
+      const {rowCount} = await client.query(
+        `INSERT INTO videos (video_filename, video_type, video_filesize,
+        video_uuid, video_status, vudeo_bucket, video_company_id)
+       values ($1, $2, $3, $4, 'create', $5, $6)`,
+        [name, type, size, uuid, storage_bucket, cid]
+      )
+
+      console.log('videos insert rowCount=', rowCount)
+    } catch (error) {
+    } finally {
+      client.release()
+    }
 
     const options = {
       action: 'write',
@@ -54,10 +70,12 @@ class VideoService {
     }
 
     const bucket = this.gcs.bucket(storage_bucket)
+    const check_ext = name.match(/\.(\w)*$/i)
+    const file_ext = Array.isArray(check_ext) ? check_ext[0] : ''
 
-    const gcs_file = bucket.file(name)
+    const gcs_file = bucket.file(`${uuid}${file_ext}`)
     const url = (await gcs_file.getSignedUrl(options))[0]
-    return {name, url}
+    return {name, url, uuid}
   }
 
   /**

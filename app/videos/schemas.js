@@ -3,7 +3,8 @@
 const queryStringJsonSchema = {
   name: {type: 'string'},
   size: {type: 'integer'},
-  type: {type: 'string'}
+  type: {type: 'string'},
+  uuid: {type: 'string'}
 }
 
 const gcsUploadSignedUrl = {
@@ -31,7 +32,10 @@ const gcsUploadSignedUrl = {
         },
         url: {
           type: 'string'
-        }
+        },
+        uuid: {
+          type: 'string'
+        }        
       }
     }
   }
