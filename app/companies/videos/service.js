@@ -128,15 +128,17 @@ class VideoService {
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
-        `SELECT video_id as vid,
-          video_filename,
-          video_status,
-          encode(video_thumbnail, 'hex') AS video_thumbnail,
-          video_title,
-          video_pUblic,
-          created_at,
-          updated_at,
-          deleted_at
+        `SELECT video_uuid,
+        video_filename,
+        video_status,
+        video_thumbnail,
+        video_title,
+        video_public,
+        video_tag,
+        video_description,
+        created_at,
+        updated_at,
+        deleted_at
         FROM videos
         WHERE  video_company_id = $1 
         ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
@@ -151,22 +153,24 @@ class VideoService {
   }
 
   async getVideo(payload) {
-    const {acc, cid, vid} = payload
+    const {acc, cid, uuid} = payload
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
-        `SELECT video_id as vid,
+        `SELECT video_uuid ,
           video_filename,
           video_status,
-          encode(video_thumbnail, 'hex') AS video_thumbnail,
+          video_thumbnail,
           video_title,
-          video_pUblic,
+          video_public,
+          video_tag,
+          video_description,
           created_at,
           updated_at,
           deleted_at
         FROM videos
-        WHERE  video_company_id = $1 and video_id = $2 `,
-        [cid, vid]
+        WHERE  video_company_id = $1 and video_uuid = $2 `,
+        [cid, uuid]
       )
       return rows[0]
     } catch (error) {
@@ -177,21 +181,20 @@ class VideoService {
   }
 
   async delVideo(payload) {
-    const {acc, vid} = payload
+    const {acc, cid, uuid} = payload
 
-    console.log('payload=', payload)
-    // if (acc.company_id !== cid || !acc.is_admin) {
-    //   throw Error(errors.WRONG_ACCESS)
-    // }
+    if (acc.company_id !== cid || !acc.is_admin) {
+      throw Error(errors.WRONG_ACCESS)
+    }
 
     const client = await this.db.connect()
     try {
       const {rowCount} = await client.query(
         ` UPDATE videos 
           SET deleted_at = now()::timestamp without time zone 
-          WHERE video_id=$1
+          WHERE video_company_id=$1 and video_uuid=$2
           and deleted_at is null`,
-        [vid]
+        [cid, uuid]
       )
       return rowCount
     } catch (error) {
@@ -202,7 +205,7 @@ class VideoService {
 
   async updVideo(payload) {
     const {acc, data} = payload
-    const {cid, vid, ...fields} = data
+    const {cid, uuid, ...fields} = data
 
     if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
@@ -214,9 +217,9 @@ class VideoService {
       let select = 'SELECT'
       Object.keys(fields).forEach((element, idx) => {
         switch (element) {
-          case 'video_thumbnail':
-            select += ' decode($' + (idx + 1) + ", 'hex')"
-            break
+          // case 'video_thumbnail':
+          //   select += ' decode($' + (idx + 1) + ", 'hex')"
+          //   break
           case 'video_public':
             select += ` $${idx + 1}::boolean`
             break
@@ -229,15 +232,10 @@ class VideoService {
       const query = {
         text: `UPDATE videos SET (${Object.keys(fields)}) = (${select}) 
          WHERE video_company_id=$${fields_length +
-           1} AND video_id=$${fields_length + 2}`,
-        values: [...Object.values(fields), cid, vid]
+           1} AND video_uuid=$${fields_length + 2}`,
+        values: [...Object.values(fields), cid, uuid]
       }
-      const {rowCount} = await client.query(
-        query
-        // `UPDATE videos SET (${Object.keys(fields)}) = (${select})
-        // WHERE video_company_id=$${fields_length+1} AND video_id=$${fields_length+2}`,
-        //  [...Object.values(fields), cid, vid]
-      )
+      const {rowCount} = await client.query(query)
       return rowCount
     } catch (error) {
       throw Error(error)

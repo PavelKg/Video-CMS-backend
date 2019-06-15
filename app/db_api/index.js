@@ -18,12 +18,27 @@ const sortableColumns = {
     'message_sender',
     'messages.created_at'
   ],
-  videos: ['video_id', 'videos.created_at']
+  videos: [
+    'video_thumbnail',
+    'videos.created_at',
+    'videos.deleted_at',
+    'video_uuid',
+    'video_filename',
+    'video_status',
+    'video_title',
+    'video_public',
+    'video_tag',
+    'video_description'
+  ]
 }
 
 const db_oper = {
   eq: '=',
-  like: 'like'
+  lt: '<',
+  gt: '>',
+  lte: '<=',
+  gte: '>=',  
+  like: 'like',
 }
 
 function sorting(_sort, _table) {
@@ -50,7 +65,9 @@ function filtration(_filter, _table) {
     ) {
       throw new Error(`Invalid "filter" column - ${parse_item[1]}`)
     }
-    return `${parse_item[1]} ${db_oper[parse_item[2]]} ${parse_item[3]}`
+    return `${
+      parse_item[1]
+    } ${db_oper[parse_item[2]] ? db_oper[parse_item[2]] : `${parse_item[2]}`} ${parse_item[3]}`
   })
   return ' AND ' + filter_str.join(' AND ')
 }

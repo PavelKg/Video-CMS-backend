@@ -17,9 +17,9 @@ module.exports = async function(fastify, opts) {
     {schema: getVideosCatalogSchema},
     getVideoCatalogHandler
   )
-  fastify.get('/:vid', {schema: getVideoSchema}, getVideoHandler)
-  fastify.delete('/:vid', {schema: delVideoSchema}, delVideoHandler)
-  fastify.put('/:vid', {schema: updVideoSchema}, updVideoHandler)
+  fastify.get('/:uuid', {schema: getVideoSchema}, getVideoHandler)
+  fastify.delete('/:uuid', {schema: delVideoSchema}, delVideoHandler)
+  fastify.put('/:uuid', {schema: updVideoSchema}, updVideoHandler)
   fastify.get(
     '/gcs-upload-surl',
     {schema: gcsUploadSignedUrlSchema},
@@ -65,8 +65,6 @@ async function gcsUploadSignedUrlHandler(req, reply) {
 async function getVideoCatalogHandler(req, reply) {
   const query = req.query
 
-  console.log('req.params=', req.params)
-
   let acc = null
   req.jwtVerify(function(err, decoded) {
     if (!err) {
@@ -77,7 +75,7 @@ async function getVideoCatalogHandler(req, reply) {
 }
 
 async function getVideoHandler(req, reply) {
-  const {cid, vid} = req.params
+  const {cid, uuid} = req.params
 
   let acc
   req.jwtVerify(function(err, decoded) {
@@ -86,11 +84,11 @@ async function getVideoHandler(req, reply) {
     }
   })
 
-  return await this.videoService.getVideo({acc, cid, vid})
+  return await this.videoService.getVideo({acc, cid, uuid})
 }
 
 async function delVideoHandler(req, reply) {
-  const {vid} = req.params
+  const {cid, uuid} = req.params
 
   let acc
   req.jwtVerify(function(err, decoded) {
@@ -99,14 +97,14 @@ async function delVideoHandler(req, reply) {
     }
   })
 
-  const deleted = await this.videoService.delVideo({acc, vid})
+  const deleted = await this.videoService.delVideo({acc, cid, uuid})
   const _code = deleted === 1 ? 204 : 404
   reply.code(_code).send()
 }
 
 async function updVideoHandler(req, reply) {
-  const {cid, vid} = req.params
-  const data = {...req.body, cid, vid}
+  const {cid, uuid} = req.params
+  const data = {...req.body, cid, uuid}
 
   let acc
   req.jwtVerify(function(err, decoded) {

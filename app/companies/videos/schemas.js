@@ -14,14 +14,21 @@ const gcsQueryStringJsonSchema = {
   uuid: {type: 'string'}
 }
 
+const uuidObj = {
+  type: 'string',
+  pattern: '[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}'
+}
+
 const videoCatalogObject = {
   type: 'object',
   properties: {
-    vid: {type: 'integer'},
+    video_uuid: {type: 'string'},
     video_filename: {type: 'string'},
     video_status: {type: 'string'},
     video_thumbnail: {type: 'string'},
     video_title: {type: 'string'},
+    video_tag: {type: 'string'},    
+    video_description: {type: 'string'},    
     video_public: {type: 'boolean'},
     created_at: {type: 'string'},
     updated_at: {type: 'string'},
@@ -85,14 +92,12 @@ const getVideo = {
   tags: ['videos'],
   params: {
     type: 'object',
-    required: ['cid', 'vid'],
+    required: ['cid', 'uuid'],
     properties: {
       cid: {
         type: 'number'
       },
-      vid: {
-        type: 'number'
-      }
+      uuid: uuidObj
     },
     additionalProperties: false
   },
@@ -105,11 +110,9 @@ const delVideo = {
   tags: ['videos'],
   params: {
     type: 'object',
-    required: ['cid', 'vid'],
+    required: ['cid', 'uuid'],
     properties: {
-      vid: {
-        type: 'number'
-      },
+      uuid: uuidObj,
       cid: {
         type: 'number'
       }
@@ -122,10 +125,10 @@ const updVideo = {
   tags: ['videos'],
   params: {
     type: 'object',
-    required: ['cid', 'vid'],
+    required: ['cid', 'uuid'],
     properties: {
       cid: {type: 'integer'},
-      vid: {type: 'number'}
+      uuid: uuidObj
     },
     additionalProperties: false
   },
