@@ -26,8 +26,8 @@ const UserService = require('./companies/users/service')
 const Message = require('./messages')
 const MessageService = require('./messages/service')
 
-const Video = require('./videos')
-const VideoService = require('./videos/service')
+const Video = require('./companies/videos')
+const VideoService = require('./companies/videos/service')
 
 async function connectToDatabase(fastify) {
   console.log('DB Connecting...')
@@ -127,5 +127,5 @@ module.exports = async function(fastify, opts) {
     .register(Group, {prefix: '/api/companies/:cid/groups'})
     .register(User, {prefix: '/api/companies/:cid/users'})
     .register(Message, {prefix: '/api/messages'})
-    .register(Video, {prefix: '/api/videos'})
+    .register(Video, {prefix: '/api/companies/:cid/videos'})
 }

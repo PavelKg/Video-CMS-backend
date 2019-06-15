@@ -13,12 +13,12 @@ const sortableColumns = {
   roles: ['role_rid', 'role_name', 'role_is_admin', 'roles.deleted_at'],
   messages: [
     'message_id',
-    'message_impartant',
     'message_subject',
     'message_receiver',
     'message_sender',
     'messages.created_at'
-  ]
+  ],
+  videos: ['video_id', 'videos.created_at']
 }
 
 const db_oper = {
