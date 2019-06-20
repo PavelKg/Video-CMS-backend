@@ -48,6 +48,7 @@ async function fastifyGoogleCloudStorage(fastify) {
     keyFilename: GOOGLE_CLOUD_KEYFILE_JSON
   }
 
+  console.log('Storage:', gcsOpts.projectId)
   const storage = new Storage(gcsOpts)
 
   try {

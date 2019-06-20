@@ -160,7 +160,6 @@ class VideoService {
         `SELECT video_uuid ,
           video_filename,
           video_status,
-          video_thumbnail,
           video_title,
           video_public,
           video_tag,
@@ -168,6 +167,25 @@ class VideoService {
           created_at,
           updated_at,
           deleted_at
+        FROM videos
+        WHERE  video_company_id = $1 and video_uuid = $2 `,
+        [cid, uuid]
+      )
+      return rows[0]
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
+  }
+
+  async getVideoThumbnail(payload) {
+    const {acc, cid, uuid} = payload
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `SELECT video_uuid ,
+          video_thumbnail
         FROM videos
         WHERE  video_company_id = $1 and video_uuid = $2 `,
         [cid, uuid]

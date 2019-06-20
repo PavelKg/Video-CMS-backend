@@ -16,7 +16,8 @@ const gcsQueryStringJsonSchema = {
 
 const uuidObj = {
   type: 'string',
-  pattern: '[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}'
+  pattern:
+    '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
 }
 
 const videoCatalogObject = {
@@ -27,12 +28,20 @@ const videoCatalogObject = {
     video_status: {type: 'string'},
     video_thumbnail: {type: 'string'},
     video_title: {type: 'string'},
-    video_tag: {type: 'string'},    
-    video_description: {type: 'string'},    
+    video_tag: {type: 'string'},
+    video_description: {type: 'string'},
     video_public: {type: 'boolean'},
     created_at: {type: 'string'},
     updated_at: {type: 'string'},
     deleted_at: {type: 'string'}
+  }
+}
+
+const videoCatalogThumbnailObject = {
+  type: 'object',
+  properties: {
+    video_uuid: {type: 'string'},
+    video_thumbnail: {type: 'string'}
   }
 }
 
@@ -106,6 +115,24 @@ const getVideo = {
   }
 }
 
+const getVideoThumbnail = {
+  tags: ['videos'],
+  params: {
+    type: 'object',
+    required: ['cid', 'uuid'],
+    properties: {
+      cid: {
+        type: 'number'
+      },
+      uuid: uuidObj
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: videoCatalogThumbnailObject
+  }
+}
+
 const delVideo = {
   tags: ['videos'],
   params: {
@@ -174,6 +201,7 @@ module.exports = {
   gcsUploadSignedUrl,
   getVideosCatalog,
   getVideo,
+  getVideoThumbnail,
   delVideo,
   updVideo
   //gcsUploadSignedPolicy

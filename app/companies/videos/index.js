@@ -5,6 +5,7 @@ const {
   gcsUploadSignedUrl: gcsUploadSignedUrlSchema,
   getVideosCatalog: getVideosCatalogSchema,
   getVideo: getVideoSchema,
+  getVideoThumbnail: getVideoThumbnailSchema,
   delVideo: delVideoSchema,
   updVideo: updVideoSchema
 } = require('./schemas')
@@ -18,6 +19,11 @@ module.exports = async function(fastify, opts) {
     getVideoCatalogHandler
   )
   fastify.get('/:uuid', {schema: getVideoSchema}, getVideoHandler)
+  fastify.get(
+    '/:uuid/thumbnail',
+    {schema: getVideoThumbnailSchema},
+    getVideoThumbnailHandler
+  )
   fastify.delete('/:uuid', {schema: delVideoSchema}, delVideoHandler)
   fastify.put('/:uuid', {schema: updVideoSchema}, updVideoHandler)
   fastify.get(
@@ -85,6 +91,19 @@ async function getVideoHandler(req, reply) {
   })
 
   return await this.videoService.getVideo({acc, cid, uuid})
+}
+
+async function getVideoThumbnailHandler(req, replay) {
+  const {cid, uuid} = req.params
+
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  return await this.videoService.getVideoThumbnail({acc, cid, uuid})
 }
 
 async function delVideoHandler(req, reply) {
