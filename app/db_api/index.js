@@ -39,6 +39,7 @@ const db_oper = {
   lte: '<=',
   gte: '>=',  
   like: 'like',
+  isNull: 'IS NULL'
 }
 
 function sorting(_sort, _table) {
