@@ -261,6 +261,39 @@ class VideoService {
       client.release()
     }
   }
+
+  async updVideoStatus(payload) {
+    const {acc, data} = payload
+    const {cid, uuid, value} = data
+
+    const avValues = ['uploaded']
+
+
+    if (!avValues.includes(value.toLowerCase())) {
+      throw Error(errors.WRONG_STATUS_VALUE)
+    }
+
+console.log('acc.company_id !== cid || !acc.is_admin=', typeof acc.company_id , typeof cid ,acc.is_admin)
+
+    if (acc.company_id !== cid || !acc.is_admin) {
+      throw Error(errors.WRONG_ACCESS)
+    }
+
+    const client = await this.db.connect()
+    try {
+      const query = {
+        text: `UPDATE videos SET video_status = $3
+         WHERE video_company_id=$1 AND video_uuid=$2`,
+        values: [cid, uuid, value.toLowerCase()]
+      }
+      const {rowCount} = await client.query(query)
+      return rowCount
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
+  }
 }
 
 module.exports = VideoService

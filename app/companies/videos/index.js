@@ -7,7 +7,8 @@ const {
   getVideo: getVideoSchema,
   getVideoThumbnail: getVideoThumbnailSchema,
   delVideo: delVideoSchema,
-  updVideo: updVideoSchema
+  updVideo: updVideoSchema,
+  updVideoStatus: updVideoStatusSchema
 } = require('./schemas')
 
 module.exports = async function(fastify, opts) {
@@ -26,6 +27,7 @@ module.exports = async function(fastify, opts) {
   )
   fastify.delete('/:uuid', {schema: delVideoSchema}, delVideoHandler)
   fastify.put('/:uuid', {schema: updVideoSchema}, updVideoHandler)
+  fastify.put('/:uuid/status', {schema: updVideoStatusSchema}, updVideoStatusHandler)
   fastify.get(
     '/gcs-upload-surl',
     {schema: gcsUploadSignedUrlSchema},
@@ -133,6 +135,22 @@ async function updVideoHandler(req, reply) {
   })
 
   const updated = await this.videoService.updVideo({acc, data})
+  const _code = updated === 1 ? 200 : 404
+  reply.code(_code).send()
+}
+
+async function updVideoStatusHandler(req, reply) {
+  const {cid, uuid} = req.params
+  const data = {...req.body, cid, uuid}
+
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  const updated = await this.videoService.updVideoStatus({acc, data})
   const _code = updated === 1 ? 200 : 404
   reply.code(_code).send()
 }
