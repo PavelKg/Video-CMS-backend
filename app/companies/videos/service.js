@@ -129,15 +129,8 @@ class VideoService {
     try {
       const {rows} = await client.query(
         `SELECT video_uuid,
-        video_filename,
         video_status,
-        video_thumbnail,
-        video_title,
-        video_public,
-        video_tag,
-        video_description,
         created_at,
-        updated_at,
         deleted_at
         FROM videos
         WHERE  video_company_id = $1 
