@@ -193,6 +193,29 @@ const updVideoStatus = {
     additionalProperties: false // added in an attempt to make this work
   }
 }
+
+const updVideoPublicStatus = {
+  tags: ['videos'],
+  params: {
+    type: 'object',
+    required: ['cid', 'uuid'],
+    properties: {
+      cid: {type: 'number'},
+      uuid: uuidObj
+    },
+    additionalProperties: false
+  },
+  body: {
+    type: 'object',
+    properties: {
+      value: {type: 'string'}
+    },
+    //removeAdditonal: true, // added in an attempt to make this work
+    additionalProperties: false // added in an attempt to make this work
+  }
+}
+
+
 // const gcsUploadSignedPolicy = {
 //   tags: ['videos'],
 //   params: {
@@ -225,6 +248,7 @@ module.exports = {
   getVideoThumbnail,
   delVideo,
   updVideo,
-  updVideoStatus
+  updVideoStatus,
+  updVideoPublicStatus
   //gcsUploadSignedPolicy
 }
