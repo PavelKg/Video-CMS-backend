@@ -29,6 +29,9 @@ const MessageService = require('./messages/service')
 const Video = require('./companies/videos')
 const VideoService = require('./companies/videos/service')
 
+const Comment = require('./companies/videos/comments')
+const CommentService = require('./companies/videos/comments/service')
+
 async function connectToDatabase(fastify) {
   console.log('DB Connecting...')
   const {DB_HOST, DB_USER, DB_PASS, DB_NAME} = process.env
@@ -92,6 +95,7 @@ async function decorateFastifyInstance(fastify) {
   const userService = new UserService(db)
   const messageService = new MessageService(db)
   const videoService = new VideoService(db, storage)
+  const commentService = new CommentService(db, storage)
 
   fastify.decorate('personService', personService)
   fastify.decorate('roleService', roleService)
@@ -99,6 +103,7 @@ async function decorateFastifyInstance(fastify) {
   fastify.decorate('userService', userService)
   fastify.decorate('messageService', messageService)
   fastify.decorate('videoService', videoService)
+  fastify.decorate('commentService', commentService)
 
   fastify.decorate('authPreHandler', async function auth(request, reply) {
     try {
@@ -129,4 +134,5 @@ module.exports = async function(fastify, opts) {
     .register(User, {prefix: '/api/companies/:cid/users'})
     .register(Message, {prefix: '/api/messages'})
     .register(Video, {prefix: '/api/companies/:cid/videos'})
+    .register(Comment, {prefix: '/api/companies/:cid/videos/:uuid/comments'})
 }

@@ -29,7 +29,8 @@ const sortableColumns = {
     'video_public',
     'video_tag',
     'video_description'
-  ]
+  ],
+  comments: ['comments.created_at']
 }
 
 const db_oper = {

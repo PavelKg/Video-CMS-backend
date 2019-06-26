@@ -62,9 +62,7 @@ async function addUserHandler(req, reply) {
   let url = req.raw.url
   let user = {...req.body, cid}
 
-  console.log('user--------------=', user)
-
-  let acc
+ let acc
   req.jwtVerify(function(err, decoded) {
     if (!err) {
       acc = decoded.user
@@ -107,8 +105,6 @@ async function delUserHandler(req, reply) {
       acc = decoded.user
     }
   })
-
-  console.log('acc-=', acc)
 
   const deleted = await this.userService.delUser({acc, user})
   const _code = deleted === 1 ? 204 : 404
