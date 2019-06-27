@@ -13,7 +13,7 @@ module.exports = async function(fastify, opts) {
   fastify.addHook('preHandler', fastify.authPreHandler)
   fastify.get('/', {schema: getCommentsSchema}, getCommentsHandler)
   fastify.get('/:comid', {schema: getCommentInfoSchema}, getCommentInfoHandler)
-  fastify.post('/', {schema: addCommentSchema}, addCommentsHandler)
+  fastify.post('/', {schema: addCommentSchema}, addCommentHandler)
   fastify.put(
     '/:comid/visible',
     {schema: updCommentVisibleSchema},
@@ -59,7 +59,7 @@ async function getCommentInfoHandler(req, reply) {
   }
 }
 
-async function addCommentsHandler(req, reply) {
+async function addCommentHandler(req, reply) {
   const {cid, uuid} = req.params
   let url = req.raw.url
   let comment = {...req.body, cid, uuid}
