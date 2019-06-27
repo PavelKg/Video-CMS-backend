@@ -125,7 +125,7 @@ module.exports = async function(fastify, opts) {
       origin: false,
       path: '*',
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-      exposedHeaders: 'location'
+      exposedHeaders: 'Location'
     })
 
     // APIs modules
