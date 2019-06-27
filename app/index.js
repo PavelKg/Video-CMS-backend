@@ -124,7 +124,8 @@ module.exports = async function(fastify, opts) {
     .register(cors, {
       origin: false,
       path: '*',
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE'
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      exposedHeaders: 'location'
     })
 
     // APIs modules
