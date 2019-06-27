@@ -23,13 +23,51 @@ class CommentService {
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
-        `SELECT *
+        `SELECT 
+          comment_video_uuid, 
+          comment_id,
+          comment_text,
+          comment_visible,
+          comment_user_uid,
+          created_at,
+          updated_at,
+          deleted_at
         FROM comments
         WHERE  comment_company_id = $1 and comment_video_uuid= $2
         ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $3;`,
         [cid, uuid, offset]
       )
       return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
+  }
+
+  async commentInfo(payload) {
+    const {acc, params} = payload
+    const {cid, uuid, comid} = params
+
+    console.log('cid, uuid, comid=', cid, uuid, comid)
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `SELECT 
+          comment_video_uuid, 
+          comment_id,
+          comment_text,
+          comment_visible,
+          comment_user_uid,
+          created_at,
+          updated_at,
+          deleted_at
+        FROM comments
+        WHERE  comment_company_id = $1 
+          AND comment_video_uuid= $2 AND comment_id = $3;`,
+        [cid, uuid, comid]
+      )
+      return rows[0]
     } catch (error) {
       throw Error(error.message)
     } finally {

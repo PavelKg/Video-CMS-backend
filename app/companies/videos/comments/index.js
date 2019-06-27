@@ -2,6 +2,7 @@
 
 const {
   getComments: getCommentsSchema,
+  getCommentInfo: getCommentInfoSchema,
   addComment: addCommentSchema,
   updCommentVisible: updCommentVisibleSchema,
   delComment: delCommentSchema
@@ -11,6 +12,7 @@ module.exports = async function(fastify, opts) {
   // All APIs are under authentication here!
   fastify.addHook('preHandler', fastify.authPreHandler)
   fastify.get('/', {schema: getCommentsSchema}, getCommentsHandler)
+  fastify.get('/:comid', {schema: getCommentInfoSchema}, getCommentInfoHandler)
   fastify.post('/', {schema: addCommentSchema}, addCommentsHandler)
   fastify.put(
     '/:comid/visible',
@@ -37,6 +39,24 @@ async function getCommentsHandler(req, reply) {
     }
   })
   return await this.commentService.videoComments({acc, params, query})
+}
+
+async function getCommentInfoHandler(req, reply) {
+  const params = req.params
+
+  let acc = null
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+  const info =  await this.commentService.commentInfo({acc, params})
+  console.log('info=', info)
+  if (info) {
+    reply.code(200).send(info)
+  } else {
+    reply.code(404).send()
+  }
 }
 
 async function addCommentsHandler(req, reply) {

@@ -59,6 +59,23 @@ const getComments = {
   }
 }
 
+const getCommentInfo = {
+  tags: ['comments'],
+  params: {
+    type: 'object',
+    required: ['cid', 'uuid', 'comid'],
+    properties: {
+      cid: {type: 'number'},
+      uuid: uuidObj,
+      comid: {type: 'number'}
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: videoCommentObject
+  }
+}
+
 const addComment = {
   tags: ['comments'],
   params: {
@@ -82,10 +99,10 @@ const updCommentVisible = {
     required: ['cid', 'uuid', 'comid'],
     properties: {
       cid: {
-        type: 'number',
+        type: 'number'
       },
       uuid: uuidObj,
-      comid:{type: 'number'}
+      comid: {type: 'number'}
     },
     additionalProperties: false
   },
@@ -104,9 +121,7 @@ const delComment = {
     type: 'object',
     required: ['cid', 'uuid', 'comid'],
     properties: {
-      cid: {
-        type: 'number',
-      },
+      cid: {type: 'number'},
       uuid: uuidObj,
       comid: {type: 'number'}
     },
@@ -116,6 +131,7 @@ const delComment = {
 
 module.exports = {
   getComments,
+  getCommentInfo,
   addComment,
   updCommentVisible,
   delComment

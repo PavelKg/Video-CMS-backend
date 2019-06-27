@@ -261,7 +261,6 @@ class VideoService {
 
     const avValues = ['uploaded']
 
-
     if (!avValues.includes(value.toLowerCase())) {
       throw Error(errors.WRONG_STATUS_VALUE)
     }
