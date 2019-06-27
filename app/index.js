@@ -122,7 +122,7 @@ module.exports = async function(fastify, opts) {
     .register(fp(fastifyGoogleCloudStorage))
     .register(fp(decorateFastifyInstance))
     .register(cors, {
-      origin: /[\.kg|:8769]$/,
+      origin: /[\.kg|:8769|:8080]$/,
       path: '*',
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
       exposedHeaders: 'Location,Date'
