@@ -6,6 +6,8 @@ const fp = require('fastify-plugin')
 const jwt = require('fastify-jwt')
 const cors = require('fastify-cors')
 const pg = require('fastify-postgres')
+const nodemailer = require('fastify-nodemailer')
+
 //const swagger = require('fastify-swagger')
 const {Storage} = require('@google-cloud/storage')
 
@@ -42,6 +44,24 @@ async function connectToDatabase(fastify) {
   console.log('Finish DB Connecting.')
 }
 
+async function fastifyNodemailer(fastify) {
+  console.log('Nodemailer loading...')
+  const {MAIL_HOST, MAIL_PORT, MAIL_USER, MAIL_PASS, MAIL_SERVICE} = process.env
+  fastify.register(nodemailer, {
+    //pool: true,
+    service: MAIL_SERVICE,
+    //host: MAIL_HOST,
+    //port: MAIL_PORT,
+    //secure: true, // use TLS
+    auth: {
+      user: MAIL_USER,
+      pass: MAIL_PASS
+    },
+    //jsonTransport: true
+  })
+  console.log('Finish Nodemailer loading')
+}
+
 async function fastifyGoogleCloudStorage(fastify) {
   console.log('GCS Connecting...')
   const {GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_KEYFILE_JSON} = process.env
@@ -60,7 +80,7 @@ async function fastifyGoogleCloudStorage(fastify) {
     console.log('Connect to GCS success')
   } catch (err) {
     console.log('Connect to GCS error:', err)
-  } 
+  }
 
   console.log('Finish GCS Connecting.')
 }
@@ -88,14 +108,15 @@ async function decorateFastifyInstance(fastify) {
   console.log('Decorate Loading...')
   const db = fastify.pg
   const storage = fastify.googleCloudStorage
+  const nodemailer = fastify.nodemailer
 
-  const personService = new PersonService(db)
+  const personService = new PersonService(db, nodemailer)
   const roleService = new RoleService(db)
   const groupService = new GroupService(db)
   const userService = new UserService(db)
   const messageService = new MessageService(db)
   const videoService = new VideoService(db, storage)
-  const commentService = new CommentService(db, storage)
+  const commentService = new CommentService(db)
 
   fastify.decorate('personService', personService)
   fastify.decorate('roleService', roleService)
@@ -119,10 +140,11 @@ module.exports = async function(fastify, opts) {
   fastify
     .register(fp(authenticator))
     .register(fp(connectToDatabase))
+    .register(fp(fastifyNodemailer))    
     .register(fp(fastifyGoogleCloudStorage))
     .register(fp(decorateFastifyInstance))
     .register(cors, {
-      origin: /[\.kg|:8769|:8080]$/,
+      origin: /[\.kg|:8769|:8080|p-stream.jp]$/,
       path: '*',
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
       exposedHeaders: 'Location,Date'

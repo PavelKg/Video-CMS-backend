@@ -2,6 +2,8 @@
 
 const {
   login: loginSchema,
+  passwordResetRequest: passwordResetRequestSchema,
+  passwordUpdate: passwordUpdateSchema,
   //registration: registrationSchema,
   //search: searchSchema,
   getProfile: getProfileSchema
@@ -16,6 +18,17 @@ module.exports = async function(fastify, opts) {
 
   // Unlogged APIs
   fastify.post('/login', {schema: loginSchema}, loginHandler)
+  fastify.post(
+    '/password-reset-request',
+    {schema: passwordResetRequestSchema},
+    passwordResetRequestHandler
+  )
+  fastify.put(
+    '/password',
+    {schema: passwordUpdateSchema},
+    passwordUpdateHandler
+  )
+
   //fastify.post('/register', {schema: registrationSchema}, registerHandler)
 
   // Logged APIs
@@ -56,6 +69,26 @@ async function meHandler(req, reply) {
   return this.personService.getProfile(userId, userId)
 }
 
+async function passwordResetRequestHandler(req, reply) {
+  const {email, locale = 'en'} = req.body
+
+  const person = await this.personService.findUserByEmail(email)
+  const token = await this.personService.getPasswordResetToken(person, email) //this.jwt.sign({user: person})
+  await this.personService.sendEmail(email, token, locale)
+
+  reply.code(202).send()
+}
+
+async function passwordUpdateHandler(req, reply) {
+  const {token, password} = req.body
+  const result = await this.personService.updateUserPasword(token, password)
+  if (result > 0) {
+    reply.code(200)
+  } else {
+    reply.code(404)
+  }
+  reply.send()
+}
 // async function userHandler(req, reply) {
 //   return this.userService.getProfile(
 //     this.transformStringIntoObjectId(req.params.userId)

@@ -25,6 +25,7 @@ class CommentService {
       const {rows} = await client.query(
         `SELECT 
           comment_video_uuid, 
+          comment_company_id,
           comment_id,
           comment_text,
           comment_visible,
@@ -34,8 +35,9 @@ class CommentService {
           deleted_at
         FROM comments
         WHERE  comment_company_id = $1 and comment_video_uuid= $2
-        ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $3;`,
-        [cid, uuid, offset]
+        and (comment_visible=true or comment_user_uid=$3)
+        ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $4;`,
+        [cid, uuid, acc.uid, offset]
       )
       return rows
     } catch (error) {
@@ -55,6 +57,7 @@ class CommentService {
       const {rows} = await client.query(
         `SELECT 
           comment_video_uuid, 
+          comment_company_id,
           comment_id,
           comment_text,
           comment_visible,

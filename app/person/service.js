@@ -1,13 +1,12 @@
 'use strict'
-
 const crypto = require('crypto')
-const DUPLICATE_KEY_ERROR_CODE = 11000
-
+//const DUPLICATE_KEY_ERROR_CODE = 11000
 const errors = require('../errors')
 
 class PersonService {
-  constructor(db) {
+  constructor(db, nodemailer) {
     this.db = db
+    this.nodemailer = nodemailer
   }
 
   // async register(username, password) {
@@ -25,30 +24,129 @@ class PersonService {
 
   async login(username, password) {
     const client = await this.db.connect()
-    console.log('before select login($1, $2)')
-    const {rows} = await client.query(
-      `select login($1, $2);`,
-      [username, password]
-    )
-    console.log('after select login($1, $2)')
-    client.release()
-    const user = rows[0].login
+    try {
+      const {rows} = await client.query(`select login($1, $2);`, [
+        username,
+        password
+      ])
 
-    if (!user) throw new Error(errors.WRONG_CREDENTIAL)
-    return user
+      const user = rows[0].login
+
+      if (!user) throw new Error(errors.WRONG_CREDENTIAL)
+      return user
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
   }
 
   async getProfile(myUid, uid) {
     const client = await this.db.connect()
-    const {rows} = await client.query(
-      `select user_profile($1::jsonb, $2) as uProfile;`,
-      [JSON.stringify({userId: myUid}), uid]
-    )
-    client.release()
+    try {
+      const {rows} = await client.query(
+        `select user_profile($1::jsonb, $2) as uProfile;`,
+        [JSON.stringify({userId: myUid}), uid]
+      )
+      const user_profile = rows[0].uprofile
+      if (!user_profile) throw new Error(errors.WRONG_USER_ID)
+      return user_profile
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
+  }
 
-    const user_profile = rows[0].uprofile
-    if (!user_profile) throw new Error(errors.WRONG_USER_ID)
-    return user_profile
+  async findUserByEmail(email) {
+    if (!email) {
+      throw Error(errors.WRONG_EMAIL_TYPE)
+    }
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(`select loginEmail($1);`, [email])
+      const user = rows[0].loginemail
+
+      if (!user) throw new Error(errors.WRONG_CREDENTIAL)
+      return user
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
+  }
+  async sendEmail(email, token, locale) {
+    try {
+      console.log('token=', typeof token)
+      await this.nodemailer.sendMail({
+        from: 'pepex.kg@gmail.com',
+        to: email,
+        subject: 'foo1',
+        text: `token - ${token}`
+      })
+      return true
+    } catch (error) {
+      throw Error(error)
+    }
+  }
+  async getPasswordResetToken(person, email) {
+    const {uid, company_id} = person
+    const client = await this.db.connect()
+    try {
+      const {rows: user} = await client.query(
+        `SELECT user_id FROM users 
+          WHERE user_uid=$1 
+          AND user_company_id=$2;`,
+        [uid, company_id]
+      )
+      const user_id = user[0].user_id
+      const token = crypto.randomBytes(24).toString('hex')
+
+      const {rowCount} = await client.query(
+        `INSERT INTO password_recovery
+        (pr_user_id, pr_user_uid, pr_user_mail, pr_token, pr_company_id, pr_lifetime_min) 
+        VALUES 
+        ($1, $2, $3, $4, $5, 60);`,
+        [user_id, uid, email, token, company_id]
+      )
+
+      return token
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
+  }
+  async updateUserPasword(token, password) {
+    const client = await this.db.connect()
+    try {
+      const {rows: pr} = await client.query(
+        `SELECT pr_user_id 
+         FROM password_recovery
+         WHERE pr_token = $1 
+          AND (created_at + interval '1 minutes' * pr_lifetime_min) > now();`,
+        [token]
+      )
+
+      if (pr.length === 0) {
+        return 0
+      }
+      const user_id = pr[0].pr_user_id
+
+      if (!user_id) throw new Error(errors.RECOVERY_TOKEN_IS_NOT_VALID)
+
+      const {rowCount} = await client.query(
+        `UPDATE users 
+         SET user_password = crypt($2, gen_salt('bf'))
+         WHERE user_id = $1;`,
+        [user_id, password]
+      )
+      return rowCount
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
   }
 }
 

@@ -71,6 +71,52 @@ const login = {
   }
 }
 
+const passwordResetRequest = {
+  tags: ['person'],
+  body: {
+    type: 'object',
+    require: ['email'],
+    properties: {
+      email: {
+        type: 'string'
+      },
+      locale: {
+        type: 'string'
+      }      
+    },
+    additionalProperties: false
+  },
+  response: {
+    202: {
+      type: 'string',
+      additionalProperties: false
+    }
+  }
+}
+
+const passwordUpdate = {
+  tags: ['person'],
+  body: {
+    type: 'object',
+    require: ['token', 'password'],
+    properties: {
+      token: {
+        type: 'string'
+      },
+      password: {
+        type: 'string'
+      }      
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: {
+      type: 'string',
+      additionalProperties: false
+    }
+  }
+}
+
 // const search = {
 //   querystring: {
 //     type: 'object',
@@ -108,5 +154,7 @@ const getProfile = {
 module.exports = {
   registration,
   login,
+  passwordResetRequest,
+  passwordUpdate,
   getProfile
 }
