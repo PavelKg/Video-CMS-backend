@@ -2,6 +2,9 @@
 const crypto = require('crypto')
 //const DUPLICATE_KEY_ERROR_CODE = 11000
 const errors = require('../errors')
+const mail_templ = require('./mail_templates')
+
+const {SYSTEM_NAME, MAIL_USER, RECOVERY_PASSWORD_URL} = process.env
 
 class PersonService {
   constructor(db, nodemailer) {
@@ -75,14 +78,28 @@ class PersonService {
       client.release()
     }
   }
-  async sendEmail(email, token, locale) {
+  async sendEmail(payload) {
+    const {email, fullname, token, valid_date, locale} = payload
+    const url = `${RECOVERY_PASSWORD_URL}?token=${token}`
+    const valid = new Date(valid_date)
+      .toISOString()
+      .slice(0, 19)
+      .replace(/\-/gi, '/')
+      .replace(/T/gi, ' ')
     try {
-      console.log('token=', typeof token)
+      const time_zone = `UTC${-(new Date().getTimezoneOffset() / 60)} (${Intl.DateTimeFormat().resolvedOptions().timeZone})`
+      const letter = mail_templ(locale, {
+        system_name: SYSTEM_NAME,
+        name: fullname,
+        email: email,
+        valid: `${valid} ${time_zone}`,
+        url
+      })
       await this.nodemailer.sendMail({
-        from: 'pepex.kg@gmail.com',
+        from: MAIL_USER,
         to: email,
-        subject: 'foo1',
-        text: `token - ${token}`
+        subject: letter.subject,
+        text: letter.body
       })
       return true
     } catch (error) {
@@ -101,16 +118,21 @@ class PersonService {
       )
       const user_id = user[0].user_id
       const token = crypto.randomBytes(24).toString('hex')
+      const lifetime_min = 60
 
-      const {rowCount} = await client.query(
+      const {rows: inserted} = await client.query(
         `INSERT INTO password_recovery
         (pr_user_id, pr_user_uid, pr_user_mail, pr_token, pr_company_id, pr_lifetime_min) 
         VALUES 
-        ($1, $2, $3, $4, $5, 60);`,
-        [user_id, uid, email, token, company_id]
+        ($1, $2, $3, $4, $5, $6)
+        RETURNING *;`,
+        [user_id, uid, email, token, company_id, lifetime_min]
       )
 
-      return token
+      const valid_date = new Date(inserted[0].created_at)
+      valid_date.setTime(valid_date.getTime() + lifetime_min * 60 * 1000)
+
+      return {token, valid_date}
     } catch (error) {
       throw Error(error)
     } finally {

@@ -73,8 +73,9 @@ async function passwordResetRequestHandler(req, reply) {
   const {email, locale = 'en'} = req.body
 
   const person = await this.personService.findUserByEmail(email)
-  const token = await this.personService.getPasswordResetToken(person, email) //this.jwt.sign({user: person})
-  await this.personService.sendEmail(email, token, locale)
+  const {token, valid_date} = await this.personService.getPasswordResetToken(person, email) //this.jwt.sign({user: person})
+  const {fullname} = person
+  await this.personService.sendEmail({email, fullname, token, valid_date, locale})
 
   reply.code(202).send()
 }
