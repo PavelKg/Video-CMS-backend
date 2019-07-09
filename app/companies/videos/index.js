@@ -28,8 +28,16 @@ module.exports = async function(fastify, opts) {
   )
   fastify.delete('/:uuid', {schema: delVideoSchema}, delVideoHandler)
   fastify.put('/:uuid', {schema: updVideoSchema}, updVideoHandler)
-  fastify.put('/:uuid/status', {schema: updVideoStatusSchema}, updVideoStatusHandler)
-  fastify.put('/:uuid/public', {schema: updVideoPublicStatusSchema}, updVideoPublicStatusHandler)
+  fastify.put(
+    '/:uuid/status',
+    {schema: updVideoStatusSchema},
+    updVideoStatusHandler
+  )
+  fastify.put(
+    '/:uuid/public',
+    {schema: updVideoPublicStatusSchema},
+    updVideoPublicStatusHandler
+  )
   fastify.get(
     '/gcs-upload-surl',
     {schema: gcsUploadSignedUrlSchema},
@@ -153,7 +161,16 @@ async function updVideoStatusHandler(req, reply) {
   })
 
   const updated = await this.videoService.updVideoStatus({acc, data})
-  const _code = updated === 1 ? 200 : 404
+
+  const file_ext = updated[0].video_filename.match(/\.(\w+)$/i)
+  if (data.value === 'uploaded') {
+    this.bitmovinService.videoEncode(cid, uuid, file_ext[1]).then(res=>{
+      const { path_to_file} = res
+      this.videoService.updVideoOutputFile({cid, uuid, path_to_file})
+    }, error=> {encodedVideoFinishHandler(error, res)}) 
+  }
+
+  const _code = updated.length === 1 ? 200 : 404
   reply.code(_code).send()
 }
 
@@ -172,3 +189,6 @@ async function updVideoPublicStatusHandler(req, reply) {
   const _code = updated === 1 ? 200 : 404
   reply.code(_code).send()
 }
+ 
+  
+

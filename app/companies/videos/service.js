@@ -113,6 +113,7 @@ class VideoService {
 
   async videosCatalog(payload) {
     const {acc} = payload
+    console.log('acc=', acc)
     const cid = acc.company_id
     const uid = acc.uid
     const {
@@ -121,6 +122,8 @@ class VideoService {
       sort = '-videos.created_at',
       filter = undefined
     } = payload.query
+
+    const onlyPublic = !Boolean(acc.is_admin) ? ' AND video_public = true AND videos.deleted_at IS NULL' : ''
 
     const qSort = db_api.sorting(sort, 'videos')
     const qFilter = Boolean(filter) ? db_api.filtration(filter, 'videos') : ''
@@ -133,7 +136,7 @@ class VideoService {
         created_at,
         deleted_at
         FROM videos
-        WHERE  video_company_id = $1 
+        WHERE  video_company_id = $1 ${onlyPublic}
         ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
         [cid, offset]
       )
@@ -157,6 +160,7 @@ class VideoService {
           video_public,
           video_tag,
           video_description,
+          video_output_file
           created_at,
           updated_at,
           deleted_at
@@ -273,11 +277,13 @@ class VideoService {
     try {
       const query = {
         text: `UPDATE videos SET video_status = $3
-         WHERE video_company_id=$1 AND video_uuid=$2`,
+         WHERE video_company_id=$1 AND video_uuid=$2
+         RETURNING *`,
         values: [cid, uuid, value.toLowerCase()]
       }
-      const {rowCount} = await client.query(query)
-      return rowCount
+      const {rows} = await client.query(query)
+
+      return rows
     } catch (error) {
       throw Error(error)
     } finally {
@@ -313,7 +319,26 @@ class VideoService {
     } finally {
       client.release()
     }
-  }  
+  }
+  
+  async updVideoOutputFile(payload){
+    const {cid, uuid, path_to_file} = payload
+    const client = await this.db.connect()
+    try {
+      const query = {
+        text: `UPDATE videos 
+          SET video_status = 'ready', video_output_file = $3
+          WHERE video_company_id=$1 AND video_uuid=$2`,
+        values: [cid, uuid, path_to_file]
+      }
+      const {rowCount} = await client.query(query)
+      return rowCount
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
+  }
 }
 
 module.exports = VideoService

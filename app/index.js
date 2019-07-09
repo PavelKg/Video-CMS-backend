@@ -7,6 +7,7 @@ const jwt = require('fastify-jwt')
 const cors = require('fastify-cors')
 const pg = require('fastify-postgres')
 const nodemailer = require('fastify-nodemailer')
+const bitmovinApi = require('bitmovin-javascript').default
 
 //const swagger = require('fastify-swagger')
 const {Storage} = require('@google-cloud/storage')
@@ -34,6 +35,8 @@ const VideoService = require('./companies/videos/service')
 const Comment = require('./companies/videos/comments')
 const CommentService = require('./companies/videos/comments/service')
 
+const BitmovinService = require('./bm')
+
 async function connectToDatabase(fastify) {
   console.log('DB Connecting...')
   const {DB_HOST, DB_USER, DB_PASS, DB_NAME} = process.env
@@ -56,7 +59,7 @@ async function fastifyNodemailer(fastify) {
     auth: {
       user: MAIL_USER,
       pass: MAIL_PASS
-    },
+    }
     //jsonTransport: true
   })
   console.log('Finish Nodemailer loading')
@@ -81,8 +84,25 @@ async function fastifyGoogleCloudStorage(fastify) {
   } catch (err) {
     console.log('Connect to GCS error:', err)
   }
-
   console.log('Finish GCS Connecting.')
+}
+
+async function fastifyBitmovin(fastify) {
+
+  console.log('Bitmovin Connecting...')
+  const {BITMOVIN_API_KEY, BITMOVIN_GCS_INPUT_KEY} = process.env
+  try {
+    const bitmovin = new bitmovinApi({
+      apiKey: BITMOVIN_API_KEY,
+      debug: false
+    })
+    await bitmovin.encoding.inputs.gcs(BITMOVIN_GCS_INPUT_KEY)
+    fastify.decorate('bitmovin', bitmovin)
+  } catch (error) {
+    console.log('Bitmovin Connecting error: ', error)
+    throw Error(error)
+  }
+  console.log('Finish Bitmovin Connecting...')
 }
 
 async function authenticator(fastify) {
@@ -109,6 +129,7 @@ async function decorateFastifyInstance(fastify) {
   const db = fastify.pg
   const storage = fastify.googleCloudStorage
   const nodemailer = fastify.nodemailer
+  const bitmovin = fastify.bitmovin
 
   const personService = new PersonService(db, nodemailer)
   const roleService = new RoleService(db)
@@ -117,6 +138,7 @@ async function decorateFastifyInstance(fastify) {
   const messageService = new MessageService(db)
   const videoService = new VideoService(db, storage)
   const commentService = new CommentService(db)
+  const bitmovinService = new BitmovinService(bitmovin)
 
   fastify.decorate('personService', personService)
   fastify.decorate('roleService', roleService)
@@ -125,6 +147,7 @@ async function decorateFastifyInstance(fastify) {
   fastify.decorate('messageService', messageService)
   fastify.decorate('videoService', videoService)
   fastify.decorate('commentService', commentService)
+  fastify.decorate('bitmovinService', bitmovinService)
 
   fastify.decorate('authPreHandler', async function auth(request, reply) {
     try {
@@ -140,8 +163,9 @@ module.exports = async function(fastify, opts) {
   fastify
     .register(fp(authenticator))
     .register(fp(connectToDatabase))
-    .register(fp(fastifyNodemailer))    
+    .register(fp(fastifyNodemailer))
     .register(fp(fastifyGoogleCloudStorage))
+    .register(fp(fastifyBitmovin))
     .register(fp(decorateFastifyInstance))
     .register(cors, {
       origin: /[\.kg|:8769|:8080|p-stream.jp]$/,
