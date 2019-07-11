@@ -160,7 +160,7 @@ class VideoService {
           video_public,
           video_tag,
           video_description,
-          video_output_file
+          video_output_file,
           created_at,
           updated_at,
           deleted_at

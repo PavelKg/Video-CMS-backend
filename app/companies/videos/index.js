@@ -164,10 +164,21 @@ async function updVideoStatusHandler(req, reply) {
 
   const file_ext = updated[0].video_filename.match(/\.(\w+)$/i)
   if (data.value === 'uploaded') {
-    this.bitmovinService.videoEncode(cid, uuid, file_ext[1]).then(res=>{
-      const { path_to_file} = res
-      this.videoService.updVideoOutputFile({cid, uuid, path_to_file})
-    }, error=> {encodedVideoFinishHandler(error, res)}) 
+    this.bitmovinService.videoEncode(cid, uuid, file_ext[1]).then(
+      (res) => {
+        const {path_to_manifest, path_to_thumbnail} = res
+        console.log('res=', res)
+        this.videoService.updVideoOutputFile({
+          cid,
+          uuid,
+          path_to_manifest,
+          path_to_thumbnail
+        })
+      },
+      (error) => {
+        console.log('videoEncode error: ', error)
+      }
+    )
   }
 
   const _code = updated.length === 1 ? 200 : 404
@@ -189,6 +200,3 @@ async function updVideoPublicStatusHandler(req, reply) {
   const _code = updated === 1 ? 200 : 404
   reply.code(_code).send()
 }
- 
-  
-

@@ -1,6 +1,6 @@
 //const Promise = require('bluebird');
 const manifestName = 'manifest.m3u8'
-const OUTPUT_FOLDER = '/videocms'
+const OUTPUT_FOLDER = '/' //'/videocms'
 const ENCODING_NAME = () => {
   return `vcms_encoding_${new Date().getTime() / 1000}`
 }
@@ -193,7 +193,7 @@ class BitmovinService {
     return new Promise((resolve, reject) => {
       addMuxingPromise
         .then((addedTSMuxing) => {
-          console.log('added ts muxing ' + tsMuxing.name)
+          //console.log('added ts muxing ' + tsMuxing.name)
           resolve(addedTSMuxing)
         })
         .catch((error) => {
@@ -218,7 +218,7 @@ class BitmovinService {
           if (audioMuxingsWithPath.length > 0) {
             let promise = Promise.all(
               audioMuxingsWithPath.map(async (audioMuxingWithPath) => {
-                console.log('audioMuxingWithPath=', audioMuxingWithPath)
+                //console.log('audioMuxingWithPath=', audioMuxingWithPath)
                 const tsMuxing = audioMuxingWithPath.tsMuxing
                 const path = audioMuxingWithPath.path
 
@@ -412,8 +412,37 @@ class BitmovinService {
     })
   }
 
+  async createThumbnail(
+    output,
+    encoding,
+    stream,
+    thumbnail,
+    THUMBNAIL_OUTPUT_PATH
+  ) {
+    let thumbnailRequest = Object.assign({}, thumbnail, {
+      outputs: [
+        {
+          outputId: output.id,
+          outputPath: THUMBNAIL_OUTPUT_PATH
+        }
+      ]
+    })
+    return this.bitmovin.encoding
+      .encodings(encoding.id)
+      .streams(stream.id)
+      .thumbnails.add(thumbnailRequest)
+  }
+
+  async getThumbnailImage(encoding_id, stream_id, thumbnail_id) {
+    return this.bitmovin.encoding
+      .encodings(encoding_id)
+      .streams(stream_id)
+      .thumbnails(thumbnail_id)
+      .customData()
+  }
+
   async videoEncode(cid, uuid, file_ext) {
-    console.log('file_ext=', file_ext)
+    //console.log('file_ext=', file_ext)
     const {
       BITMOVIN_GCS_INPUT_KEY,
       BITMOVIN_GCS_OUTPUT_KEY,
@@ -427,13 +456,26 @@ class BitmovinService {
     }
 
     const today = new Date().toISOString()
-    const OUTPUT_PATH = `${OUTPUT_FOLDER}/${cid}/${uuid}/${today}/`
+    const OUTPUT_PATH = `${today}/`// `${OUTPUT_FOLDER}/${cid}/${uuid}/${today}/`
+
+    const THUMBNAIL_OUTPUT_PATH = OUTPUT_PATH + 'thumbnails/'
+    const THUMBNAIL_POSITIONS = [10, 15, 25] //If this array is empty the thumbnail generation will be omitted
+
+    const thumbnailResource = {
+      name: `Thumbnail_${uuid}`,
+      description: 'Demo thumbnail',
+      height: 320,
+      unit: 'SECONDS',
+      positions: THUMBNAIL_POSITIONS,
+      pattern: 'thumbnail-%number%.png'
+    }
 
     let encoding = Object.assign({}, encodingResource)
     let input
     let output
     let H264CodecConfiguration
     let aacCodecConfiguration
+    let thumbnail = Object.assign({}, thumbnailResource)
 
     const getInputConfiguration = this.bitmovin.encoding.inputs
       .gcs(BITMOVIN_GCS_INPUT_KEY)
@@ -520,8 +562,8 @@ class BitmovinService {
     addedAudioMuxing.streamId = addedAudioStream.id
     addedVideoMuxing.streamId = addedVideoStream.id
 
-    console.log('Added audio Muxing', addedAudioMuxing)
-    console.log('Added video Muxing 1080p', addedVideoMuxing)
+    //console.log('Added audio Muxing', addedAudioMuxing)
+    //console.log('Added video Muxing 1080p', addedVideoMuxing)
 
     const createdHlsManifest = await this.createHlsManifest(
       output,
@@ -531,13 +573,36 @@ class BitmovinService {
       OUTPUT_PATH
     )
 
-    console.log('hlsManifestPromise=', createdHlsManifest)
+    //console.log('hlsManifestPromise=', createdHlsManifest)
+
+    let thumbnailPromise = Promise.resolve()
+    let thumbnailImagePromise = Promise.resolve()
+
+    if (thumbnail.positions.length > 0) {
+      thumbnailPromise = await this.createThumbnail(
+        output,
+        encoding,
+        addedVideoStream,
+        thumbnail,
+        THUMBNAIL_OUTPUT_PATH
+      )
+    }
 
     await this.startEncodingAndWaitForItToBeFinished(encoding)
     console.log('Successfully finished encoding')
     await this.startHlsManifestCreation(createdHlsManifest)
     console.log('Successfully created  HLS Manifests')
-    return {path_to_file: `${OUTPUT_PATH}${manifestName}`}
+
+    thumbnailImagePromise = await this.getThumbnailImage(
+      encoding.id,
+      addedVideoStream.id,
+      thumbnailPromise.id
+    )
+
+    return {
+      path_to_manifest: `${OUTPUT_PATH}${manifestName}`,
+      path_to_thumbnail: `${THUMBNAIL_OUTPUT_PATH}thumbnail-10.png`
+    }
   }
 }
 
