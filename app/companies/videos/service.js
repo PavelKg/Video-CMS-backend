@@ -2,6 +2,8 @@
 const errors = require('../../errors')
 const db_api = require('../../db_api')
 
+const service_domain = 'p-stream.jp'
+
 class VideoService {
   constructor(db, gcs) {
     this.db = db
@@ -34,8 +36,9 @@ class VideoService {
     try {
       const {rows} = await client.query(
         `SELECT storage_bucket_input, storage_bucket_output, storage_content_limit 
-        FROM storages
-        WHERE storage_cid=$1 and upper(storage_type)=upper($2)`,
+        FROM storages, companies
+        WHERE company_storage_id = storage_id and company_id=$1 
+          and upper(storage_type)=upper($2)`,
         [cid, storage_type]
       )
 
@@ -153,19 +156,19 @@ class VideoService {
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
-        `SELECT video_uuid ,
+        `SELECT video_uuid,
           video_filename,
           video_status,
           video_title,
           video_public,
           video_tag,
           video_description,
-          video_output_file,
-          created_at,
-          updated_at,
-          deleted_at
-        FROM videos
-        WHERE  video_company_id = $1 and video_uuid = $2 `,
+          'https://'||company_corporate_code||'.${service_domain}'||'/'||video_output_file AS video_output_file,
+          videos.created_at,
+          videos.updated_at,
+          videos.deleted_at
+        FROM videos, companies
+        WHERE  video_company_id = company_id and video_uuid = $2 and company_id = $1`,
         [cid, uuid]
       )
       return rows[0]
@@ -322,14 +325,28 @@ class VideoService {
   }
   
   async updVideoOutputFile(payload){
-    const {cid, uuid, path_to_file} = payload
+    const {cid, uuid, path_to_manifest, path_to_thumbnail} = payload
     const client = await this.db.connect()
+    
     try {
+      const getGcsOutput = {
+        text: `SELECT storage_bucket_output
+        FROM storages, companies
+        WHERE company_storage_id = storage_id and company_id=$1 `,
+        values: [cid]
+      }      
+      const qResult = await client.query(getGcsOutput)
+      const {storage_bucket_output} = qResult.rows[0]
+      const bucket = this.gcs.bucket(storage_bucket_output)
+      const thumbnail = await bucket.file(`/${path_to_thumbnail}`).download()
+      const base64data = Buffer.from(thumbnail[0]).toString('base64');
+
       const query = {
         text: `UPDATE videos 
-          SET video_status = 'ready', video_output_file = $3
+          SET video_status = 'ready', video_output_file = $3, 
+          video_thumbnail = $4
           WHERE video_company_id=$1 AND video_uuid=$2`,
-        values: [cid, uuid, path_to_file]
+        values: [cid, uuid, path_to_manifest, `data:image/png;base64,${base64data}` ]
       }
       const {rowCount} = await client.query(query)
       return rowCount

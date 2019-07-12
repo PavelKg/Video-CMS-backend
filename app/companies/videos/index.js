@@ -167,7 +167,6 @@ async function updVideoStatusHandler(req, reply) {
     this.bitmovinService.videoEncode(cid, uuid, file_ext[1]).then(
       (res) => {
         const {path_to_manifest, path_to_thumbnail} = res
-        console.log('res=', res)
         this.videoService.updVideoOutputFile({
           cid,
           uuid,

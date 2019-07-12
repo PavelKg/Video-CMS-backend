@@ -601,7 +601,7 @@ class BitmovinService {
 
     return {
       path_to_manifest: `${OUTPUT_PATH}${manifestName}`,
-      path_to_thumbnail: `${THUMBNAIL_OUTPUT_PATH}thumbnail-10.png`
+      path_to_thumbnail: `${THUMBNAIL_OUTPUT_PATH}thumbnail-${THUMBNAIL_POSITIONS[0]}_0.png`
     }
   }
 }
