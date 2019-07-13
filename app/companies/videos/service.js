@@ -136,6 +136,7 @@ class VideoService {
       const {rows} = await client.query(
         `SELECT video_uuid,
         video_status,
+        video_public,
         created_at,
         deleted_at
         FROM videos
