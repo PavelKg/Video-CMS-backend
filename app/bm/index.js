@@ -446,7 +446,8 @@ class BitmovinService {
     const {
       BITMOVIN_GCS_INPUT_KEY,
       BITMOVIN_GCS_OUTPUT_KEY,
-      BITMOVIN_VIDEO_CODEC_KEY,
+      BITMOVIN_VIDEO_CODEC_KEY_1080,
+      BITMOVIN_VIDEO_CODEC_KEY_960,
       BITMOVIN_AUDIO_CODEC_KEY
     } = process.env
 
@@ -459,7 +460,7 @@ class BitmovinService {
     const OUTPUT_PATH = `${today}/`// `${OUTPUT_FOLDER}/${cid}/${uuid}/${today}/`
 
     const THUMBNAIL_OUTPUT_PATH = OUTPUT_PATH + 'thumbnails/'
-    const THUMBNAIL_POSITIONS = [10, 15, 25] //If this array is empty the thumbnail generation will be omitted
+    const THUMBNAIL_POSITIONS = [1, 5, 10] //If this array is empty the thumbnail generation will be omitted
 
     const thumbnailResource = {
       name: `Thumbnail_${uuid}`,
@@ -473,7 +474,8 @@ class BitmovinService {
     let encoding = Object.assign({}, encodingResource)
     let input
     let output
-    let H264CodecConfiguration
+    let H264CodecConfiguration_1080
+    let H264CodecConfiguration_960
     let aacCodecConfiguration
     let thumbnail = Object.assign({}, thumbnailResource)
 
@@ -495,14 +497,24 @@ class BitmovinService {
       output = outputConfiguration
     })
 
-    const getH264CodecConfiguration = this.bitmovin.encoding.codecConfigurations
-      .h264(BITMOVIN_VIDEO_CODEC_KEY)
+    const getH264CodecConfiguration_1080 = this.bitmovin.encoding.codecConfigurations
+      .h264(BITMOVIN_VIDEO_CODEC_KEY_1080)
       .details()
 
-    getH264CodecConfiguration.then((codec) => {
-      console.log('Successfully got H264CodecConfiguration')
-      H264CodecConfiguration = codec
+    getH264CodecConfiguration_1080.then((codec) => {
+      console.log('Successfully got H264CodecConfiguration 1080')
+      H264CodecConfiguration_1080 = codec
     })
+
+    console.log('BITMOVIN_VIDEO_CODEC_KEY_960=', BITMOVIN_VIDEO_CODEC_KEY_960)
+    const getH264CodecConfiguration_960 = this.bitmovin.encoding.codecConfigurations
+      .h264(BITMOVIN_VIDEO_CODEC_KEY_960)
+      .details()
+
+    getH264CodecConfiguration_960.then((codec) => {
+      console.log('Successfully got H264CodecConfiguration 960')
+      H264CodecConfiguration_960 = codec
+    })    
 
     const getAacCodecConfiguration = this.bitmovin.encoding.codecConfigurations
       .aac(BITMOVIN_AUDIO_CODEC_KEY)
@@ -524,13 +536,14 @@ class BitmovinService {
     const preparationPromises = [
       getInputConfiguration,
       getOutputConfiguration,
-      getH264CodecConfiguration,
+      getH264CodecConfiguration_1080,
+      getH264CodecConfiguration_960,
       getAacCodecConfiguration,
       createEncodingPromise
     ]
 
     const preparationPromise = await Promise.all(preparationPromises)
-    const codecConfigurations = [aacCodecConfiguration, H264CodecConfiguration]
+    const codecConfigurations = [aacCodecConfiguration, H264CodecConfiguration_1080, H264CodecConfiguration_960]
 
     console.log(
       '----\nSuccessfully created and got input, output, codec configurations and encoding resource.\n----'
@@ -556,11 +569,13 @@ class BitmovinService {
 
     const [
       [addedAudioStream, addedAudioMuxing],
-      [addedVideoStream, addedVideoMuxing]
+      [addedVideoStream_1080, addedVideoMuxing_1080],
+      [addedVideoStream_960, addedVideoMuxing_960]
     ] = results
 
     addedAudioMuxing.streamId = addedAudioStream.id
-    addedVideoMuxing.streamId = addedVideoStream.id
+    addedVideoMuxing_1080.streamId = addedVideoStream_1080.id
+    addedVideoMuxing_960.streamId = addedVideoStream_960.id
 
     //console.log('Added audio Muxing', addedAudioMuxing)
     //console.log('Added video Muxing 1080p', addedVideoMuxing)
@@ -569,7 +584,7 @@ class BitmovinService {
       output,
       encoding,
       [addedAudioMuxing],
-      [addedVideoMuxing],
+      [addedVideoMuxing_1080, addedVideoMuxing_960],
       OUTPUT_PATH
     )
 
@@ -582,7 +597,7 @@ class BitmovinService {
       thumbnailPromise = await this.createThumbnail(
         output,
         encoding,
-        addedVideoStream,
+        addedVideoStream_960,
         thumbnail,
         THUMBNAIL_OUTPUT_PATH
       )
@@ -595,7 +610,7 @@ class BitmovinService {
 
     thumbnailImagePromise = await this.getThumbnailImage(
       encoding.id,
-      addedVideoStream.id,
+      addedVideoStream_960.id,
       thumbnailPromise.id
     )
 
