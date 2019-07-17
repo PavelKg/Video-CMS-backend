@@ -45,6 +45,17 @@ class BitmovinService {
       codecConfigId: codecConfiguration.id
     }
 
+    console.log('codecConfiguration=', codecConfiguration)
+    if (!codecConfiguration.width && !codecConfiguration.height) {
+      // only for audio
+      stream.conditions = {
+        type: 'CONDITION',
+        attribute: 'INPUTSTREAM',
+        operator: '==',
+        value: 'true'
+      }
+    }
+
     return new Promise((resolve, reject) => {
       this.addStream(encoding, stream, output, codecConfiguration, OUTPUT_PATH)
         .then(([addedStream, addedMuxing]) => {
@@ -442,7 +453,7 @@ class BitmovinService {
   }
 
   async videoEncode(cid, uuid, file_ext) {
-    //console.log('file_ext=', file_ext)
+    console.log('file_ext=', uuid, file_ext)
     const {
       BITMOVIN_GCS_INPUT_KEY,
       BITMOVIN_GCS_OUTPUT_KEY,
@@ -457,7 +468,7 @@ class BitmovinService {
     }
 
     const today = new Date().toISOString()
-    const OUTPUT_PATH = `${today}/`// `${OUTPUT_FOLDER}/${cid}/${uuid}/${today}/`
+    const OUTPUT_PATH = `${today}/` // `${OUTPUT_FOLDER}/${cid}/${uuid}/${today}/`
 
     const THUMBNAIL_OUTPUT_PATH = OUTPUT_PATH + 'thumbnails/'
     const THUMBNAIL_POSITIONS = [1, 5, 10] //If this array is empty the thumbnail generation will be omitted
@@ -514,7 +525,7 @@ class BitmovinService {
     getH264CodecConfiguration_960.then((codec) => {
       console.log('Successfully got H264CodecConfiguration 960')
       H264CodecConfiguration_960 = codec
-    })    
+    })
 
     const getAacCodecConfiguration = this.bitmovin.encoding.codecConfigurations
       .aac(BITMOVIN_AUDIO_CODEC_KEY)
@@ -543,7 +554,11 @@ class BitmovinService {
     ]
 
     const preparationPromise = await Promise.all(preparationPromises)
-    const codecConfigurations = [aacCodecConfiguration, H264CodecConfiguration_1080, H264CodecConfiguration_960]
+    const codecConfigurations = [
+      aacCodecConfiguration,
+      H264CodecConfiguration_1080,
+      H264CodecConfiguration_960
+    ]
 
     console.log(
       '----\nSuccessfully created and got input, output, codec configurations and encoding resource.\n----'
@@ -616,7 +631,9 @@ class BitmovinService {
 
     return {
       path_to_manifest: `${OUTPUT_PATH}${manifestName}`,
-      path_to_thumbnail: `${THUMBNAIL_OUTPUT_PATH}thumbnail-${THUMBNAIL_POSITIONS[0]}_0.png`
+      path_to_thumbnail: `${THUMBNAIL_OUTPUT_PATH}thumbnail-${
+        THUMBNAIL_POSITIONS[0]
+      }_0.png`
     }
   }
 }
