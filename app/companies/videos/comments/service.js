@@ -51,7 +51,6 @@ class CommentService {
     const {acc, params} = payload
     const {cid, uuid, comid} = params
 
-    console.log('cid, uuid, comid=', cid, uuid, comid)
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(

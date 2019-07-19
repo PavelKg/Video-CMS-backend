@@ -108,7 +108,7 @@ class MessageService {
     try {
       const {rowCount} = await client.query(
         `WITH acc_user AS ( 
-          SELECT 2 as user_id 
+          SELECT user_id 
           FROM users 
           WHERE user_uid=$2 and user_company_id=$3
         )
