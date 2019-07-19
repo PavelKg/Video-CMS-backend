@@ -8,13 +8,13 @@ class MessageService {
   }
 
   async userMessages(payload) {
-    const {acc} = payload
+    const {acc, direction} = payload
     const cid = acc.company_id
     const uid = acc.uid
     const {
       limit = 'ALL',
       offset = 0,
-      sort = 'message_id',
+      sort = 'mid',
       filter = undefined
     } = payload.query
 
@@ -22,35 +22,28 @@ class MessageService {
     const qFilter = Boolean(filter) ? db_api.filtration(filter, 'messages') : ''
 
     const client = await this.db.connect()
-    const {rows} = await client.query(
-      `SELECT mes.*, 
-      CASE WHEN starred_messages_id IS NOT null THEN true
-        ELSE false
-        END as starred 
-      FROM (SELECT message_id as mid, 
-              send_users.user_uid as sender_uid, send_users.user_company_id as sender_cid ,send_comp.company_name as sender_cname,
-              rec_users.user_uid as receiver_uid, rec_users.user_company_id as receiver_cid ,rec_comp.company_name as receiver_cname,
-              message_subject as subject,
-              message_text as text, 
-              messages.created_at, messages.deleted_at
-            FROM "messages", users as rec_users, companies as rec_comp, users as send_users, companies as send_comp
-            WHERE (
-              (send_users.user_company_id=$1 and send_users.user_uid=$2) 
-              or 
-              (rec_users.user_company_id=$1 and rec_users.user_uid=$2)
-            )
-            and send_comp.company_id=send_users.user_company_id 
-            and rec_comp.company_id=rec_users.user_company_id
-            and (message_receiver=rec_users.user_id and message_sender=send_users.user_id)
-          ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $3) AS mes
-      LEFT OUTER JOIN messages_starred
-      ON mid=starred_messages_id AND starred_user_id = 
-          (select user_id from users where user_uid=$2 and user_company_id=$1);`,
-      [cid, uid, offset]
-    )
-
-    client.release()
-    return rows
+    try {
+      const {rows} = await client.query(
+        `SELECT mid,
+        message_cp_uid AS cp_uid,
+        message_cp_cid AS cp_cid,
+        message_cp_cname AS cp_cname,
+        subject,
+        text,
+        starred,
+        created_at,
+        deleted_at 
+        FROM vw_messages_${direction}
+        WHERE message_own_uid = $2 and message_own_cid = $1 and deleted_at IS NULL 
+        ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $3;`,
+        [cid, uid, offset]
+      )
+      return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
   }
 
   async userMessagesReceivers(payload) {
@@ -78,8 +71,9 @@ class MessageService {
     const {receiver_cid, receiver_uid, subject, text, important} = message
 
     const client = await this.db.connect()
-    const {rows} = await client.query(
-      `WITH sender AS (
+    try {
+      const {rows} = await client.query(
+        `WITH sender AS (
         select user_id from users where user_company_id=$3 and user_uid=$4
       ),
       receiver AS (
@@ -90,45 +84,49 @@ class MessageService {
           message_subject, message_text) 
       SELECT sender.user_id, receiver.user_id, $5, $6 FROM sender, receiver  
       RETURNING message_id;`,
-      [
-        receiver_cid,
-        receiver_uid,
-        sender_cid,
-        sender_uid,
-        subject,
-        text
-      ]
-    )
-    client.release()
-    if (rows.length === 0) {
-      throw Error(errors.MESSAGE_RECEIVER_NOT_FOUND)
+        [receiver_cid, receiver_uid, sender_cid, sender_uid, subject, text]
+      )
+      if (rows.length === 0) {
+        throw Error(errors.MESSAGE_RECEIVER_NOT_FOUND)
+      }
+      return rows[0].message_id
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
     }
-    return rows[0].message_id
   }
 
   async delMessage(payload) {
-    const {acc, message} = payload
-    const {mid} = message
-
+    const {acc, mid, direction} = payload
+    const dir_target = direction === 'inbox' ? 'receiver' : 'sender'
     // if (acc.company_id !== cid || !acc.is_admin) {
     //   throw Error(errors.WRONG_ACCESS)
     // }
-
+    const {uid, company_id: cid} = acc
     const client = await this.db.connect()
-    const {rows} = await client.query(
-      `with deleted AS(
-        UPDATE messages 
-        SET deleted_at = now()::timestamp without time zone 
-        WHERE message_id=$1
-        and deleted_at is null
-        RETURNING 1
+    try {
+      const {rowCount} = await client.query(
+        `WITH acc_user AS ( 
+          SELECT 2 as user_id 
+          FROM users 
+          WHERE user_uid=$2 and user_company_id=$3
         )
-        SELECT count(*) del FROM deleted;`,
-      [mid]
-    )
 
-    client.release()
-    return +rows[0].del
+        UPDATE messages 
+        SET message_${dir_target}_deleted_at = now()::timestamp without time zone 
+        WHERE message_id=$1
+        AND message_${dir_target} = (select user_id from acc_user)
+        AND message_${dir_target}_deleted_at is null;`,
+        [mid, uid, cid]
+      )
+      
+      return rowCount
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
   }
 
   async addStarredMessage(payload) {

@@ -11,12 +11,9 @@ const messageObject = {
   type: 'object',
   properties: {
     mid: {type: 'integer'},
-    sender_uid: {type: 'string'},
-    sender_cid: {type: 'string'},
-    sender_cname: {type: 'string'},
-    receiver_uid: {type: 'string'},
-    receiver_cid: {type: 'string'},
-    receiver_cname: {type: 'string'},
+    cp_uid: {type: 'string'},
+    cp_cid: {type: 'string'},
+    cp_cname: {type: 'string'},
     subject: {type: 'string'},
     text: {type: 'string'},
     starred: {type: 'boolean'},
@@ -41,6 +38,7 @@ const getUserMessages = {
   tags: ['messages'],
   params: {
     type: 'object',
+    required: ['direction'],
     properties: {
       cid: {
         type: 'string',
@@ -48,6 +46,10 @@ const getUserMessages = {
       },
       uid: {
         type: 'string'
+      },
+      direction: {
+        type: 'string',
+        pattern: '^(inbox|outbox)$'
       }
     },
     additionalProperties: false
@@ -116,12 +118,16 @@ const delMessage = {
   tags: ['messages'],
   params: {
     type: 'object',
-    required: ['mid'],
+    required: ['direction','mid'],
     properties: {
       mid: {
         type: 'string',
         pattern: '^[0-9]?'
-      }
+      },
+      direction: {
+        type: 'string',
+        pattern: '^(inbox|outbox)$'
+      }      
     },
     additionalProperties: false
   }

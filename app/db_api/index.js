@@ -12,7 +12,7 @@ const sortableColumns = {
   groups: ['group_gid', 'group_name', 'groups.deleted_at'],
   roles: ['role_rid', 'role_name', 'role_is_admin', 'roles.deleted_at'],
   messages: [
-    'message_id',
+    'mid',
     'message_subject',
     'message_receiver',
     'message_sender',

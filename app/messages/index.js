@@ -13,14 +13,14 @@ module.exports = async function(fastify, opts) {
   // All APIs are under authentication here!
   fastify.addHook('preHandler', fastify.authPreHandler)
 
-  fastify.get('/', {schema: getUserMessagesSchema}, getUserMessagesHandler)
+  fastify.get('/:direction', {schema: getUserMessagesSchema}, getUserMessagesHandler)
   fastify.get(
     '/receivers',
     {schema: getMessagesReceiversSchema},
     getMessagesReceiversHandler
   )
   fastify.post('/', {schema: addMessageSchema}, addMessageHandler)
-  fastify.delete('/:mid', {schema: delMessageSchema}, delMessageHandler)
+  fastify.delete('/:direction/:mid', {schema: delMessageSchema}, delMessageHandler)
   fastify.post('/:mid/star', {schema: starMessageSchema}, addStarMessageHandler)
   fastify.delete(
     '/:mid/star',
@@ -36,6 +36,8 @@ module.exports[Symbol.for('plugin-meta')] = {
 }
 
 async function getUserMessagesHandler(req, reply) {
+  
+  const {direction} = req.params
   const query = req.query
   let acc = null
   req.jwtVerify(function(err, decoded) {
@@ -43,7 +45,7 @@ async function getUserMessagesHandler(req, reply) {
       acc = decoded.user
     }
   })
-  return await this.messageService.userMessages({acc, query})
+  return await this.messageService.userMessages({acc, query, direction})
 }
 
 async function getMessagesReceiversHandler(req, reply) {
@@ -79,8 +81,7 @@ async function addMessageHandler(req, reply) {
 }
 
 async function delMessageHandler(req, reply) {
-  const {mid} = req.params
-  let message = {mid}
+  const {direction, mid} = req.params
 
   let acc
   req.jwtVerify(function(err, decoded) {
@@ -89,7 +90,7 @@ async function delMessageHandler(req, reply) {
     }
   })
 
-  const deleted = await this.messageService.delMessage({acc, message})
+  const deleted = await this.messageService.delMessage({acc, mid, direction})
   const _code = deleted === 1 ? 204 : 404
   reply.code(_code).send()
 }
