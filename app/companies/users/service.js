@@ -55,18 +55,22 @@ class UserService {
     const client = await this.db.connect()
     const {rows} = await client.query(
       `SELECT 
-        users.user_uid as uid, 
-        users.user_fullname as fullname, 
-        user_company_id as cid,        
-        roles.role_rid as rid, 
-        "groups".group_gid as gid, 
-        users.user_email email, 
-        users.deleted_at
+        user_uid as uid, 
+        user_fullname as fullname, 
+        role_rid as rid, 
+        user_company_id as cid,
+        group_gid as gid, 
+        group_name as group_name, 
+        user_email email, 
+        users.deleted_at,
+        (select max(userhist_date)  
+        from "userHistoryLog" 
+        where userhist_user_id = users.user_id and userhist_action='login' ) as last_login
       FROM users
       LEFT OUTER JOIN roles
       ON users.user_role_id = roles.role_id
       LEFT OUTER JOIN "groups"
-      ON users.user_group_id = "groups".group_id
+      ON users.user_group_id = "groups".group_gid
       WHERE user_company_id=$1 and user_uid=$2::character varying;`,
       [cid, uid]
     )
@@ -105,7 +109,7 @@ class UserService {
       [uid, cid, fullname, gid, rid, email, password]
     )
 
-   console.log('rows=', rows)
+    console.log('rows=', rows)
 
     client.release()
     return rows[0].user_uid
