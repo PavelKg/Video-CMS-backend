@@ -16,7 +16,11 @@ class GroupService {
 
     const client = await this.db.connect()
     const {rows} = await client.query(
-      `SELECT group_gid as gid, group_name as name, deleted_at
+      `SELECT 
+        group_gid as gid, 
+        group_company_id as cid,         
+        group_name as name, 
+        deleted_at
       FROM "groups"
       WHERE group_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
       [cid, offset]

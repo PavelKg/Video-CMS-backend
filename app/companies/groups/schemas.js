@@ -11,6 +11,7 @@ const groupObject = {
   type: 'object',
   properties: {
     gid: {type: 'string'},
+    cid: {type: 'string'},    
     name: {type: 'string'},
     deleted_at: {type: 'string'}
   }

@@ -12,6 +12,7 @@ const userObject = {
   properties: {
     uid: {type: 'string'},
     fullname: {type: 'string'},
+    cid: {type: 'string'},
     gid: {type: 'string'},
     group_name: {type: 'string'},
     rid: {type: 'string'},
@@ -26,6 +27,7 @@ const user = {
   properties: {
     uid: {type: 'string'},
     fullname: {type: 'string'},
+    cid: {type: 'string'},    
     gid: {type: 'string'},
     rid: {type: 'string'},
     email: {type: 'string'},

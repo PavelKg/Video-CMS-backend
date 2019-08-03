@@ -26,6 +26,7 @@ class UserService {
         user_uid as uid, 
         user_fullname as fullname, 
         role_rid as rid, 
+        user_company_id as cid,
         group_gid as gid, 
         group_name as group_name, 
         user_email email, 
@@ -56,6 +57,7 @@ class UserService {
       `SELECT 
         users.user_uid as uid, 
         users.user_fullname as fullname, 
+        user_company_id as cid,        
         roles.role_rid as rid, 
         "groups".group_gid as gid, 
         users.user_email email, 

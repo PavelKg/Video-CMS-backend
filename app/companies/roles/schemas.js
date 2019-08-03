@@ -11,6 +11,7 @@ const roleObject = {
   type: 'object',
   properties: {
     rid: {type: 'string'},
+    cid: {type: 'string'},    
     name: {type: 'string'},
     is_admin: {type: 'boolean'},
     deleted_at: {type: 'string'}
@@ -21,6 +22,7 @@ const role = {
   type: 'object',
   properties: {
     rid: {type: 'string'},
+    cid: {type: 'string'},        
     name: {type: 'string'},
     is_admin: {type: 'boolean'}
   },

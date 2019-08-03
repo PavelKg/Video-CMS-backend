@@ -16,8 +16,11 @@ class RoleService {
     
     const client = await this.db.connect()
     const {rows} = await client.query(
-      `select role_rid as rid, role_name as name, 
-      role_is_admin as is_admin, deleted_at
+      `select role_rid as rid, 
+        role_name as name, 
+        role_company_id as cid, 
+        role_is_admin as is_admin, 
+        deleted_at
       from roles
       where role_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
       [cid, offset]
