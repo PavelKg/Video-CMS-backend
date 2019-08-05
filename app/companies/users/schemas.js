@@ -27,7 +27,7 @@ const user = {
   properties: {
     uid: {type: 'string'},
     fullname: {type: 'string'},
-    cid: {type: 'string'},    
+    cid: {type: 'string'},
     gid: {type: 'string'},
     rid: {type: 'string'},
     email: {type: 'string'},
@@ -44,8 +44,7 @@ const getCompanyUsers = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'string',
-        pattern: '^[0-9]?'
+        type: 'number',
       }
     },
     additionalProperties: false
@@ -66,8 +65,7 @@ const getCompanyUserInfo = {
     required: ['cid', 'uid'],
     properties: {
       cid: {
-        type: 'string',
-        pattern: '^[0-9]?'
+        type: 'number'
       },
       uid: {
         type: 'string',
@@ -88,8 +86,7 @@ const addUser = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'string',
-        pattern: '^[0-9]?'
+        type: 'number'
       }
     },
     additionalProperties: false
@@ -104,8 +101,7 @@ const updUser = {
     required: ['cid', 'uid'],
     properties: {
       cid: {
-        type: 'string',
-        pattern: '^[0-9]?'
+        type: 'number'
       },
       uid: {type: 'string'}
     },
@@ -131,8 +127,7 @@ const delUser = {
     required: ['cid', 'uid'],
     properties: {
       cid: {
-        type: 'string',
-        pattern: '^[0-9]?'
+        type: 'number'
       },
       uid: {type: 'string'}
     },

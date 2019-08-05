@@ -3,6 +3,7 @@
 const {
   group: groupSchema,
   getCompanyGroups: getCompanyGroupsSchema,
+  getCompanyGroupById: getCompanyGroupByIdSchema,
   addGroup: addGroupSchema,
   updGroup: updGroupSchema,
   delGroup: delGroupSchema
@@ -13,6 +14,7 @@ module.exports = async function(fastify, opts) {
   fastify.addHook('preHandler', fastify.authPreHandler)
 
   fastify.get('/', {schema: getCompanyGroupsSchema}, getCompanyGroupsHandler)
+  fastify.get('/:gid', {schema: getCompanyGroupByIdSchema}, getCompanyGroupsByIdHandler)
   fastify.post('/', {schema: addGroupSchema}, addGroupHandler)
   fastify.put('/:gid', {schema: updGroupSchema}, updGroupHandler)
   fastify.delete('/:gid', {schema: delGroupSchema}, delGroupHandler)
@@ -35,6 +37,20 @@ async function getCompanyGroupsHandler(req, reply) {
   })
 
   return await this.groupService.companyGroups({acc, cid, query})
+}
+
+async function getCompanyGroupsByIdHandler(req, reply) {
+  const {cid, gid} = req.params
+  let acc = null
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  const groups = await this.groupService.companyGroupById({acc, cid, gid})
+  const _code = groups.length === 1 ? 200 : 404
+  reply.code(_code).send(groups[0])
 }
 
 async function addGroupHandler(req, reply) {

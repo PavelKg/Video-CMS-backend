@@ -11,7 +11,7 @@ const roleObject = {
   type: 'object',
   properties: {
     rid: {type: 'string'},
-    cid: {type: 'string'},    
+    cid: {type: 'string'},
     name: {type: 'string'},
     is_admin: {type: 'boolean'},
     deleted_at: {type: 'string'}
@@ -22,7 +22,7 @@ const role = {
   type: 'object',
   properties: {
     rid: {type: 'string'},
-    cid: {type: 'string'},        
+    cid: {type: 'string'},
     name: {type: 'string'},
     is_admin: {type: 'boolean'}
   },
@@ -37,8 +37,7 @@ const getCompanyRoles = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'string',
-        pattern: '^[0-9]?'
+        type: 'number'
       }
     },
     additionalProperties: false
@@ -52,8 +51,29 @@ const getCompanyRoles = {
   }
 }
 
+const getCompanyRoleById = {
+  tags: ['roles'],
+  params: {
+    type: 'object',
+    required: ['cid', 'rid'],
+    properties: {
+      cid: {
+        type: 'number'
+      },
+      rid: {
+        type: 'string'
+      }
+    },
+    additionalProperties: false
+  },
+  querystring: queryStringJsonSchema,
+  response: {
+    200: roleObject
+  }
+}
+
 const addRole = {
-  tags: ['roles'],  
+  tags: ['roles'],
   params: {
     type: 'object',
     required: ['cid'],
@@ -69,7 +89,7 @@ const addRole = {
 }
 
 const updRole = {
-  tags: ['roles'],  
+  tags: ['roles'],
   params: {
     type: 'object',
     required: ['cid', 'rid'],
@@ -93,7 +113,7 @@ const updRole = {
 }
 
 const delRole = {
-  tags: ['roles'],  
+  tags: ['roles'],
   params: {
     type: 'object',
     required: ['cid', 'rid'],
@@ -108,9 +128,9 @@ const delRole = {
   }
 }
 
-
 module.exports = {
   getCompanyRoles,
+  getCompanyRoleById,
   addRole,
   updRole,
   delRole

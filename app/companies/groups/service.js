@@ -9,25 +9,61 @@ class GroupService {
 
   async companyGroups(payload) {
     const {acc, cid} = payload
-    const {limit='ALL' , offset=0, sort='group_gid', filter=''} = payload.query
+    const {
+      limit = 'ALL',
+      offset = 0,
+      sort = 'group_gid',
+      filter = ''
+    } = payload.query
 
     const qSort = db_api.sorting(sort, 'groups')
     const qFilter = filter !== '' ? db_api.filtration(filter, 'groups') : ''
 
     const client = await this.db.connect()
-    const {rows} = await client.query(
-      `SELECT 
+    try {
+      const {rows} = await client.query(
+        `SELECT 
         group_gid as gid, 
         group_company_id as cid,         
         group_name as name, 
         deleted_at
       FROM "groups"
       WHERE group_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
-      [cid, offset]
-    )
+        [cid, offset]
+      )
+      return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
+  }
 
-    client.release()
-    return rows
+  async companyGroupById(payload) {
+    const {acc, cid, gid} = payload
+
+    if (acc.company_id !== cid || !acc.is_admin) {
+      throw Error(errors.WRONG_ACCESS)
+    }
+
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `SELECT 
+        group_gid as gid, 
+        group_company_id as cid,         
+        group_name as name, 
+        deleted_at
+      FROM "groups"
+      WHERE group_company_id=$1 and group_gid=$2;`,
+        [cid, gid]
+      )
+      return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
   }
 
   async addGroup(payload) {
@@ -39,15 +75,19 @@ class GroupService {
     }
 
     const client = await this.db.connect()
-    const {rows} = await client.query(
-      `INSERT INTO groups (group_company_id, group_name) 
-      VALUES ($1, $2) 
-      RETURNING group_gid;`,
-      [cid, name]
-    )
-
-    client.release()
-    return rows[0].group_gid
+    try {
+      const {rows} = await client.query(
+        `INSERT INTO groups (group_company_id, group_name) 
+        VALUES ($1, $2) 
+        RETURNING group_gid;`,
+        [cid, name]
+      )
+      return rows[0].group_gid
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
   }
 
   async updGroup(payload) {
@@ -59,20 +99,21 @@ class GroupService {
     }
 
     const client = await this.db.connect()
-    const {rows} = await client.query(
-      `with updated AS(
-        UPDATE groups 
-        SET group_name=$3 
-        WHERE group_company_id=$2 and group_gid =$1
-        and deleted_at is null 
-        RETURNING 1
-        )
-        SELECT count(*) upd FROM updated;`,
-      [gid, cid, name]
-    )
+    try {
+      const {rowCount} = await client.query(
+        `UPDATE groups 
+          SET group_name=$3 
+          WHERE group_company_id=$2 and group_gid =$1
+          and deleted_at is null;`,
+        [gid, cid, name]
+      )
 
-    client.release()
-    return +rows[0].upd
+      return rowCount
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
   }
 
   async delGroup(payload) {
@@ -84,31 +125,33 @@ class GroupService {
     }
 
     const client = await this.db.connect()
-    const {rows: usrs} = await client.query(
-      `select count(users.user_id) cnt 
+
+    try {
+      const {rows: usrs} = await client.query(
+        `select count(users.user_id) cnt 
        from groups, users 
        where group_company_id=$2 and group_gid=$1 
-        and user_group_id = group_gid and users.deleted_at is null;`, 
+        and user_group_id = group_gid and users.deleted_at is null;`,
         [gid, cid]
-    )
-    if (Array.isArray(usrs) && usrs[0].cnt > 0) {
-      throw Error(errors.CANNOT_DELETE_A_GROUP_WITH_EXISTING_USERS)
-    }
+      )
+      if (Array.isArray(usrs) && usrs[0].cnt > 0) {
+        throw Error(errors.CANNOT_DELETE_A_GROUP_WITH_EXISTING_USERS)
+      }
 
-    const {rows} = await client.query(
-      `with deleted AS(
-        UPDATE groups 
+      const {rowCount} = await client.query(
+        `UPDATE groups 
         SET deleted_at = now()::timestamp without time zone 
         WHERE group_company_id=$2 and group_gid =$1 
-        and deleted_at is null
-        RETURNING 1
-        )
-        SELECT count(*) del FROM deleted;`,
-      [gid, cid]
-    )
+        and deleted_at is null;`,
+        [gid, cid]
+      )
 
-    client.release()
-    return +rows[0].del
+      return rowCount
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
   }
 }
 

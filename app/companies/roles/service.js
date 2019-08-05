@@ -9,28 +9,69 @@ class RoleService {
 
   async companyRoles(payload) {
     const {acc, cid} = payload
-    const {limit='ALL' , offset=0, sort='role_rid', filter=''} = payload.query
+    const {
+      limit = 'ALL',
+      offset = 0,
+      sort = 'role_rid',
+      filter = ''
+    } = payload.query
+
+    if (acc.company_id !== cid || !acc.is_admin) {
+      throw Error(errors.WRONG_ACCESS)
+    }
 
     const qSort = db_api.sorting(sort, 'roles')
     const qFilter = filter !== '' ? db_api.filtration(filter, 'roles') : ''
-    
+
     const client = await this.db.connect()
-    const {rows} = await client.query(
-      `select role_rid as rid, 
+    try {
+      const {rows} = await client.query(
+        `select role_rid as rid, 
         role_name as name, 
         role_company_id as cid, 
         role_is_admin as is_admin, 
         deleted_at
       from roles
       where role_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
-      [cid, offset]
-    )
+        [cid, offset]
+      )
 
-    client.release()
-    const cRoles = rows
+      const cRoles = rows
 
-    if (!cRoles) throw new Error(errors.WRONG_LOAD_ROLES)
-    return cRoles
+      if (!cRoles) throw new Error(errors.WRONG_LOAD_ROLES)
+      return cRoles
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
+  }
+
+  async companyRoleById(payload) {
+    const {acc, cid, rid} = payload
+
+    if (acc.company_id !== cid || !acc.is_admin) {
+      throw Error(errors.WRONG_ACCESS)
+    }
+
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `select role_rid as rid, 
+          role_name as name, 
+          role_company_id as cid, 
+          role_is_admin as is_admin, 
+          deleted_at
+        from roles
+        where role_company_id=$1 and role_rid=$2;`,
+        [cid, rid]
+      )
+      return rows
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
   }
 
   async addRole(payload) {
@@ -41,15 +82,20 @@ class RoleService {
     }
 
     const client = await this.db.connect()
-    const {rows} = await client.query(
-      `INSERT INTO roles (role_rid, role_company_id, role_name, role_is_admin) 
+    try {
+      const {rows} = await client.query(
+        `INSERT INTO roles (role_rid, role_company_id, role_name, role_is_admin) 
       VALUES ($1, $2, $3, $4) 
       RETURNING role_rid;`,
-      [rid, cid, name, is_admin]
-    )
+        [rid, cid, name, is_admin]
+      )
 
-    client.release()
-    return rows[0].role_rid
+      return rows[0].role_rid
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
   }
 
   async updRole(payload) {
@@ -61,19 +107,21 @@ class RoleService {
     }
 
     const client = await this.db.connect()
-    const {rows} = await client.query(
-      `with updated AS(
-        UPDATE roles 
-        SET role_name=$3, role_is_admin=$4 
-        WHERE role_company_id=$2 and role_rid =$1 
-        RETURNING 1
-        )
-        SELECT count(*) upd FROM updated;`,
-      [rid, cid, name, is_admin]
-    )
 
-    client.release()
-    return +rows[0].upd
+    try {
+      const {rowCount} = await client.query(
+        `UPDATE roles 
+        SET role_name=$3, role_is_admin=$4 
+        WHERE role_company_id=$2 and role_rid =$1;`,
+        [rid, cid, name, is_admin]
+      )
+
+      return rowCount
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
   }
 
   async delRole(payload) {
@@ -85,33 +133,32 @@ class RoleService {
     }
 
     const client = await this.db.connect()
-
-    const {rows: usrs} = await client.query(
-      `select count(users.user_id) cnt 
+    try {
+      const {rows: usrs} = await client.query(
+        `select count(users.user_id) cnt 
        from roles, users 
        where role_company_id=$2 and role_rid=$1 
-        and user_role_id = role_id and users.deleted_at is null;`, 
+        and user_role_id = role_id and users.deleted_at is null;`,
         [rid, cid]
-    )
-    if (Array.isArray(usrs) && usrs[0].cnt > 0) {
-      throw Error(errors.CANNOT_DELETE_A_ROLE_WITH_EXISTING_USERS)
-    }
+      )
+      if (Array.isArray(usrs) && usrs[0].cnt > 0) {
+        throw Error(errors.CANNOT_DELETE_A_ROLE_WITH_EXISTING_USERS)
+      }
 
-
-    const {rows} = await client.query(
-      `with deleted AS(
-        UPDATE roles 
+      const {rowCount} = await client.query(
+        `UPDATE roles 
         SET deleted_at = now()::timestamp without time zone 
         WHERE role_company_id=$2 and role_rid =$1 
-        and deleted_at is null
-        RETURNING 1
-        )
-        SELECT count(*) del FROM deleted;`,
-      [rid, cid]
-    )
+        and deleted_at is null;`,
+        [rid, cid]
+      )
 
-    client.release()
-    return +rows[0].del
+      return rowCount
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
   }
 }
 

@@ -3,6 +3,7 @@
 const {
   role: roleSchema,
   getCompanyRoles: getCompanyRolesSchema,
+  getCompanyRoleById: getCompanyRoleByIdSchema,
   addRole: addRoleSchema,
   updRole: updRoleSchema,
   delRole: delRoleSchema
@@ -13,6 +14,11 @@ module.exports = async function(fastify, opts) {
   fastify.addHook('preHandler', fastify.authPreHandler)
 
   fastify.get('/', {schema: getCompanyRolesSchema}, getCompanyRolesHandler)
+  fastify.get(
+    '/:rid',
+    {schema: getCompanyRoleByIdSchema},
+    getCompanyRoleByIdHandler
+  )
   fastify.post('/', {schema: addRoleSchema}, addRoleHandler)
   fastify.put('/:rid', {schema: updRoleSchema}, updRoleHandler)
   fastify.delete('/:rid', {schema: delRoleSchema}, delRoleHandler)
@@ -26,7 +32,7 @@ module.exports[Symbol.for('plugin-meta')] = {
 
 async function getCompanyRolesHandler(req, reply) {
   const cid = req.params.cid
-  const query =  req.query
+  const query = req.query
   let acc = null
   req.jwtVerify(function(err, decoded) {
     if (!err) {
@@ -36,6 +42,19 @@ async function getCompanyRolesHandler(req, reply) {
   return await this.roleService.companyRoles({acc, cid, query})
 }
 
+async function getCompanyRoleByIdHandler(req, reply) {
+  const {cid, rid} = req.params
+  let acc = null
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  const roles = await this.roleService.companyRoleById({acc, cid, rid})
+  const _code = roles.length === 1 ? 200 : 404
+  reply.code(_code).send(roles[0])
+}
 
 async function addRoleHandler(req, reply) {
   const cid = +req.params.cid
@@ -62,7 +81,6 @@ async function addRoleHandler(req, reply) {
 async function updRoleHandler(req, reply) {
   const {cid, rid} = req.params
   let role = {...req.body, cid: +cid, rid}
-  
 
   let acc
   req.jwtVerify(function(err, decoded) {
@@ -79,7 +97,7 @@ async function updRoleHandler(req, reply) {
 async function delRoleHandler(req, reply) {
   const {cid, rid} = req.params
   let role = {cid: +cid, rid}
-  
+
   let acc
   req.jwtVerify(function(err, decoded) {
     if (!err) {
@@ -91,5 +109,3 @@ async function delRoleHandler(req, reply) {
   const _code = deleted === 1 ? 204 : 404
   reply.code(_code).send()
 }
-
-
