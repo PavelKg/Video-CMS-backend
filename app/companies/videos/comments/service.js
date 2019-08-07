@@ -17,6 +17,8 @@ class CommentService {
       filter = undefined
     } = payload.query
 
+console.log('acc=', acc)
+
     const qSort = db_api.sorting(sort, 'comments')
     const qFilter = Boolean(filter) ? db_api.filtration(filter, 'comments') : ''
 
@@ -35,9 +37,9 @@ class CommentService {
           deleted_at
         FROM comments
         WHERE  comment_company_id = $1 and comment_video_uuid= $2
-        and (comment_visible=true or comment_user_uid=$3)
+        and (comment_visible = true or $3 = true)
         ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $4;`,
-        [cid, uuid, acc.uid, offset]
+        [cid, uuid, acc.is_admin, offset]
       )
       return rows
     } catch (error) {

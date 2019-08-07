@@ -126,7 +126,7 @@ class VideoService {
       filter = undefined
     } = payload.query
 
-    const onlyPublic = !Boolean(acc.is_admin) ? ' AND video_public = true AND videos.deleted_at IS NULL' : ''
+    const onlyPublic = !Boolean(acc.is_admin) ? ` AND video_public = true AND video_status='ready' AND videos.deleted_at IS NULL` : ''
 
     const qSort = db_api.sorting(sort, 'videos')
     const qFilter = Boolean(filter) ? db_api.filtration(filter, 'videos') : ''
