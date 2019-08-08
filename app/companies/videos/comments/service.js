@@ -17,8 +17,6 @@ class CommentService {
       filter = undefined
     } = payload.query
 
-console.log('acc=', acc)
-
     const qSort = db_api.sorting(sort, 'comments')
     const qFilter = Boolean(filter) ? db_api.filtration(filter, 'comments') : ''
 
@@ -142,8 +140,8 @@ console.log('acc=', acc)
     const {acc, comment} = payload
     const {cid, uuid, comid} = comment
 
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
+    if (acc.company_id !== cid) {
+       throw Error(errors.WRONG_ACCESS)
     }
 
     const client = await this.db.connect()
@@ -152,7 +150,7 @@ console.log('acc=', acc)
       const query_check = {
         text: `SELECT comment_id FROM comments 
          WHERE comment_company_id=$1 AND comment_video_uuid=$2 
-         AND comment_id=$3 AND deleted_at is not null`,
+          AND comment_id=$3 AND deleted_at is not null`,
         values: [cid, uuid, comid]
       }
       const cntDeleted = await client.query(query_check)
@@ -160,12 +158,15 @@ console.log('acc=', acc)
       if (cntDeleted.rowCount>0) {
         return 0
       }
-
+      console.log('acc=', acc)
       const query = {
         text: `UPDATE comments SET 
          deleted_at = now()::timestamp without time zone 
-         WHERE comment_company_id=$1 AND comment_video_uuid=$2 AND comment_id=$3`,
-        values: [cid, uuid, comid]
+         WHERE comment_company_id=$1 
+          AND comment_video_uuid=$2 
+          AND comment_id=$3
+          AND ($4 = true OR ($1=$5 AND comment_user_uid = $6))`,
+        values: [cid, uuid, comid, acc.is_admin, acc.company_id, acc.uid]
       }
       const {rowCount} = await client.query(query)
       return rowCount
