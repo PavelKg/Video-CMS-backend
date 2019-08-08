@@ -141,12 +141,11 @@ class CommentService {
     const {cid, uuid, comid} = comment
 
     if (acc.company_id !== cid) {
-       throw Error(errors.WRONG_ACCESS)
+      throw Error(errors.WRONG_ACCESS)
     }
 
     const client = await this.db.connect()
     try {
-
       const query_check = {
         text: `SELECT comment_id FROM comments 
          WHERE comment_company_id=$1 AND comment_video_uuid=$2 
@@ -154,8 +153,8 @@ class CommentService {
         values: [cid, uuid, comid]
       }
       const cntDeleted = await client.query(query_check)
-      
-      if (cntDeleted.rowCount>0) {
+
+      if (cntDeleted.rowCount > 0) {
         return 0
       }
       console.log('acc=', acc)

@@ -6,7 +6,8 @@ require('dotenv').config()
 // Require the framework
 const fastify = require('fastify')({
   logger: true,
-  ignoreTrailingSlash: true
+  ignoreTrailingSlash: true,
+  bodyLimit: 5242880
 })
 
 // Register swagger.
