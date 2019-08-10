@@ -22,6 +22,7 @@ const sortableColumns = {
     'video_thumbnail',
     'videos.created_at',
     'videos.deleted_at',
+    'videos.updated_at',
     'video_uuid',
     'video_filename',
     'video_status',
