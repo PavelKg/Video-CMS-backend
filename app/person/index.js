@@ -65,17 +65,32 @@ async function loginHandler(req, reply) {
 }
 
 async function meHandler(req, reply) {
-  const userId = req.user.user.uid
-  return this.personService.getProfile(userId, userId)
+  let acc = null
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  return this.personService.getProfile(acc)
 }
 
 async function passwordResetRequestHandler(req, reply) {
   const {email, locale = 'en'} = req.body
 
   const person = await this.personService.findUserByEmail(email)
-  const {token, valid_date} = await this.personService.getPasswordResetToken(person, email) //this.jwt.sign({user: person})
+  const {token, valid_date} = await this.personService.getPasswordResetToken(
+    person,
+    email
+  ) //this.jwt.sign({user: person})
   const {fullname} = person
-  await this.personService.sendEmail({email, fullname, token, valid_date, locale})
+  await this.personService.sendEmail({
+    email,
+    fullname,
+    token,
+    valid_date,
+    locale
+  })
 
   reply.code(202).send()
 }

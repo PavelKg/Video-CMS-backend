@@ -27,31 +27,78 @@ class PersonService {
 
   async login(username, password) {
     const client = await this.db.connect()
+    let factQuery = ''
     try {
-      const {rows} = await client.query(`select login($1, $2);`, [
-        username,
-        password
-      ])
+      const {rows} = await client.query(
+        //`select login($1, $2);`,
+        `SELECT 
+        user_id,
+        user_uid AS uid, 
+        role_name AS role, 
+        company_id, 
+        role_is_admin AS is_admin,
+        company_timezone AS timezone 
+      FROM users, roles, companies 
+      WHERE users.user_company_id=companies.company_id 
+	      and roles.role_company_id=companies.company_id 
+	      and roles.role_id=users.user_role_id
+	      and users.deleted_at IS NULL
+	      and users.user_uid =$1 and users.user_password=crypt($2, user_password);`,
+        [username, password]
+      )
 
-      const user = rows[0].login
+      const user = rows[0]
+      factQuery = {
+        text: `INSERT INTO public."userHistoryLog" 
+      (userhist_user_id, userhist_action, userhist_date, userhist_result, userhist_data) 
+      values 
+      ($1, 'login', now(), $2, $3);`,
+        values: [
+          user ? user.user_id : null,
+          user ? 'success' : 'failed',
+          {uid: username}
+        ]
+      }
 
-      if (!user) throw new Error(errors.WRONG_CREDENTIAL)
+      if (!user) {
+        throw new Error(errors.WRONG_CREDENTIAL)
+      }
+
       return user
     } catch (error) {
       throw Error(error)
     } finally {
+      await client.query(factQuery)
       client.release()
     }
   }
 
-  async getProfile(myUid, uid) {
+  async getProfile(acc) {
     const client = await this.db.connect()
+    const {company_id: cid, uid} = acc
     try {
       const {rows} = await client.query(
-        `select user_profile($1::jsonb, $2) as uProfile;`,
-        [JSON.stringify({userId: myUid}), uid]
+        //`select user_profile($1::jsonb, $2) as uProfile;`,
+        `SELECT
+          user_uid As uid, 
+          role_name AS role, 
+          user_fullname AS username, 
+          company_id, 
+          company_name, 
+          user_email AS email,
+          CASE WHEN company_is_super THEN 'super'
+                WHEN role_is_admin THEN 'admin'
+            ELSE 'user'
+          END AS irole 
+        FROM users, roles, companies 
+        WHERE users.user_company_id=companies.company_id 
+          AND roles.role_company_id=companies.company_id 
+          AND roles.role_id=users.user_role_id
+          AND users.user_uid = $2
+          AND companies.company_id = $1;`,
+        [cid, uid]
       )
-      const user_profile = rows[0].uprofile
+      const user_profile = rows[0]
       if (!user_profile) throw new Error(errors.WRONG_USER_ID)
       return user_profile
     } catch (error) {
@@ -87,7 +134,9 @@ class PersonService {
       .replace(/\-/gi, '/')
       .replace(/T/gi, ' ')
     try {
-      const time_zone = `UTC${-(new Date().getTimezoneOffset() / 60)} (${Intl.DateTimeFormat().resolvedOptions().timeZone})`
+      const time_zone = `UTC${-(new Date().getTimezoneOffset() / 60)} (${
+        Intl.DateTimeFormat().resolvedOptions().timeZone
+      })`
       const letter = mail_templ(locale, {
         system_name: SYSTEM_NAME,
         name: fullname,

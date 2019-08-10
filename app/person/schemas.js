@@ -10,7 +10,8 @@ const userProfileOutput = {
     company_id: {type: 'string'},
     company_name: {type: 'string'},
     irole: {type: 'string'},
-    username: {type: 'string'}
+    username: {type: 'string'},
+    timezone: {type: 'string'}
   }
 }
 
