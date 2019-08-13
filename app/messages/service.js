@@ -12,13 +12,12 @@ class MessageService {
     //const cid = acc.company_id
     const {uid, company_id: cid, timezone} = acc
     const {
-      limit = '1',
+      limit = 'ALL',
       offset = 0,
       sort = '-mid',
       filter = undefined
     } = payload.query
 
-    //console.log('timezone=', timezone, acc)
     const qSort = db_api.sorting(sort, 'messages')
     let qFilter = Boolean(filter) ? db_api.filtration(filter, 'messages') : ''
     qFilter = db_api.setFilterTz(qFilter, timezone)
@@ -40,7 +39,7 @@ class MessageService {
         ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $3;`,
         [cid, uid, offset, timezone]
       )
-      console.log('row=', rows)
+
       return rows
     } catch (error) {
       throw Error(error.message)
