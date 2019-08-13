@@ -9,6 +9,7 @@ class RoleService {
 
   async companyRoles(payload) {
     const {acc, cid} = payload
+    const {timezone} = acc
     const {
       limit = 'ALL',
       offset = 0,
@@ -21,19 +22,21 @@ class RoleService {
     }
 
     const qSort = db_api.sorting(sort, 'roles')
-    const qFilter = filter !== '' ? db_api.filtration(filter, 'roles') : ''
+    let qFilter = filter !== '' ? db_api.filtration(filter, 'roles') : ''
+    qFilter = db_api.setFilterTz(qFilter, timezone)
 
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
-        `select role_rid as rid, 
-        role_name as name, 
-        role_company_id as cid, 
-        role_is_admin as is_admin, 
-        deleted_at
-      from roles
-      where role_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
-        [cid, offset]
+        `select 
+          role_rid as rid, 
+          role_name as name, 
+          role_company_id as cid, 
+          role_is_admin as is_admin, 
+          deleted_at AT TIME ZONE $3 AS deleted_at 
+        from roles
+        where role_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
+        [cid, offset, timezone]
       )
 
       const cRoles = rows
@@ -49,7 +52,7 @@ class RoleService {
 
   async companyRoleById(payload) {
     const {acc, cid, rid} = payload
-
+    const {timezone} = acc
     if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
@@ -61,10 +64,10 @@ class RoleService {
           role_name as name, 
           role_company_id as cid, 
           role_is_admin as is_admin, 
-          deleted_at
+          deleted_at AT TIME ZONE $3 AS deleted_at 
         from roles
         where role_company_id=$1 and role_rid=$2;`,
-        [cid, rid]
+        [cid, rid, timezone]
       )
       return rows
     } catch (error) {
@@ -147,7 +150,7 @@ class RoleService {
 
       const {rowCount} = await client.query(
         `UPDATE roles 
-        SET deleted_at = now()::timestamp without time zone 
+        SET deleted_at = now() 
         WHERE role_company_id=$2 and role_rid =$1 
         and deleted_at is null;`,
         [rid, cid]

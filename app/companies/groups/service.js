@@ -9,6 +9,7 @@ class GroupService {
 
   async companyGroups(payload) {
     const {acc, cid} = payload
+    const {timezone} = acc
     const {
       limit = 'ALL',
       offset = 0,
@@ -17,7 +18,8 @@ class GroupService {
     } = payload.query
 
     const qSort = db_api.sorting(sort, 'groups')
-    const qFilter = filter !== '' ? db_api.filtration(filter, 'groups') : ''
+    let qFilter = filter !== '' ? db_api.filtration(filter, 'groups') : ''
+    qFilter = db_api.setFilterTz(qFilter, timezone)
 
     const client = await this.db.connect()
     try {
@@ -26,10 +28,10 @@ class GroupService {
         group_gid as gid, 
         group_company_id as cid,         
         group_name as name, 
-        deleted_at
+        deleted_at AT TIME ZONE $3 AS deleted_at
       FROM "groups"
       WHERE group_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
-        [cid, offset]
+        [cid, offset, timezone]
       )
       return rows
     } catch (error) {
@@ -41,7 +43,7 @@ class GroupService {
 
   async companyGroupById(payload) {
     const {acc, cid, gid} = payload
-
+    const {timezone} = acc
     if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
@@ -53,10 +55,10 @@ class GroupService {
         group_gid as gid, 
         group_company_id as cid,         
         group_name as name, 
-        deleted_at
+        deleted_at AT TIME ZONE $3 AS deleted_at
       FROM "groups"
       WHERE group_company_id=$1 and group_gid=$2;`,
-        [cid, gid]
+        [cid, gid, timezone]
       )
       return rows
     } catch (error) {
@@ -140,7 +142,7 @@ class GroupService {
 
       const {rowCount} = await client.query(
         `UPDATE groups 
-        SET deleted_at = now()::timestamp without time zone 
+        SET deleted_at = now()
         WHERE group_company_id=$2 and group_gid =$1 
         and deleted_at is null;`,
         [gid, cid]

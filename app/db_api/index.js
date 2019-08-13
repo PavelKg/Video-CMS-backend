@@ -16,7 +16,11 @@ const sortableColumns = {
     'message_subject',
     'message_receiver',
     'message_sender',
-    'messages.created_at'
+    'vw_messages_outbox.created_at',
+    'vw_messages_inbox.created_at',
+    'vw_messages_outbox.updated_at',
+    'vw_messages_inbox.updated_at'
+    
   ],
   videos: [
     'video_thumbnail',
@@ -74,4 +78,15 @@ function filtration(_filter, _table) {
   })
   return ' AND ' + filter_str.join(' AND ')
 }
-module.exports = {sorting, filtration}
+
+function setFilterTz(filter, timezone) {
+  let qFilter = filter
+  const timeField =  ['created_at', 'deleted_at', 'updated_at']
+
+  timeField.forEach((elem, index)=>{
+    const re = new RegExp(elem, "gi");
+    qFilter = qFilter.replace(re, `${elem} AT TIME ZONE '${timezone}'`)
+  })
+  return qFilter
+}
+module.exports = {sorting, filtration, setFilterTz}

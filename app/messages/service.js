@@ -9,17 +9,19 @@ class MessageService {
 
   async userMessages(payload) {
     const {acc, direction} = payload
-    const cid = acc.company_id
-    const uid = acc.uid
+    //const cid = acc.company_id
+    const {uid, company_id: cid, timezone} = acc
     const {
-      limit = 'ALL',
+      limit = '1',
       offset = 0,
-      sort = 'mid',
+      sort = '-mid',
       filter = undefined
     } = payload.query
 
+    //console.log('timezone=', timezone, acc)
     const qSort = db_api.sorting(sort, 'messages')
-    const qFilter = Boolean(filter) ? db_api.filtration(filter, 'messages') : ''
+    let qFilter = Boolean(filter) ? db_api.filtration(filter, 'messages') : ''
+    qFilter = db_api.setFilterTz(qFilter, timezone)
 
     const client = await this.db.connect()
     try {
@@ -31,13 +33,14 @@ class MessageService {
         subject,
         text,
         starred,
-        created_at,
-        deleted_at 
+        created_at AT TIME ZONE $4 AS created_at,
+        deleted_at AT TIME ZONE $4 AS deleted_at 
         FROM vw_messages_${direction}
         WHERE message_own_uid = $2 and message_own_cid = $1 and deleted_at IS NULL 
         ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $3;`,
-        [cid, uid, offset]
+        [cid, uid, offset, timezone]
       )
+      console.log('row=', rows)
       return rows
     } catch (error) {
       throw Error(error.message)
@@ -52,7 +55,9 @@ class MessageService {
 
     const client = await this.db.connect()
     const {rows} = await client.query(
-      `SELECT user_uid as uid, user_company_id as cid 
+      `SELECT 
+        user_uid as uid, 
+        user_company_id as cid 
       FROM users 
       WHERE user_company_id=$1 and users.deleted_at is null 
       ORDER BY user_company_id, user_uid;`,
@@ -114,7 +119,7 @@ class MessageService {
         )
 
         UPDATE messages 
-        SET message_${dir_target}_deleted_at = now()::timestamp without time zone 
+        SET message_${dir_target}_deleted_at = now() 
         WHERE message_id=$1
         AND message_${dir_target} = (select user_id from acc_user)
         AND message_${dir_target}_deleted_at is null;`,

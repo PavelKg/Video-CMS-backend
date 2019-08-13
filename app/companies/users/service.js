@@ -10,6 +10,7 @@ class UserService {
 
   async companyUsers(payload) {
     const {acc, cid} = payload
+    const {timezone} = acc
     const {
       limit = 'ALL',
       offset = 0,
@@ -22,7 +23,8 @@ class UserService {
     }
 
     const qSort = db_api.sorting(sort, 'users')
-    const qFilter = filter !== '' ? db_api.filtration(filter, 'users') : ''
+    let qFilter = filter !== '' ? db_api.filtration(filter, 'users') : ''
+    qFilter = db_api.setFilterTz(qFilter, timezone)
 
     const client = await this.db.connect()
     try {
@@ -35,17 +37,17 @@ class UserService {
         group_gid as gid, 
         group_name as group_name, 
         user_email email, 
-        users.deleted_at,
+        users.deleted_at AT TIME ZONE $3 AS deleted_at,
         (select max(userhist_date)  
          from "userHistoryLog" 
-         where userhist_user_id = users.user_id and userhist_action='login' ) as last_login
+         where userhist_user_id = users.user_id and userhist_action='login' ) AT TIME ZONE $3 as last_login
       FROM users
       LEFT OUTER JOIN roles
       ON users.user_role_id = roles.role_id
       LEFT OUTER JOIN "groups"
       ON users.user_group_id = "groups".group_gid
       WHERE user_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
-        [cid, offset]
+        [cid, offset, timezone]
       )
 
       return rows
@@ -58,6 +60,7 @@ class UserService {
 
   async companyUserInfo(payload) {
     const {acc, cid, uid} = payload
+    const {timezone} = acc
 
     if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
@@ -74,17 +77,17 @@ class UserService {
         group_gid as gid, 
         group_name as group_name, 
         user_email email, 
-        users.deleted_at,
+        users.deleted_at AT TIME ZONE $3 AS deleted_at,
         (select max(userhist_date)  
         from "userHistoryLog" 
-        where userhist_user_id = users.user_id and userhist_action='login' ) as last_login
+        where userhist_user_id = users.user_id and userhist_action='login' ) AT TIME ZONE $3 as last_login
       FROM users
       LEFT OUTER JOIN roles
       ON users.user_role_id = roles.role_id
       LEFT OUTER JOIN "groups"
       ON users.user_group_id = "groups".group_gid
       WHERE user_company_id=$1 and user_uid=$2::character varying;`,
-        [cid, uid]
+        [cid, uid, timezone]
       )
 
       return rows.length ? rows[0] : ''
@@ -174,7 +177,7 @@ class UserService {
     try {
       const {rowCount} = await client.query(
         `UPDATE users 
-        SET deleted_at = now()::timestamp without time zone 
+        SET deleted_at = now() 
         WHERE user_company_id=$2 and user_uid =$1::character varying 
         and deleted_at is null;`,
         [uid, cid]

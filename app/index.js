@@ -1,18 +1,17 @@
 'use strict'
 
 const path = require('path')
+const pgo = require('pg')
+const fpg = require('fastify-postgres')
 
 const fp = require('fastify-plugin')
 const jwt = require('fastify-jwt')
 const cors = require('fastify-cors')
-const pg = require('fastify-postgres')
+
 const nodemailer = require('fastify-nodemailer')
 const bitmovinApi = require('bitmovin-javascript').default
 
-//const swagger = require('fastify-swagger')
 const {Storage} = require('@google-cloud/storage')
-
-//const swagger = require('../config/swagger')
 
 const Person = require('./person')
 const PersonService = require('./person/service')
@@ -39,10 +38,14 @@ const BitmovinService = require('./bm')
 
 async function connectToDatabase(fastify) {
   console.log('DB Connecting...')
+  pgo.types.setTypeParser(1114, function(stringValue) {
+    return stringValue
+  })
   const {DB_HOST, DB_USER, DB_PASS, DB_NAME} = process.env
-  fastify.register(pg, {
+  fastify.register(fpg, {
     connectionString: `postgres://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}`,
-    max: 20
+    max: 20,
+    pg: pgo
   })
   console.log('Finish DB Connecting.')
 }
@@ -88,7 +91,6 @@ async function fastifyGoogleCloudStorage(fastify) {
 }
 
 async function fastifyBitmovin(fastify) {
-
   console.log('Bitmovin Connecting...')
   const {BITMOVIN_API_KEY, BITMOVIN_GCS_INPUT_KEY} = process.env
   try {

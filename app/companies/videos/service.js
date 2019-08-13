@@ -116,33 +116,35 @@ class VideoService {
 
   async videosCatalog(payload) {
     const {acc} = payload
-    console.log('acc=', acc)
-    const cid = acc.company_id
-    const uid = acc.uid
+    const {company_id: cid, uid, timezone} = acc
+
     const {
       limit = 'ALL',
       offset = 0,
-      sort = '-videos.created_at',
+      sort = '-videos.updated_at',
       filter = undefined
     } = payload.query
 
     const onlyPublic = !Boolean(acc.is_admin) ? ` AND video_public = true AND video_status='ready' AND videos.deleted_at IS NULL` : ''
 
     const qSort = db_api.sorting(sort, 'videos')
-    const qFilter = Boolean(filter) ? db_api.filtration(filter, 'videos') : ''
+    let qFilter = Boolean(filter) ? db_api.filtration(filter, 'videos') : ''
+    qFilter = db_api.setFilterTz(qFilter, timezone)
 
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
-        `SELECT video_uuid,
-        video_status,
-        video_public,
-        created_at,
-        deleted_at
+        `SELECT 
+          video_uuid,
+          video_status,
+          video_public,
+          created_at AT TIME ZONE $3 AS created_at, 
+          updated_at AT TIME ZONE $3 AS updated_at,           
+          deleted_at AT TIME ZONE $3 AS deleted_at 
         FROM videos
         WHERE  video_company_id = $1 ${onlyPublic}
         ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
-        [cid, offset]
+        [cid, offset, timezone]
       )
       return rows
     } catch (error) {
@@ -154,6 +156,7 @@ class VideoService {
 
   async getVideo(payload) {
     const {acc, cid, uuid} = payload
+    const {timezone} = acc
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
@@ -165,12 +168,12 @@ class VideoService {
           video_tag,
           video_description,
           'https://'||company_corporate_code||'.${service_domain}'||'/'||video_output_file AS video_output_file,
-          videos.created_at,
-          videos.updated_at,
-          videos.deleted_at
+          videos.created_at AT TIME ZONE $3 AS created_at, 
+          videos.updated_at AT TIME ZONE $3 AS updated_at,           
+          videos.deleted_at AT TIME ZONE $3 AS deleted_at 
         FROM videos, companies
         WHERE  video_company_id = company_id and video_uuid = $2 and company_id = $1`,
-        [cid, uuid]
+        [cid, uuid, timezone]
       )
       return rows[0]
     } catch (error) {
@@ -210,7 +213,7 @@ class VideoService {
     try {
       const {rowCount} = await client.query(
         ` UPDATE videos 
-          SET deleted_at = now()::timestamp without time zone 
+          SET deleted_at = now()
           WHERE video_company_id=$1 and video_uuid=$2
           and deleted_at is null`,
         [cid, uuid]

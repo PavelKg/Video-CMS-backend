@@ -10,6 +10,7 @@ class CommentService {
   async videoComments(payload) {
     const {acc, params, query} = payload
     const {cid, uuid} = params
+    const {timezone, is_admin} = acc
     const {
       limit = 'ALL',
       offset = 0,
@@ -18,7 +19,8 @@ class CommentService {
     } = payload.query
 
     const qSort = db_api.sorting(sort, 'comments')
-    const qFilter = Boolean(filter) ? db_api.filtration(filter, 'comments') : ''
+    let qFilter = Boolean(filter) ? db_api.filtration(filter, 'comments') : ''
+    qFilter = db_api.setFilterTz(qFilter, timezone)
 
     const client = await this.db.connect()
     try {
@@ -30,14 +32,14 @@ class CommentService {
           CASE WHEN deleted_at IS NULL THEN comment_text ELSE '' END AS comment_text,
           comment_visible,
           comment_user_uid,
-          created_at,
-          updated_at,
-          deleted_at
+          created_at AT TIME ZONE $5 AS created_at, 
+          updated_at AT TIME ZONE $5 AS updated_at,           
+          deleted_at AT TIME ZONE $5 AS deleted_at 
         FROM comments
         WHERE  comment_company_id = $1 and comment_video_uuid= $2
         and (comment_visible = true or $3 = true)
         ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $4;`,
-        [cid, uuid, acc.is_admin, offset]
+        [cid, uuid, is_admin, offset, timezone]
       )
       return rows
     } catch (error) {
@@ -50,6 +52,7 @@ class CommentService {
   async commentInfo(payload) {
     const {acc, params} = payload
     const {cid, uuid, comid} = params
+    const {timezone} = acc
 
     const client = await this.db.connect()
     try {
@@ -61,13 +64,13 @@ class CommentService {
           CASE WHEN deleted_at IS NULL THEN comment_text ELSE '' END AS comment_text,
           comment_visible,
           comment_user_uid,
-          created_at,
-          updated_at,
-          deleted_at
+          created_at AT TIME ZONE $4 AS created_at, 
+          updated_at AT TIME ZONE $4 AS updated_at,           
+          deleted_at AT TIME ZONE $4 AS deleted_at 
         FROM comments
         WHERE  comment_company_id = $1 
           AND comment_video_uuid= $2 AND comment_id = $3;`,
-        [cid, uuid, comid]
+        [cid, uuid, comid, timezone]
       )
       return rows[0]
     } catch (error) {
@@ -104,7 +107,7 @@ class CommentService {
         ;`,
         [cid, uid, uuid, comment_text]
       )
-      console.log('rows[0]=', rows[0])
+
       return rows[0].comment_id
     } catch (error) {
       throw Error(error.message)
@@ -157,10 +160,10 @@ class CommentService {
       if (cntDeleted.rowCount > 0) {
         return 0
       }
-      console.log('acc=', acc)
+
       const query = {
         text: `UPDATE comments SET 
-         deleted_at = now()::timestamp without time zone 
+         deleted_at = now()
          WHERE comment_company_id=$1 
           AND comment_video_uuid=$2 
           AND comment_id=$3
