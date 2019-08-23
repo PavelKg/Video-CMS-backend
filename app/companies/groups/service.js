@@ -106,7 +106,7 @@ class GroupService {
         `UPDATE groups 
           SET group_name=$3 
           WHERE group_company_id=$2 and group_gid =$1
-          and deleted_at is null;`,
+          AND deleted_at IS NULL;`,
         [gid, cid, name]
       )
 

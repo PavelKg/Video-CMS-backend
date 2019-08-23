@@ -153,7 +153,7 @@ class UserService {
           user_role_id = (select role_id from roles where role_rid=$5 and role_company_id=$2),
           user_email = $6,
           user_password = CASE WHEN $7<>'' THEN crypt($7, gen_salt('bf')) ELSE user_password END
-        WHERE user_company_id=$2 and user_uid =$1;`,
+        WHERE user_company_id=$2 and user_uid =$1 AND deleted_at IS NULL;`,
         [uid, cid, fullname, gid, rid, email, password]
       )
 
@@ -179,7 +179,7 @@ class UserService {
         `UPDATE users 
         SET deleted_at = now() 
         WHERE user_company_id=$2 and user_uid =$1::character varying 
-        and deleted_at is null;`,
+        AND deleted_at IS NULL;`,
         [uid, cid]
       )
 

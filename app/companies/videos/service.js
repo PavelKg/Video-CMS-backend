@@ -173,6 +173,7 @@ class VideoService {
           videos.deleted_at AT TIME ZONE $3 AS deleted_at 
         FROM videos, companies
         WHERE  video_company_id = company_id and video_uuid = $2 and company_id = $1 
+          and  videos.deleted_at IS NULL
           and (video_public=true or (video_public=false and $4=true))`,
         [cid, uuid, timezone, is_admin]
       )
@@ -216,7 +217,7 @@ class VideoService {
         ` UPDATE videos 
           SET deleted_at = now()
           WHERE video_company_id=$1 and video_uuid=$2
-          and deleted_at is null`,
+          AND deleted_at IS NULL`,
         [cid, uuid]
       )
       return rowCount
@@ -254,7 +255,7 @@ class VideoService {
       })
       const query = {
         text: `UPDATE videos SET (${Object.keys(fields)}) = (${select}) 
-         WHERE video_company_id=$${fields_length +
+         WHERE deleted_at IS NULL AND video_company_id=$${fields_length +
            1} AND video_uuid=$${fields_length + 2}`,
         values: [...Object.values(fields), cid, uuid]
       }
@@ -285,7 +286,8 @@ class VideoService {
     try {
       const query = {
         text: `UPDATE videos SET video_status = $3
-         WHERE video_company_id=$1 AND video_uuid=$2
+         WHERE video_company_id=$1 AND video_uuid=$2 
+          AND deleted_at IS NULL
          RETURNING *`,
         values: [cid, uuid, value.toLowerCase()]
       }
@@ -317,7 +319,8 @@ class VideoService {
     try {
       const query = {
         text: `UPDATE videos SET video_public = $3
-         WHERE video_company_id=$1 AND video_uuid=$2`,
+         WHERE video_company_id=$1 
+          AND video_uuid=$2 AND deleted_at IS NULL`,
         values: [cid, uuid, value.toLowerCase()==='public']
       }
       const {rowCount} = await client.query(query)

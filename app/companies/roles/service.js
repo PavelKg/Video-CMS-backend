@@ -115,7 +115,8 @@ class RoleService {
       const {rowCount} = await client.query(
         `UPDATE roles 
         SET role_name=$3, role_is_admin=$4 
-        WHERE role_company_id=$2 and role_rid =$1;`,
+        WHERE role_company_id=$2 and role_rid =$1 
+          AND deleted_at IS NULL;`,
         [rid, cid, name, is_admin]
       )
 
