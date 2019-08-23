@@ -154,9 +154,9 @@ class VideoService {
     }
   }
 
-  async getVideo(payload) {
+  async getVideo(payload) { // get videos data for uuid
     const {acc, cid, uuid} = payload
-    const {timezone} = acc
+    const {timezone, is_admin} = acc
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
@@ -172,10 +172,11 @@ class VideoService {
           videos.updated_at AT TIME ZONE $3 AS updated_at,           
           videos.deleted_at AT TIME ZONE $3 AS deleted_at 
         FROM videos, companies
-        WHERE  video_company_id = company_id and video_uuid = $2 and company_id = $1`,
-        [cid, uuid, timezone]
+        WHERE  video_company_id = company_id and video_uuid = $2 and company_id = $1 
+          and (video_public=true or (video_public=false and $4=true))`,
+        [cid, uuid, timezone, is_admin]
       )
-      return rows[0]
+      return rows
     } catch (error) {
       throw Error(error.message)
     } finally {

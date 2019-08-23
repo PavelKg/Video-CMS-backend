@@ -101,8 +101,9 @@ async function getVideoHandler(req, reply) {
       acc = decoded.user
     }
   })
-
-  return await this.videoService.getVideo({acc, cid, uuid})
+  const videos = await this.videoService.getVideo({acc, cid, uuid})
+  const _code = videos.length === 1 ? 200 : 404
+  reply.code(_code).send(videos[0])
 }
 
 async function getVideoThumbnailHandler(req, replay) {
