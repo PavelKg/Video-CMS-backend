@@ -49,8 +49,8 @@ class VideoService {
       const {rowCount} = await client.query(
         `INSERT INTO videos (video_filename, video_type, video_filesize,
         video_uuid, video_status, video_bucket_input, 
-        video_bucket_output,video_company_id)
-       values ($1, $2, $3, $4, 'create', $5, $6, $7)`,
+        video_bucket_output,video_company_id, video_public)
+       values ($1, $2, $3, $4, 'create', $5, $6, $7, false)`,
         [
           name,
           type,
