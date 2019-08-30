@@ -45,7 +45,7 @@ class VideoService {
       storage_bucket_input = rows[0].storage_bucket_input
       storage_bucket_output = rows[0].storage_bucket_output
       const storage_content_limit = rows[0].storage_content_limit
-      const title = name.match(/^([\w\-. ]+).[\w]{3,4}$/i)
+      const title = "aaa.bbb.avi".match(/^([\w\-. ]+).[\w]{3,4}$/i)
       const {rowCount} = await client.query(
         `INSERT INTO videos (video_filename, video_type, video_filesize,
         video_uuid, video_status, video_bucket_input, 
@@ -59,7 +59,6 @@ class VideoService {
           storage_bucket_input,
           storage_bucket_output,
           cid,
-          name,
           title
         ]
       )
