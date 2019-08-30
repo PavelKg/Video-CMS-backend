@@ -45,7 +45,7 @@ class VideoService {
       storage_bucket_input = rows[0].storage_bucket_input
       storage_bucket_output = rows[0].storage_bucket_output
       const storage_content_limit = rows[0].storage_content_limit
-      const title = "aaa.bbb.avi".match(/^([\w\-. ]+).[\w]{3,4}$/i)
+      const title = name.match(/^([\w\-. ]+).[\w]{3,4}$/i)[1]
       const {rowCount} = await client.query(
         `INSERT INTO videos (video_filename, video_type, video_filesize,
         video_uuid, video_status, video_bucket_input, 
@@ -59,7 +59,7 @@ class VideoService {
           storage_bucket_input,
           storage_bucket_output,
           cid,
-          title
+          title ? title : ''
         ]
       )
     } catch (error) {
@@ -126,7 +126,9 @@ class VideoService {
       filter = undefined
     } = payload.query
 
-    const onlyPublic = !Boolean(acc.is_admin) ? ` AND video_public = true AND video_status='ready' AND videos.deleted_at IS NULL` : ''
+    const onlyPublic = !Boolean(acc.is_admin)
+      ? ` AND video_public = true AND video_status='ready' AND videos.deleted_at IS NULL`
+      : ''
 
     const qSort = db_api.sorting(sort, 'videos')
     let qFilter = Boolean(filter) ? db_api.filtration(filter, 'videos') : ''
@@ -155,7 +157,8 @@ class VideoService {
     }
   }
 
-  async getVideo(payload) { // get videos data for uuid
+  async getVideo(payload) {
+    // get videos data for uuid
     const {acc, cid, uuid} = payload
     const {timezone, is_admin} = acc
     const client = await this.db.connect()
@@ -322,7 +325,7 @@ class VideoService {
         text: `UPDATE videos SET video_public = $3
          WHERE video_company_id=$1 
           AND video_uuid=$2 AND deleted_at IS NULL`,
-        values: [cid, uuid, value.toLowerCase()==='public']
+        values: [cid, uuid, value.toLowerCase() === 'public']
       }
       const {rowCount} = await client.query(query)
       return rowCount
@@ -332,30 +335,35 @@ class VideoService {
       client.release()
     }
   }
-  
-  async updVideoOutputFile(payload){
+
+  async updVideoOutputFile(payload) {
     const {cid, uuid, path_to_manifest, path_to_thumbnail} = payload
     const client = await this.db.connect()
-    
+
     try {
       const getGcsOutput = {
         text: `SELECT storage_bucket_output
         FROM storages, companies
         WHERE company_storage_id = storage_id and company_id=$1 `,
         values: [cid]
-      }      
+      }
       const qResult = await client.query(getGcsOutput)
       const {storage_bucket_output} = qResult.rows[0]
       const bucket = this.gcs.bucket(storage_bucket_output)
       const thumbnail = await bucket.file(`/${path_to_thumbnail}`).download()
-      const base64data = Buffer.from(thumbnail[0]).toString('base64');
+      const base64data = Buffer.from(thumbnail[0]).toString('base64')
 
       const query = {
         text: `UPDATE videos 
           SET video_status = 'ready', video_output_file = $3, 
           video_thumbnail = $4
           WHERE video_company_id=$1 AND video_uuid=$2`,
-        values: [cid, uuid, path_to_manifest, `data:image/png;base64,${base64data}` ]
+        values: [
+          cid,
+          uuid,
+          path_to_manifest,
+          `data:image/png;base64,${base64data}`
+        ]
       }
       const {rowCount} = await client.query(query)
       return rowCount
