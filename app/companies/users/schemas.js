@@ -13,8 +13,8 @@ const userObject = {
     uid: {type: 'string'},
     fullname: {type: 'string'},
     cid: {type: 'string'},
-    gid: {type: 'string'},
-    group_name: {type: 'string'},
+    gids: {type: 'array', items: {type: 'string'}},
+    groups_name: {type: 'array', items: {type: 'string'}},
     rid: {type: 'string'},
     email: {type: 'string'},
     deleted_at: {type: 'string'},
@@ -28,12 +28,12 @@ const user = {
     uid: {type: 'string'},
     fullname: {type: 'string'},
     cid: {type: 'string'},
-    gid: {type: 'string'},
+    gids: {type: 'array', items: {type: 'integer'}},
     rid: {type: 'string'},
     email: {type: 'string'},
     password: {type: 'string'}
   },
-  required: ['uid', 'fullname', 'gid', 'rid', 'email', 'password'],
+  required: ['uid', 'fullname', 'gids', 'rid', 'email', 'password'],
   additionalProperties: false
 }
 
@@ -44,7 +44,7 @@ const getCompanyUsers = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'number',
+        type: 'number'
       }
     },
     additionalProperties: false
@@ -111,12 +111,12 @@ const updUser = {
     type: 'object',
     properties: {
       fullname: {type: 'string'},
-      gid: {type: 'string'},
+      gids: {type: 'array', items: {type: 'integer'}},
       rid: {type: 'string'},
       email: {type: 'string'},
       password: {type: 'string'}
     },
-    required: ['fullname', 'gid', 'rid', 'email']
+    required: ['fullname', 'gids', 'rid', 'email']
   }
 }
 

@@ -170,6 +170,7 @@ class VideoService {
           video_title,
           video_public,
           video_tag,
+          CASE WHEN video_groups IS NULL THEN '{}' ELSE video_groups END as video_groups,
           video_description,
           'https://'||company_corporate_code||'.${service_domain}'||'/'||video_output_file AS video_output_file,
           videos.created_at AT TIME ZONE $3 AS created_at, 
@@ -250,6 +251,9 @@ class VideoService {
           //   break
           case 'video_public':
             select += ` $${idx + 1}::boolean`
+            break
+          case 'video_groups':
+            select += ` $${idx + 1}::integer[]`
             break
           default:
             select += ` $${idx + 1}`

@@ -32,6 +32,7 @@ const videoCatalogObject = {
     video_description: {type: 'string'},
     video_public: {type: 'boolean'},
     video_output_file: {type: 'string'},
+    video_groups: {type: 'array', items: {type: 'integer'}},
     created_at: {type: 'string'},
     updated_at: {type: 'string'},
     deleted_at: {type: 'string'}
@@ -166,6 +167,7 @@ const updVideo = {
       video_thumbnail: {type: 'string'},
       video_title: {type: 'string'},
       video_tag: {type: 'string'},
+      video_groups: {type: 'array', items: {type: 'integer'}},
       video_description: {type: 'string'},
       video_public: {type: 'boolean'}
     },
@@ -215,7 +217,6 @@ const updVideoPublicStatus = {
     additionalProperties: false // added in an attempt to make this work
   }
 }
-
 
 // const gcsUploadSignedPolicy = {
 //   tags: ['videos'],
