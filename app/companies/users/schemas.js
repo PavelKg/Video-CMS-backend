@@ -13,7 +13,7 @@ const userObject = {
     uid: {type: 'string'},
     fullname: {type: 'string'},
     cid: {type: 'string'},
-    gids: {type: 'array', items: {type: 'string'}},
+    gids: {type: 'array', items: {type: 'integer'}},
     groups_name: {type: 'array', items: {type: 'string'}},
     rid: {type: 'string'},
     email: {type: 'string'},
