@@ -137,7 +137,11 @@ class VideoService {
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
-        `SELECT 
+        `WITH user_group AS (
+          select user_groups AS groups from users where user_company_id=$1 and user_uid=$4
+        )
+
+        SELECT 
           video_uuid,
           video_status,
           video_public,
@@ -145,9 +149,11 @@ class VideoService {
           updated_at AT TIME ZONE $3 AS updated_at,           
           deleted_at AT TIME ZONE $3 AS deleted_at 
         FROM videos
-        WHERE  video_company_id = $1 ${onlyPublic}
+        WHERE  video_company_id = $1 
+        AND video_groups && (select groups from user_group)
+        ${onlyPublic}
         ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
-        [cid, offset, timezone]
+        [cid, offset, timezone, uid]
       )
       return rows
     } catch (error) {
@@ -160,11 +166,15 @@ class VideoService {
   async getVideo(payload) {
     // get videos data for uuid
     const {acc, cid, uuid} = payload
-    const {timezone, is_admin} = acc
+    const {timezone, is_admin, uid} = acc
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
-        `SELECT video_uuid,
+        `WITH user_group AS (
+          select user_groups AS groups from users where user_company_id=$1 and user_uid=$5
+        )
+
+        SELECT video_uuid,
           video_filename,
           video_status,
           video_title,
@@ -178,9 +188,11 @@ class VideoService {
           videos.deleted_at AT TIME ZONE $3 AS deleted_at 
         FROM videos, companies
         WHERE  video_company_id = company_id and video_uuid = $2 and company_id = $1 
-          and  videos.deleted_at IS NULL
-          and (video_public=true or (video_public=false and $4=true))`,
-        [cid, uuid, timezone, is_admin]
+          AND  videos.deleted_at IS NULL
+          AND (video_public=true or (video_public=false and $4=true))
+          AND video_groups && (select groups from user_group)
+          `,
+        [cid, uuid, timezone, is_admin, uid]
       )
       return rows
     } catch (error) {
