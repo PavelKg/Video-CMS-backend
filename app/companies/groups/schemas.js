@@ -10,7 +10,7 @@ const queryStringJsonSchema = {
 const groupObject = {
   type: 'object',
   properties: {
-    gid: {type: 'string'},
+    gid: {type: 'integer'},
     cid: {type: 'string'},
     name: {type: 'string'},
     deleted_at: {type: 'string'}
@@ -58,7 +58,7 @@ const getCompanyGroupById = {
         type: 'number',
       },
       gid: {
-        type: 'string'
+        type: 'integer'
       }
     },
     additionalProperties: false
@@ -95,7 +95,7 @@ const updGroup = {
         type: 'string',
         pattern: '^[0-9]?'
       },
-      gid: {type: 'string', pattern: '^[0-9]?'}
+      gid: {type: 'integer', pattern: '^[0-9]?'}
     },
     additionalProperties: false
   },
@@ -118,7 +118,7 @@ const delGroup = {
         type: 'string',
         pattern: '^[0-9]?'
       },
-      gid: {type: 'string'}
+      gid: {type: 'integer'}
     },
     additionalProperties: false
   }
