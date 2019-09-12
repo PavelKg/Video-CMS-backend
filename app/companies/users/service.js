@@ -25,7 +25,6 @@ class UserService {
     const qSort = db_api.sorting(sort, 'users')
     let qFilter = filter !== '' ? db_api.filtration(filter, 'users') : ''
     qFilter = db_api.setFilterTz(qFilter, timezone)
-
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(

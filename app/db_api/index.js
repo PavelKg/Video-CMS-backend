@@ -5,7 +5,7 @@ const sortableColumns = {
     'user_uid',
     'user_fullname',
     'role_rid',
-    'group_gid',
+    'user_groups',
     'user_email',
     'users.deleted_at'
   ],
@@ -20,7 +20,6 @@ const sortableColumns = {
     'vw_messages_inbox.created_at',
     'vw_messages_outbox.updated_at',
     'vw_messages_inbox.updated_at'
-    
   ],
   videos: [
     'video_thumbnail',
@@ -39,13 +38,14 @@ const sortableColumns = {
 }
 
 const db_oper = {
-  eq: '=',
-  lt: '<',
-  gt: '>',
-  lte: '<=',
-  gte: '>=',  
+  eq: '= ',
+  lt: '< ',
+  gt: '> ',
+  lte: '<= ',
+  gte: '>= ',
   like: 'like',
-  isNull: 'IS NULL'
+  isNull: 'IS NULL',
+  ol: ' && ' // array overlap
 }
 
 function sorting(_sort, _table) {
@@ -62,10 +62,11 @@ function sorting(_sort, _table) {
 }
 
 function filtration(_filter, _table) {
-  const filter_arr = _filter.split(',')
+  const filter_arr = _filter.split(/(?<!\\),/)
   const filter_str = filter_arr.map(function(item) {
     const re = /(.*)\[(\w+)\]:(.*)/i
     const parse_item = item.match(re)
+    const sl = new RegExp(/\\/, 'g')
     if (
       !sortableColumns[_table].includes(parse_item[1]) &&
       parse_item[1] !== '1'
@@ -74,17 +75,17 @@ function filtration(_filter, _table) {
     }
     return `${
       parse_item[1]
-    } ${db_oper[parse_item[2]] ? db_oper[parse_item[2]] : `${parse_item[2]}`} ${parse_item[3]}`
+    } ${db_oper[parse_item[2]] ? db_oper[parse_item[2]] : `${parse_item[2]}`} ${parse_item[3].replace(sl, '')}`
   })
   return ' AND ' + filter_str.join(' AND ')
 }
 
 function setFilterTz(filter, timezone) {
   let qFilter = filter
-  const timeField =  ['created_at', 'deleted_at', 'updated_at']
+  const timeField = ['created_at', 'deleted_at', 'updated_at']
 
-  timeField.forEach((elem, index)=>{
-    const re = new RegExp(elem, "gi");
+  timeField.forEach((elem, index) => {
+    const re = new RegExp(elem, 'gi')
     qFilter = qFilter.replace(re, `${elem} AT TIME ZONE '${timezone}'`)
   })
   return qFilter
