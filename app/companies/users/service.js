@@ -97,8 +97,7 @@ class UserService {
 
   async addUser(payload) {
     const {acc, user} = payload
-    const {uid, cid, fullname, rid, email = '', password} = user
-    const gids = user.gids ? user.gid : []
+    const {uid, cid, fullname, rid, email = '', password, gids =[]} = user
 
     if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
