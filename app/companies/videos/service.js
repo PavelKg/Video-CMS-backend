@@ -117,7 +117,7 @@ class VideoService {
 
   async videosCatalog(payload) {
     const {acc} = payload
-    const {company_id: cid, uid, timezone} = acc
+    const {company_id: cid, uid, timezone, is_admin} = acc
 
     const {
       limit = 'ALL',
@@ -126,7 +126,7 @@ class VideoService {
       filter = undefined
     } = payload.query
 
-    const onlyPublic = !Boolean(acc.is_admin)
+    const onlyPublic = !Boolean(is_admin)
       ? ` AND video_public = true AND video_status='ready' AND videos.deleted_at IS NULL`
       : ''
 
@@ -150,10 +150,10 @@ class VideoService {
           deleted_at AT TIME ZONE $3 AS deleted_at 
         FROM videos
         WHERE  video_company_id = $1 
-        AND video_groups && (select groups from user_group)
+        AND (video_groups && (select groups from user_group) OR $5=true)
         ${onlyPublic}
         ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
-        [cid, offset, timezone, uid]
+        [cid, offset, timezone, uid, is_admin]
       )
       return rows
     } catch (error) {
@@ -190,7 +190,7 @@ class VideoService {
         WHERE  video_company_id = company_id and video_uuid = $2 and company_id = $1 
           AND  videos.deleted_at IS NULL
           AND (video_public=true or (video_public=false and $4=true))
-          AND video_groups && (select groups from user_group)
+          AND (video_groups && (select groups from user_group) OR $4=true)
           `,
         [cid, uuid, timezone, is_admin, uid]
       )
