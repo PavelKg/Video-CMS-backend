@@ -36,6 +36,8 @@ const CommentService = require('./companies/videos/comments/service')
 
 const BitmovinService = require('./bm')
 
+const HistoryLoggerService = require('./history-logger')
+
 async function connectToDatabase(fastify) {
   console.log('DB Connecting...')
   pgo.types.setTypeParser(1114, function(stringValue) {
@@ -132,15 +134,18 @@ async function decorateFastifyInstance(fastify) {
   const storage = fastify.googleCloudStorage
   const nodemailer = fastify.nodemailer
   const bitmovin = fastify.bitmovin
+  
+  const histLogger = new HistoryLoggerService(db)
+  fastify.decorate('histLogger', histLogger)
 
-  const personService = new PersonService(db, nodemailer)
-  const roleService = new RoleService(db)
-  const groupService = new GroupService(db)
-  const userService = new UserService(db)
-  const messageService = new MessageService(db)
-  const videoService = new VideoService(db, storage)
-  const commentService = new CommentService(db)
-  const bitmovinService = new BitmovinService(bitmovin)
+  const personService = new PersonService(db, nodemailer, histLogger)
+  const roleService = new RoleService(db, histLogger)
+  const groupService = new GroupService(db, histLogger)
+  const userService = new UserService(db, histLogger)
+  const messageService = new MessageService(db, histLogger)
+  const videoService = new VideoService(db, storage, histLogger)
+  const commentService = new CommentService(db, histLogger)
+  const bitmovinService = new BitmovinService(bitmovin, histLogger)
 
   fastify.decorate('personService', personService)
   fastify.decorate('roleService', roleService)

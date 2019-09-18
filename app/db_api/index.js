@@ -90,4 +90,9 @@ function setFilterTz(filter, timezone) {
   })
   return qFilter
 }
-module.exports = {sorting, filtration, setFilterTz}
+
+module.exports = {
+  sorting,
+  filtration,
+  setFilterTz
+}

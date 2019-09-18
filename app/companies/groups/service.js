@@ -3,8 +3,10 @@ const errors = require('../../errors')
 const db_api = require('../../db_api')
 
 class GroupService {
-  constructor(db) {
+  constructor(db, histLogger) {
     this.db = db
+    this.history_category = 'Groups'
+    this.histLogger = histLogger
   }
 
   async companyGroups(payload) {
@@ -72,6 +74,17 @@ class GroupService {
     const {acc, group} = payload
     const {cid, name} = group
 
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'created',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      target_data: {...group}
+    }
+
     if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
@@ -84,17 +97,31 @@ class GroupService {
         RETURNING group_gid;`,
         [cid, name]
       )
+      histData.result = typeof rows[0] === 'object'
+      histData.target_data = {...histData.target_data, gid: rows[0].group_gid}
       return rows[0].group_gid
     } catch (error) {
       throw Error(error.message)
     } finally {
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async updGroup(payload) {
     const {acc, group} = payload
     const {gid, cid, name} = group
+
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'edited',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      target_data: {...group}
+    }
 
     if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
@@ -109,18 +136,30 @@ class GroupService {
           AND deleted_at IS NULL;`,
         [gid, cid, name]
       )
-
+      histData.result = rowCount === 1
       return rowCount
     } catch (error) {
       throw Error(error.message)
     } finally {
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async delGroup(payload) {
     const {acc, group} = payload
     const {gid, cid} = group
+
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'deleted',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      target_data: {...group}
+    }
 
     if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
@@ -148,12 +187,13 @@ class GroupService {
         and deleted_at is null;`,
         [gid, cid]
       )
-
+      histData.result = rowCount === 1
       return rowCount
     } catch (error) {
       throw Error(error.message)
     } finally {
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 }

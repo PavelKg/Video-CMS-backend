@@ -3,8 +3,10 @@ const errors = require('../../errors')
 const db_api = require('../../db_api')
 
 class RoleService {
-  constructor(db) {
+  constructor(db, histLogger) {
     this.db = db
+    this.history_category = 'Roles'
+    this.histLogger = histLogger
   }
 
   async companyRoles(payload) {
@@ -84,6 +86,17 @@ class RoleService {
       throw Error(errors.WRONG_ACCESS)
     }
 
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'created',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      target_data: {...role}
+    }
+
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
@@ -93,17 +106,32 @@ class RoleService {
         [rid, cid, name, is_admin]
       )
 
+      histData.result = typeof rows[0] === 'object'
+      histData.target_data = {...histData.target_data, rid: rows[0].role_rid}
+
       return rows[0].role_rid
     } catch (error) {
       throw Error(error)
     } finally {
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async updRole(payload) {
     const {acc, role} = payload
     const {rid, cid, name, is_admin = false} = role
+
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'edited',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      target_data: {...role}
+    }
 
     if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
@@ -119,18 +147,30 @@ class RoleService {
           AND deleted_at IS NULL;`,
         [rid, cid, name, is_admin]
       )
-
+      histData.result = rowCount === 1
       return rowCount
     } catch (error) {
       throw Error(error)
     } finally {
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async delRole(payload) {
     const {acc, role} = payload
     const {rid, cid} = role
+
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'edited',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      target_data: {...role}
+    }
 
     if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
@@ -156,12 +196,13 @@ class RoleService {
         and deleted_at is null;`,
         [rid, cid]
       )
-
+      histData.result = rowCount === 1
       return rowCount
     } catch (error) {
       throw Error(error)
     } finally {
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 }

@@ -39,7 +39,7 @@ class UserService {
         user_email email, 
         users.deleted_at AT TIME ZONE $3 AS deleted_at,
         (select max(userhist_date)  
-         from "userHistoryLog" 
+         from user_history_log
          where userhist_user_id = users.user_id and userhist_action='login' ) AT TIME ZONE $3 as last_login
       FROM users
       LEFT OUTER JOIN roles
@@ -78,7 +78,7 @@ class UserService {
         user_email email, 
         users.deleted_at AT TIME ZONE $3 AS deleted_at,
         (select max(userhist_date)  
-        from "userHistoryLog" 
+        from users_history_log
         where userhist_user_id = users.user_id and userhist_action='login' ) AT TIME ZONE $3 as last_login
       FROM users
       LEFT OUTER JOIN roles
