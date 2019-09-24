@@ -32,7 +32,8 @@ class PersonService {
     const client = await this.db.connect()
     let histData = {
       category: this.history_category,
-      action: 'logged-in'
+      action: 'logged-in',
+      object_name: username
     }
     try {
       const {rows} = await client.query(
@@ -75,8 +76,8 @@ class PersonService {
     } catch (error) {
       throw Error(error)
     } finally {
-      this.histLogger.saveHistoryInfo(histData)
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
@@ -150,6 +151,7 @@ class PersonService {
         user_uid,
         cid,
         result: typeof user === 'object',
+        object_name: user_uid,
         target_data: {email, uid: user_uid}
       }
 
@@ -158,8 +160,8 @@ class PersonService {
     } catch (error) {
       throw Error(error)
     } finally {
-      this.histLogger.saveHistoryInfo(histData)
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
   async sendEmail(payload) {
@@ -250,6 +252,7 @@ class PersonService {
         user_uid,
         cid,
         result: pr.length > 0,
+        object_name: user_uid,
         target_data: {token}
       }
 

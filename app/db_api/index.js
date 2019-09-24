@@ -34,7 +34,13 @@ const sortableColumns = {
     'video_tag',
     'video_description'
   ],
-  comments: ['comments.created_at']
+  comments: ['comments.created_at'],
+  history: [
+    'users_history_log.created_at',
+    'userhist_action',
+    'userhist_category',
+    'userhist_user_uid'
+  ]
 }
 
 const db_oper = {

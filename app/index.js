@@ -36,7 +36,8 @@ const CommentService = require('./companies/videos/comments/service')
 
 const BitmovinService = require('./bm')
 
-const HistoryLoggerService = require('./history-logger')
+const HistoryLogger = require('./history-logger')
+const HistoryLoggerService = require('./history-logger/service')
 
 async function connectToDatabase(fastify) {
   console.log('DB Connecting...')
@@ -135,17 +136,17 @@ async function decorateFastifyInstance(fastify) {
   const nodemailer = fastify.nodemailer
   const bitmovin = fastify.bitmovin
   
-  const histLogger = new HistoryLoggerService(db)
-  fastify.decorate('histLogger', histLogger)
+  const histLoggerService = new HistoryLoggerService(db)
+  fastify.decorate('histLoggerService', histLoggerService)
 
-  const personService = new PersonService(db, nodemailer, histLogger)
-  const roleService = new RoleService(db, histLogger)
-  const groupService = new GroupService(db, histLogger)
-  const userService = new UserService(db, histLogger)
-  const messageService = new MessageService(db, histLogger)
-  const videoService = new VideoService(db, storage, histLogger)
-  const commentService = new CommentService(db, histLogger)
-  const bitmovinService = new BitmovinService(bitmovin, histLogger)
+  const personService = new PersonService(db, nodemailer, histLoggerService)
+  const roleService = new RoleService(db, histLoggerService)
+  const groupService = new GroupService(db, histLoggerService)
+  const userService = new UserService(db, histLoggerService)
+  const messageService = new MessageService(db, histLoggerService)
+  const videoService = new VideoService(db, storage, histLoggerService)
+  const commentService = new CommentService(db, histLoggerService)
+  const bitmovinService = new BitmovinService(bitmovin, histLoggerService)
 
   fastify.decorate('personService', personService)
   fastify.decorate('roleService', roleService)
@@ -189,4 +190,5 @@ module.exports = async function(fastify, opts) {
     .register(Message, {prefix: '/api/messages'})
     .register(Video, {prefix: '/api/companies/:cid/videos'})
     .register(Comment, {prefix: '/api/companies/:cid/videos/:uuid/comments'})
+    .register(HistoryLogger, {prefix: '/api/history'})
 }

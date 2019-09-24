@@ -3,8 +3,10 @@ const errors = require('../../../errors')
 const db_api = require('../../../db_api')
 
 class CommentService {
-  constructor(db) {
+  constructor(db, histLogger) {
     this.db = db
+    this.history_category = 'Comments'
+    this.histLogger = histLogger
   }
 
   async videoComments(payload) {
@@ -83,13 +85,23 @@ class CommentService {
   async addComment(payload) {
     const {acc, comment} = payload
     const {uuid, cid, comment_text} = comment
-    const {uid} = acc
-    if (acc.company_id !== cid) {
-      throw Error(errors.WRONG_ACCESS)
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'created',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      target_data: {...comment}
     }
 
     const client = await this.db.connect()
     try {
+      if (acc.company_id !== cid) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
       const {rows} = await client.query(
         `WITH adv_info AS (
           SELECT 
@@ -108,16 +120,29 @@ class CommentService {
         [cid, uid, uuid, comment_text]
       )
 
+      histData.result = typeof rows[0] === 'object'
       return rows[0].comment_id
     } catch (error) {
       throw Error(error.message)
     } finally {
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
   async updMessageVisible(payload) {
     const {acc, comment} = payload
     const {value, cid, uuid, comid} = comment
+
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: value ? `display` : 'hide',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      target_data: {...comment}
+    }
 
     if (acc.company_id !== cid || !acc.is_admin) {
       throw Error(errors.WRONG_ACCESS)
@@ -130,18 +155,32 @@ class CommentService {
          WHERE comment_company_id=$1 AND comment_video_uuid=$2 AND comment_id=$3`,
         values: [cid, uuid, comid, Boolean(value)]
       }
+
       const {rowCount} = await client.query(query)
+      histData.result = rowCount === 1
       return rowCount
     } catch (error) {
       throw Error(error)
     } finally {
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async delComment(payload) {
     const {acc, comment} = payload
     const {cid, uuid, comid} = comment
+
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'deleted',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      target_data: {...comment}
+    }
 
     if (acc.company_id !== cid) {
       throw Error(errors.WRONG_ACCESS)
@@ -171,11 +210,13 @@ class CommentService {
         values: [cid, uuid, comid, acc.is_admin, acc.company_id, acc.uid]
       }
       const {rowCount} = await client.query(query)
+      histData.result = rowCount === 1
       return rowCount
     } catch (error) {
       throw Error(error)
     } finally {
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 }

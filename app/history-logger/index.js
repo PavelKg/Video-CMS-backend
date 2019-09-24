@@ -1,54 +1,43 @@
 'use strict'
 
-class HistoryLoggerService {
-  constructor(db) {
-    this.db = db
-  }
+const {
+  historyInfo: historyInfoSchema,
+  addUserActivity: addUserActivitySchema
+} = require('./schemas')
 
-  makeHistoryQuery(payload) {
-    const {
-      user_id = null,
-      user_uid = null,
-      cid = null,
-      category,
-      action,
-      result,
-      target_data
-    } = payload
+module.exports = async function(fastify, opts) {
+  // All APIs are under authentication here!
+  fastify.addHook('preHandler', fastify.authPreHandler)
 
-    return {
-      text: `INSERT INTO public.users_history_log 
-              (userhist_user_id,  userhist_user_uid, userhist_company_id, 
-                userhist_category, userhist_date, userhist_action, 
-                userhist_result, userhist_data) 
-            values 
-              ($1, $2, $3, $4, now(), $5, $6, $7);`,
-      values: [
-        user_id,
-        user_uid,
-        cid,
-        category,
-        action,
-        this.resultCheck(result),
-        target_data
-      ]
-    }
-  }
+  // fastify.get(
+  //   '/companies/:cid',
+  //   {schema: historyInfoSchema},
+  //   getHistoryInfoHandler
+  // )
+  fastify.get('/', {schema: historyInfoSchema}, getHistoryInfoHandler)
+  fastify.post(
+    '/companies/:cid/uid/:uid',
+    {schema: addUserActivitySchema},
+    addUserActivityHandler
+  )
+}
 
-  resultCheck(cond) {
-    return cond ? 's' : 'f'
-  }
-
-  async saveHistoryInfo(options) {
-    const client = await this.db.connect()
-    const query = this.makeHistoryQuery(options)
-    try {
-      client.query(query)
-    } catch (err) {
-      throw Error(err.message)
-    } finally {
-      client.release()
-    }
+module.exports[Symbol.for('plugin-meta')] = {
+  decorators: {
+    fastify: ['authPreHandler', 'histLoggerService']
   }
 }
-module.exports = HistoryLoggerService
+
+async function getHistoryInfoHandler(req, reply) {
+  const query = req.query
+  
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+  console.log('---------------------------acc=', acc)  
+  return await this.histLoggerService.getHistoryInfo({acc, query})
+}
+async function addUserActivityHandler(rec, reply) {}

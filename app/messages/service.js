@@ -76,7 +76,8 @@ class MessageService {
     let histData = {
       category: this.history_category,
       action: 'posted',
-      result: false
+      result: false,
+      object_name: sender_uid,
     }
 
     const {receiver_cid, receiver_uid, subject, text, important} = message
@@ -131,6 +132,7 @@ class MessageService {
       user_id,
       user_uid: uid,
       cid: cid,
+      object_name: uid,
       target_data: {message: mid}
     }
 
@@ -171,6 +173,7 @@ class MessageService {
       user_id,
       user_uid: uid,
       cid: company_id,
+      object_name: uid,
       target_data: {message: mid}
     }
 
@@ -210,6 +213,7 @@ class MessageService {
       user_id,
       user_uid: uid,
       cid: company_id,
+      object_name: uid,
       target_data: {message: mid}
     }
 

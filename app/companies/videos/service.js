@@ -5,9 +5,11 @@ const db_api = require('../../db_api')
 const service_domain = 'p-stream.jp'
 
 class VideoService {
-  constructor(db, gcs) {
+  constructor(db, gcs, histLogger) {
     this.db = db
     this.gcs = gcs
+    this.history_category = 'Videos'
+    this.histLogger = histLogger
   }
 
   /**
@@ -22,18 +24,31 @@ class VideoService {
 
   async videosGcsUploadSignedUrl(payload) {
     const {acc, query} = payload
-    const {company_id: cid} = acc
     const storage_type = 'gcs'
     const {name, size, type, uuid} = query
 
-    if (!this.gcs) {
-      throw Error(errors.WRONG_CONNECT_TO_GCS)
+    const {user_id, company_id: cid, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'registered',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid,
+      object_name: uuid,
+      target_data: {...query}
     }
 
-    const client = await this.db.connect()
     let storage_bucket_input = ''
     let storage_bucket_output = ''
+    let client = undefined
     try {
+      if (!this.gcs) {
+        throw Error(errors.WRONG_CONNECT_TO_GCS)
+      }
+
+      client = await this.db.connect()
+
       const {rows} = await client.query(
         `SELECT storage_bucket_input, storage_bucket_output, storage_content_limit 
         FROM storages, companies
@@ -62,9 +77,13 @@ class VideoService {
           title ? title : ''
         ]
       )
+      histData.result = rowCount === 1
     } catch (error) {
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
     }
 
     const options = {
@@ -222,14 +241,27 @@ class VideoService {
   }
 
   async delVideo(payload) {
+    let client = undefined
     const {acc, cid, uuid} = payload
 
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'deleted',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: uuid,
+      target_data: {cid, uuid}
     }
 
-    const client = await this.db.connect()
     try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      client = await this.db.connect()
       const {rowCount} = await client.query(
         ` UPDATE videos 
           SET deleted_at = now()
@@ -237,23 +269,40 @@ class VideoService {
           AND deleted_at IS NULL`,
         [cid, uuid]
       )
+      histData.result = rowCount === 1
       return rowCount
     } catch (error) {
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async updVideo(payload) {
+    let client = undefined
     const {acc, data} = payload
     const {cid, uuid, ...fields} = data
 
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'edited',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: uuid,
+      target_data: {...data}
     }
 
-    const client = await this.db.connect()
     try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      const client = await this.db.connect()
       const fields_length = Object.keys(fields).length
       let select = 'SELECT'
       Object.keys(fields).forEach((element, idx) => {
@@ -280,30 +329,47 @@ class VideoService {
         values: [...Object.values(fields), cid, uuid]
       }
       const {rowCount} = await client.query(query)
+      histData.result = rowCount === 1
       return rowCount
     } catch (error) {
       throw Error(error)
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async updVideoStatus(payload) {
+    let client = undefined
     const {acc, data} = payload
     const {cid, uuid, value} = data
 
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'state',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: uuid,
+      target_data: {...data}
+    }
+
     const avValues = ['uploaded']
 
-    if (!avValues.includes(value.toLowerCase())) {
-      throw Error(errors.WRONG_STATUS_VALUE)
-    }
-
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
-    }
-
-    const client = await this.db.connect()
     try {
+      if (!avValues.includes(value.toLowerCase())) {
+        throw Error(errors.WRONG_STATUS_VALUE)
+      }
+
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      client = await this.db.connect()
       const query = {
         text: `UPDATE videos SET video_status = $3
          WHERE video_company_id=$1 AND video_uuid=$2 
@@ -311,32 +377,49 @@ class VideoService {
          RETURNING *`,
         values: [cid, uuid, value.toLowerCase()]
       }
-      const {rows} = await client.query(query)
 
+      const {rows} = await client.query(query)
+      histData.result = rows.length === 1
       return rows
     } catch (error) {
       throw Error(error)
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async updVideoPublicStatus(payload) {
+    let client = undefined
     const {acc, data} = payload
     const {cid, uuid, value} = data
 
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'status',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: uuid,
+      target_data: {...data}
+    }
+
     const avValues = ['public', 'private']
 
-    if (!avValues.includes(value.toLowerCase())) {
-      throw Error(errors.WRONG_PRIVATE_VALUE)
-    }
-
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
-    }
-
-    const client = await this.db.connect()
     try {
+      if (!avValues.includes(value.toLowerCase())) {
+        throw Error(errors.WRONG_PRIVATE_VALUE)
+      }
+
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      client = await this.db.connect()
       const query = {
         text: `UPDATE videos SET video_public = $3
          WHERE video_company_id=$1 
@@ -344,11 +427,15 @@ class VideoService {
         values: [cid, uuid, value.toLowerCase() === 'public']
       }
       const {rowCount} = await client.query(query)
+      histData.result = rowCount === 1
       return rowCount
     } catch (error) {
       throw Error(error)
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
