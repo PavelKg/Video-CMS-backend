@@ -77,9 +77,11 @@ class HistoryLoggerService {
     try {
       const {rows} = await client.query(
         `SELECT 
-          userhist_user_uid,
-          userhist_category,
-          userhist_action,
+          userhist_user_uid AS uid,
+          userhist_category AS category,
+          userhist_action AS action,
+          userhist_object_name AS object,
+          userhist_result AS result,
           created_at AT TIME ZONE $3 AS created_at 
         FROM users_history_log
         WHERE  userhist_company_id = $1 
@@ -92,6 +94,88 @@ class HistoryLoggerService {
       throw Error(error.message)
     } finally {
       client.release()
+    }
+  }
+
+  async getHistoryCategories(payload) {
+    let client = undefined
+    const {acc} = payload
+    const {company_id: cid, uid, timezone, is_admin} = acc
+
+    const {
+      limit = 'ALL',
+      offset = 0,
+      sort = 'userhist_category',
+      filter = undefined
+    } = payload.query
+
+    const qSort = db_api.sorting(sort, 'history')
+    let qFilter = Boolean(filter) ? db_api.filtration(filter, 'history') : ''
+    qFilter = db_api.setFilterTz(qFilter, timezone)
+
+    try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+      client = await this.db.connect()
+      const {rows} = await client.query(
+        `SELECT array_agg(category) arr from (
+          SELECT userhist_category AS category
+          FROM users_history_log
+          WHERE  userhist_company_id = $1 
+          GROUP BY userhist_category 
+        ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2) abc;`,
+        [cid, offset]
+      )
+      return rows[0].arr
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      if (client) {
+        client.release()
+      }
+    }
+  }
+
+  async getHistoryCategoryObjects(payload) {
+    let client = undefined
+    const {acc, cname} = payload
+    const {company_id: cid, uid, timezone, is_admin} = acc
+
+    const {
+      limit = 'ALL',
+      offset = 0,
+      sort = 'userhist_object_name',
+      filter = undefined
+    } = payload.query
+
+    const qSort = db_api.sorting(sort, 'history')
+    let qFilter = Boolean(filter) ? db_api.filtration(filter, 'history') : ''
+    qFilter = db_api.setFilterTz(qFilter, timezone)
+
+    try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+      client = await this.db.connect()
+      const {rows} = await client.query(
+        `SELECT array_agg(obj_name) arr from (
+          SELECT userhist_object_name AS obj_name
+          FROM users_history_log
+          WHERE  userhist_company_id = $1 
+          AND userhist_category = $3
+          AND userhist_object_name is not null
+          GROUP BY userhist_object_name
+        ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2) abc;`,
+        [cid, offset, cname]
+      )
+      return rows[0].arr
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      if (client) {
+        client.release()
+      }
     }
   }
 }

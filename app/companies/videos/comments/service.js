@@ -83,6 +83,7 @@ class CommentService {
   }
 
   async addComment(payload) {
+    let client = undefined
     const {acc, comment} = payload
     const {uuid, cid, comment_text} = comment
     const {user_id, company_id, uid} = acc
@@ -93,15 +94,16 @@ class CommentService {
       user_id,
       user_uid: uid,
       cid: company_id,
+      object_name: uuid,
       target_data: {...comment}
     }
 
-    const client = await this.db.connect()
     try {
       if (acc.company_id !== cid) {
         throw Error(errors.WRONG_ACCESS)
       }
 
+      client = await this.db.connect()
       const {rows} = await client.query(
         `WITH adv_info AS (
           SELECT 
@@ -125,11 +127,14 @@ class CommentService {
     } catch (error) {
       throw Error(error.message)
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
       this.histLogger.saveHistoryInfo(histData)
     }
   }
   async updMessageVisible(payload) {
+    let client = undefined
     const {acc, comment} = payload
     const {value, cid, uuid, comid} = comment
 
@@ -141,15 +146,16 @@ class CommentService {
       user_id,
       user_uid: uid,
       cid: company_id,
+      object_name: uuid,
       target_data: {...comment}
     }
 
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
-    }
-
-    const client = await this.db.connect()
     try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      client = await this.db.connect()
       const query = {
         text: `UPDATE comments SET comment_visible = $4
          WHERE comment_company_id=$1 AND comment_video_uuid=$2 AND comment_id=$3`,
@@ -162,12 +168,15 @@ class CommentService {
     } catch (error) {
       throw Error(error)
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
       this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async delComment(payload) {
+    let client = undefined
     const {acc, comment} = payload
     const {cid, uuid, comid} = comment
 
@@ -179,15 +188,16 @@ class CommentService {
       user_id,
       user_uid: uid,
       cid: company_id,
+      object_name: uuid,
       target_data: {...comment}
     }
 
-    if (acc.company_id !== cid) {
-      throw Error(errors.WRONG_ACCESS)
-    }
-
-    const client = await this.db.connect()
     try {
+      if (acc.company_id !== cid) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      client = await this.db.connect()
       const query_check = {
         text: `SELECT comment_id FROM comments 
          WHERE comment_company_id=$1 AND comment_video_uuid=$2 
@@ -215,7 +225,9 @@ class CommentService {
     } catch (error) {
       throw Error(error)
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
       this.histLogger.saveHistoryInfo(histData)
     }
   }

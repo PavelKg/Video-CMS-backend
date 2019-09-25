@@ -2,6 +2,8 @@
 
 const {
   historyInfo: historyInfoSchema,
+  historyCategories: historyCategoriesSchema,
+  historyCategoryObjects: historyCategoryObjectsSchema,
   addUserActivity: addUserActivitySchema
 } = require('./schemas')
 
@@ -15,6 +17,16 @@ module.exports = async function(fastify, opts) {
   //   getHistoryInfoHandler
   // )
   fastify.get('/', {schema: historyInfoSchema}, getHistoryInfoHandler)
+  fastify.get(
+    '/categories',
+    {schema: historyCategoriesSchema},
+    historyCategoriesHandler
+  )
+  fastify.get(
+    '/categories/:cname/objects',
+    {schema: historyCategoryObjectsSchema},
+    historyCategoryObjectsHandler
+  )
   fastify.post(
     '/companies/:cid/uid/:uid',
     {schema: addUserActivitySchema},
@@ -30,14 +42,50 @@ module.exports[Symbol.for('plugin-meta')] = {
 
 async function getHistoryInfoHandler(req, reply) {
   const query = req.query
-  
+
   let acc
   req.jwtVerify(function(err, decoded) {
     if (!err) {
       acc = decoded.user
     }
   })
-  console.log('---------------------------acc=', acc)  
+
   return await this.histLoggerService.getHistoryInfo({acc, query})
+}
+
+async function historyCategoriesHandler(req, reply) {
+  const query = req.query
+
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  const categories = await this.histLoggerService.getHistoryCategories({
+    acc,
+    query
+  })
+  return categories
+}
+
+async function historyCategoryObjectsHandler(req, reply) {
+  const query = req.query
+  const {cname} = req.params
+
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  const categories = await this.histLoggerService.getHistoryCategoryObjects({
+    acc,
+    query,
+    cname
+  })
+  return categories
 }
 async function addUserActivityHandler(rec, reply) {}

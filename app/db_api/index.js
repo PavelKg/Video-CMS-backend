@@ -39,7 +39,8 @@ const sortableColumns = {
     'users_history_log.created_at',
     'userhist_action',
     'userhist_category',
-    'userhist_user_uid'
+    'userhist_user_uid',
+    'userhist_object_name'
   ]
 }
 
