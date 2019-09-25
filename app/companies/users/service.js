@@ -40,16 +40,16 @@ class UserService {
           from groups where "groups".group_gid = ANY(users.user_groups))  as groups_name, 
         user_email email, 
         users.deleted_at AT TIME ZONE $3 AS deleted_at,
-        (select max(userhist_date)  
-         from user_history_log
-         where userhist_user_id = users.user_id and userhist_action='login' ) AT TIME ZONE $3 as last_login
+        (SELECT max(created_at)  
+         FROM users_history_log
+         WHERE userhist_user_id = users.user_id 
+         AND userhist_action='logged-in' ) AT TIME ZONE $3 as last_login
       FROM users
       LEFT OUTER JOIN roles
       ON users.user_role_id = roles.role_id
       WHERE user_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
         [cid, offset, timezone]
       )
-      console.log('rows=', rows)
       return rows
     } catch (error) {
       throw Error(error)
@@ -79,9 +79,10 @@ class UserService {
           from groups where "groups".group_gid = ANY(users.user_groups))  as groups_name, 
         user_email email, 
         users.deleted_at AT TIME ZONE $3 AS deleted_at,
-        (select max(userhist_date)  
-        from users_history_log
-        where userhist_user_id = users.user_id and userhist_action='login' ) AT TIME ZONE $3 as last_login
+        (SELECT max(created_at)  
+        FROM users_history_log
+        WHERE userhist_user_id = users.user_id 
+        AND userhist_action='logged-in' ) AT TIME ZONE $3 as last_login
       FROM users
       LEFT OUTER JOIN roles
       ON users.user_role_id = roles.role_id
