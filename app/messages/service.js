@@ -3,8 +3,10 @@ const errors = require('../errors')
 const db_api = require('../db_api')
 
 class MessageService {
-  constructor(db) {
+  constructor(db, histLogger) {
     this.db = db
+    this.history_category = 'Messages'
+    this.histLogger = histLogger
   }
 
   async userMessages(payload) {
@@ -71,6 +73,12 @@ class MessageService {
     const {acc, message} = payload
     const sender_cid = acc.company_id
     const sender_uid = acc.uid
+    let histData = {
+      category: this.history_category,
+      action: 'posted',
+      result: false,
+      object_name: sender_uid,
+    }
 
     const {receiver_cid, receiver_uid, subject, text, important} = message
 
@@ -87,9 +95,19 @@ class MessageService {
       INSERT INTO messages ( message_sender, message_receiver,
           message_subject, message_text) 
       SELECT sender.user_id, receiver.user_id, $5, $6 FROM sender, receiver  
-      RETURNING message_id;`,
+      RETURNING *;`,
         [receiver_cid, receiver_uid, sender_cid, sender_uid, subject, text]
       )
+
+      histData = {
+        ...histData,
+        user_id: rows[0].message_sender,
+        user_uid: sender_uid,
+        cid: sender_cid,
+        result: rows.length === 1,
+        target_data: {message: rows[0].message_id}
+      }
+
       if (rows.length === 0) {
         throw Error(errors.MESSAGE_RECEIVER_NOT_FOUND)
       }
@@ -97,6 +115,7 @@ class MessageService {
     } catch (error) {
       throw Error(error.message)
     } finally {
+      this.histLogger.saveHistoryInfo(histData)
       client.release()
     }
   }
@@ -104,10 +123,19 @@ class MessageService {
   async delMessage(payload) {
     const {acc, mid, direction} = payload
     const dir_target = direction === 'inbox' ? 'receiver' : 'sender'
-    // if (acc.company_id !== cid || !acc.is_admin) {
-    //   throw Error(errors.WRONG_ACCESS)
-    // }
-    const {uid, company_id: cid} = acc
+
+    const {uid, company_id: cid, user_id} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'deleted',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: cid,
+      object_name: uid,
+      target_data: {message: mid}
+    }
+
     const client = await this.db.connect()
     try {
       const {rowCount} = await client.query(
@@ -124,18 +152,30 @@ class MessageService {
         AND message_${dir_target}_deleted_at is null;`,
         [mid, uid, cid]
       )
-      
+
       return rowCount
     } catch (error) {
       throw Error(error.message)
     } finally {
+      this.histLogger.saveHistoryInfo(histData)
       client.release()
     }
   }
 
   async addStarredMessage(payload) {
     const {acc, mid} = payload
-    const {uid, company_id} = acc
+    const {uid, company_id, user_id} = acc
+
+    let histData = {
+      category: this.history_category,
+      action: 'starred',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: uid,
+      target_data: {message: mid}
+    }
 
     const client = await this.db.connect()
     try {
@@ -146,6 +186,7 @@ class MessageService {
           WHERE user_uid=$2 AND user_company_id=$3;`,
         [mid, uid, company_id]
       )
+      histData.result = rowCount === 1
       return rowCount
     } catch (err) {
       switch (err.code) {
@@ -157,12 +198,24 @@ class MessageService {
           break
       }
     } finally {
+      this.histLogger.saveHistoryInfo(histData)
       client.release()
     }
   }
   async delStarredMessage(payload) {
     const {acc, mid} = payload
-    const {uid, company_id} = acc
+    const {uid, company_id, user_id} = acc
+
+    let histData = {
+      category: this.history_category,
+      action: 'unstarred',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: uid,
+      target_data: {message: mid}
+    }
 
     const client = await this.db.connect()
     try {
@@ -174,10 +227,12 @@ class MessageService {
          );`,
         [mid, uid, company_id]
       )
+      histData.result = rowCount === 1
       return rowCount
     } catch (err) {
       throw Error(err.message)
     } finally {
+      this.histLogger.saveHistoryInfo(histData)
       client.release()
     }
   }

@@ -3,13 +3,16 @@ const crypto = require('crypto')
 //const DUPLICATE_KEY_ERROR_CODE = 11000
 const errors = require('../errors')
 const mail_templ = require('./mail_templates')
+const db_api = require('../db_api')
 
 const {SYSTEM_NAME, MAIL_USER, RECOVERY_PASSWORD_URL} = process.env
 
 class PersonService {
-  constructor(db, nodemailer) {
+  constructor(db, nodemailer, histLogger) {
     this.db = db
     this.nodemailer = nodemailer
+    this.histLogger = histLogger
+    this.history_category = 'Others-system'
   }
 
   // async register(username, password) {
@@ -27,10 +30,13 @@ class PersonService {
 
   async login(username, password) {
     const client = await this.db.connect()
-    let factQuery = ''
+    let histData = {
+      category: this.history_category,
+      action: 'logged-in',
+      object_name: username
+    }
     try {
       const {rows} = await client.query(
-        //`select login($1, $2);`,
         `SELECT 
         user_id,
         user_uid AS uid, 
@@ -48,16 +54,18 @@ class PersonService {
       )
 
       const user = rows[0]
-      factQuery = {
-        text: `INSERT INTO public."userHistoryLog" 
-      (userhist_user_id, userhist_action, userhist_date, userhist_result, userhist_data) 
-      values 
-      ($1, 'login', now(), $2, $3);`,
-        values: [
-          user ? user.user_id : null,
-          user ? 'success' : 'failed',
-          {uid: username}
-        ]
+
+      const user_id = user ? user.user_id : null
+      const user_uid = user ? user.uid : null
+      const cid = user ? user.company_id : null
+
+      histData = {
+        ...histData,
+        user_id,
+        user_uid,
+        cid,
+        result: typeof user === 'object',
+        target_data: {uid: username}
       }
 
       if (!user) {
@@ -68,8 +76,8 @@ class PersonService {
     } catch (error) {
       throw Error(error)
     } finally {
-      await client.query(factQuery)
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
@@ -113,9 +121,39 @@ class PersonService {
       throw Error(errors.WRONG_EMAIL_TYPE)
     }
     const client = await this.db.connect()
+    let histData = {
+      category: this.history_category,
+      action: 'email-password-recovery'
+    }
     try {
-      const {rows} = await client.query(`select loginEmail($1);`, [email])
-      const user = rows[0].loginemail
+      const {rows} = await client.query(
+        /*`select loginEmail($1);`*/
+        `select user_id, user_uid AS uid, 
+        role_name AS role, 
+        company_id, role_is_admin AS is_admin,
+        user_fullname AS fullname
+      from users, roles, companies 
+      where users.user_company_id=companies.company_id 
+        and roles.role_company_id=companies.company_id 
+        and roles.role_id=users.user_role_id
+        and users.user_email =$1;`,
+        [email]
+      )
+      const user = rows[0]
+
+      const user_id = user ? user.user_id : null
+      const user_uid = user ? user.uid : null
+      const cid = user ? user.company_id : null
+
+      histData = {
+        ...histData,
+        user_id,
+        user_uid,
+        cid,
+        result: typeof user === 'object',
+        object_name: user_uid,
+        target_data: {email, uid: user_uid}
+      }
 
       if (!user) throw new Error(errors.WRONG_CREDENTIAL)
       return user
@@ -123,6 +161,7 @@ class PersonService {
       throw Error(error)
     } finally {
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
   async sendEmail(payload) {
@@ -190,21 +229,46 @@ class PersonService {
   }
   async updateUserPasword(token, password) {
     const client = await this.db.connect()
+    let histData = {
+      category: this.history_category,
+      action: 'update-password-recovery'
+    }
     try {
       const {rows: pr} = await client.query(
-        `SELECT pr_user_id 
+        `SELECT pr_user_id, pr_id, pr_user_uid, pr_company_id 
          FROM password_recovery
          WHERE pr_token = $1 
           AND (created_at + interval '1 minutes' * pr_lifetime_min) > now();`,
         [token]
       )
 
+      const user_id = pr.length > 0 ? pr[0].pr_user_id : null
+      const user_uid = pr.length > 0 ? pr[0].pr_user_uid : null
+      const cid = pr.length > 0 ? pr[0].pr_company_id : null
+
+      histData = {
+        ...histData,
+        user_id,
+        user_uid,
+        cid,
+        result: pr.length > 0,
+        object_name: user_uid,
+        target_data: {token}
+      }
+
       if (pr.length === 0) {
         return 0
       }
-      const user_id = pr[0].pr_user_id
 
       if (!user_id) throw new Error(errors.RECOVERY_TOKEN_IS_NOT_VALID)
+
+      const pr_id = pr[0].pr_id
+      await client.query(
+        `UPDATE password_recovery 
+          SET pr_used = true
+         WHERE pr_id = $1;`,
+        [pr_id]
+      )
 
       const {rowCount} = await client.query(
         `UPDATE users 
@@ -216,6 +280,7 @@ class PersonService {
     } catch (error) {
       throw Error(error)
     } finally {
+      this.histLogger.saveHistoryInfo(histData)
       client.release()
     }
   }

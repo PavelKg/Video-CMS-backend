@@ -108,6 +108,7 @@ const updRole = {
       name: {type: 'string'},
       is_admin: {type: 'boolean'}
     },
+    additionalProperties: false,
     required: ['name']
   }
 }

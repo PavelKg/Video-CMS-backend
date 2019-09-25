@@ -4,8 +4,10 @@ const errors = require('../../errors')
 const db_api = require('../../db_api')
 
 class UserService {
-  constructor(db) {
+  constructor(db, histLogger) {
     this.db = db
+    this.history_category = 'Users'
+    this.histLogger = histLogger
   }
 
   async companyUsers(payload) {
@@ -39,7 +41,7 @@ class UserService {
         user_email email, 
         users.deleted_at AT TIME ZONE $3 AS deleted_at,
         (select max(userhist_date)  
-         from "userHistoryLog" 
+         from user_history_log
          where userhist_user_id = users.user_id and userhist_action='login' ) AT TIME ZONE $3 as last_login
       FROM users
       LEFT OUTER JOIN roles
@@ -78,7 +80,7 @@ class UserService {
         user_email email, 
         users.deleted_at AT TIME ZONE $3 AS deleted_at,
         (select max(userhist_date)  
-        from "userHistoryLog" 
+        from users_history_log
         where userhist_user_id = users.user_id and userhist_action='login' ) AT TIME ZONE $3 as last_login
       FROM users
       LEFT OUTER JOIN roles
@@ -96,15 +98,27 @@ class UserService {
   }
 
   async addUser(payload) {
+    let client = undefined
     const {acc, user} = payload
-    const {uid, cid, fullname, rid, email = '', password, gids =[]} = user
+    const {uid, cid, fullname, rid, email = '', password, gids = []} = user
 
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
+    let histData = {
+      category: this.history_category,
+      action: 'created',
+      result: false,
+      user_id: acc.user_id,
+      user_uid: acc.uid,
+      cid: acc.company_id,
+      object_name: uid,
+      target_data: {uid, cid, fullname, rid, email, gids}
     }
 
-    const client = await this.db.connect()
     try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      client = await this.db.connect()
       const {rows} = await client.query(
         `with urole as (
         select role_id id from roles where role_company_id=$2 and role_rid=$5)
@@ -122,26 +136,40 @@ class UserService {
         ;`,
         [uid, cid, fullname, gids, rid, email, password]
       )
-
+      histData.result = typeof rows[0] === 'object'
       return rows[0].user_uid
     } catch (error) {
       throw Error(error)
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async updUser(payload) {
+    let client = undefined
     const {acc, user} = payload
     const {uid, cid, fullname, rid, email = '', password = ''} = user
     const gids = user.gids ? user.gids : []
 
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
+    let histData = {
+      category: this.history_category,
+      action: 'edited',
+      result: false,
+      user_id: acc.user_id,
+      user_uid: acc.uid,
+      cid: acc.company_id,
+      object_name: uid,
+      target_data: {uid, cid, fullname, rid, email, gids}
     }
 
-    const client = await this.db.connect()
     try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+      client = await this.db.connect()
       const {rowCount} = await client.query(
         `UPDATE users 
         SET user_fullname=$3, 
@@ -152,25 +180,39 @@ class UserService {
         WHERE user_company_id=$2 and user_uid =$1 AND deleted_at IS NULL;`,
         [uid, cid, fullname, gids, rid, email, password]
       )
-
+      histData.result = rowCount === 1
       return rowCount
     } catch (error) {
       throw Error(error)
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async delUser(payload) {
+    let client = undefined
     const {acc, user} = payload
     const {uid, cid} = user
 
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
+    let histData = {
+      category: this.history_category,
+      action: 'deleted',
+      result: false,
+      user_id: acc.user_id,
+      user_uid: acc.uid,
+      cid: acc.company_id,
+      object_name: uid,
+      target_data: {...user}
     }
 
-    const client = await this.db.connect()
     try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+      client = await this.db.connect()
       const {rowCount} = await client.query(
         `UPDATE users 
         SET deleted_at = now() 
@@ -178,12 +220,15 @@ class UserService {
         AND deleted_at IS NULL;`,
         [uid, cid]
       )
-
+      histData.result = rowCount === 1
       return rowCount
     } catch (error) {
       throw Error(error)
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 }

@@ -34,7 +34,14 @@ const sortableColumns = {
     'video_tag',
     'video_description'
   ],
-  comments: ['comments.created_at']
+  comments: ['comments.created_at'],
+  history: [
+    'users_history_log.created_at',
+    'userhist_action',
+    'userhist_category',
+    'userhist_user_uid',
+    'userhist_object_name'
+  ]
 }
 
 const db_oper = {
@@ -90,4 +97,9 @@ function setFilterTz(filter, timezone) {
   })
   return qFilter
 }
-module.exports = {sorting, filtration, setFilterTz}
+
+module.exports = {
+  sorting,
+  filtration,
+  setFilterTz
+}

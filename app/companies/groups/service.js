@@ -3,8 +3,10 @@ const errors = require('../../errors')
 const db_api = require('../../db_api')
 
 class GroupService {
-  constructor(db) {
+  constructor(db, histLogger) {
     this.db = db
+    this.history_category = 'Groups'
+    this.histLogger = histLogger
   }
 
   async companyGroups(payload) {
@@ -69,39 +71,71 @@ class GroupService {
   }
 
   async addGroup(payload) {
+    let client = undefined
     const {acc, group} = payload
     const {cid, name} = group
 
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'created',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: name,
+      target_data: {...group}
     }
 
-    const client = await this.db.connect()
     try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      client = await this.db.connect()
       const {rows} = await client.query(
         `INSERT INTO groups (group_company_id, group_name) 
         VALUES ($1, $2) 
         RETURNING group_gid;`,
         [cid, name]
       )
+      histData.result = typeof rows[0] === 'object'
+      histData.target_data = {...histData.target_data, gid: rows[0].group_gid}
+
       return rows[0].group_gid
     } catch (error) {
       throw Error(error.message)
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async updGroup(payload) {
+    let client = undefined
     const {acc, group} = payload
     const {gid, cid, name} = group
 
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'edited',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: name,
+      target_data: {...group}
     }
 
-    const client = await this.db.connect()
     try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      client = await this.db.connect()
       const {rowCount} = await client.query(
         `UPDATE groups 
           SET group_name=$3 
@@ -109,26 +143,41 @@ class GroupService {
           AND deleted_at IS NULL;`,
         [gid, cid, name]
       )
-
+      histData.result = rowCount === 1
       return rowCount
     } catch (error) {
       throw Error(error.message)
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async delGroup(payload) {
+    let client = undefined
     const {acc, group} = payload
     const {gid, cid} = group
 
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'deleted',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: '',
+      target_data: {...group}
     }
 
-    const client = await this.db.connect()
-
     try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      client = await this.db.connect()
       const {rows: usrs} = await client.query(
         `SELECT count(users.user_id) cnt 
           FROM groups, users 
@@ -141,19 +190,27 @@ class GroupService {
         throw Error(errors.CANNOT_DELETE_A_GROUP_WITH_EXISTING_USERS)
       }
 
-      const {rowCount} = await client.query(
+      const {rows} = await client.query(
         `UPDATE groups 
         SET deleted_at = now()
         WHERE group_company_id=$2 and group_gid =$1 
-        and deleted_at is null;`,
+        and deleted_at is null
+        RETURNING *;`,
         [gid, cid]
       )
 
-      return rowCount
+      histData.result = rows.length === 1
+      if (histData.result) {
+        histData.object_name = rows[0].group_name
+      }
+      return rows.length
     } catch (error) {
       throw Error(error.message)
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 }

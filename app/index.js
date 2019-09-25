@@ -36,6 +36,9 @@ const CommentService = require('./companies/videos/comments/service')
 
 const BitmovinService = require('./bm')
 
+const HistoryLogger = require('./history-logger')
+const HistoryLoggerService = require('./history-logger/service')
+
 async function connectToDatabase(fastify) {
   console.log('DB Connecting...')
   pgo.types.setTypeParser(1114, function(stringValue) {
@@ -132,15 +135,18 @@ async function decorateFastifyInstance(fastify) {
   const storage = fastify.googleCloudStorage
   const nodemailer = fastify.nodemailer
   const bitmovin = fastify.bitmovin
+  
+  const histLoggerService = new HistoryLoggerService(db)
+  fastify.decorate('histLoggerService', histLoggerService)
 
-  const personService = new PersonService(db, nodemailer)
-  const roleService = new RoleService(db)
-  const groupService = new GroupService(db)
-  const userService = new UserService(db)
-  const messageService = new MessageService(db)
-  const videoService = new VideoService(db, storage)
-  const commentService = new CommentService(db)
-  const bitmovinService = new BitmovinService(bitmovin)
+  const personService = new PersonService(db, nodemailer, histLoggerService)
+  const roleService = new RoleService(db, histLoggerService)
+  const groupService = new GroupService(db, histLoggerService)
+  const userService = new UserService(db, histLoggerService)
+  const messageService = new MessageService(db, histLoggerService)
+  const videoService = new VideoService(db, storage, histLoggerService)
+  const commentService = new CommentService(db, histLoggerService)
+  const bitmovinService = new BitmovinService(bitmovin, histLoggerService)
 
   fastify.decorate('personService', personService)
   fastify.decorate('roleService', roleService)
@@ -184,4 +190,5 @@ module.exports = async function(fastify, opts) {
     .register(Message, {prefix: '/api/messages'})
     .register(Video, {prefix: '/api/companies/:cid/videos'})
     .register(Comment, {prefix: '/api/companies/:cid/videos/:uuid/comments'})
+    .register(HistoryLogger, {prefix: '/api/history'})
 }

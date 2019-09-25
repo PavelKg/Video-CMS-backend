@@ -3,8 +3,10 @@ const errors = require('../../errors')
 const db_api = require('../../db_api')
 
 class RoleService {
-  constructor(db) {
+  constructor(db, histLogger) {
     this.db = db
+    this.history_category = 'Roles'
+    this.histLogger = histLogger
   }
 
   async companyRoles(payload) {
@@ -78,40 +80,78 @@ class RoleService {
   }
 
   async addRole(payload) {
+    let client = undefined
     const {acc, role} = payload
     const {rid, cid, name, is_admin = false} = role
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
+
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'created',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: rid,
+      target_data: {}
     }
 
-    const client = await this.db.connect()
     try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      client = await this.db.connect()
+
       const {rows} = await client.query(
         `INSERT INTO roles (role_rid, role_company_id, role_name, role_is_admin) 
       VALUES ($1, $2, $3, $4) 
-      RETURNING role_rid;`,
+      RETURNING role_rid AS rid, 
+        role_id, 
+        role_is_admin AS is_admin, 
+        role_company_id AS cid, 
+        role_name AS name;`,
         [rid, cid, name, is_admin]
       )
 
-      return rows[0].role_rid
+      histData.result = typeof rows[0] === 'object'
+      histData.target_data = {...rows[0]}
+
+      return rows[0].rid
     } catch (error) {
       throw Error(error)
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async updRole(payload) {
+    let client = undefined
     const {acc, role} = payload
     const {rid, cid, name, is_admin = false} = role
 
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'edited',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: rid,
+      target_data: {...role}
     }
 
-    const client = await this.db.connect()
-
     try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      client = await this.db.connect()
+
       const {rowCount} = await client.query(
         `UPDATE roles 
         SET role_name=$3, role_is_admin=$4 
@@ -119,25 +159,40 @@ class RoleService {
           AND deleted_at IS NULL;`,
         [rid, cid, name, is_admin]
       )
-
+      histData.result = rowCount === 1
       return rowCount
     } catch (error) {
       throw Error(error)
     } finally {
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 
   async delRole(payload) {
+    let client = undefined
     const {acc, role} = payload
     const {rid, cid} = role
 
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'deleted',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: rid,
+      target_data: {...role}
     }
 
-    const client = await this.db.connect()
     try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      client = await this.db.connect()
+
       const {rows: usrs} = await client.query(
         `select count(users.user_id) cnt 
        from roles, users 
@@ -156,12 +211,15 @@ class RoleService {
         and deleted_at is null;`,
         [rid, cid]
       )
-
+      histData.result = rowCount === 1
       return rowCount
     } catch (error) {
       throw Error(error)
     } finally {
-      client.release()
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 }
