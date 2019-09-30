@@ -1,21 +1,18 @@
 'use strict'
+const errors = require('../errors')
 
 const {
   historyInfo: historyInfoSchema,
   historyCategories: historyCategoriesSchema,
   historyCategoryObjects: historyCategoryObjectsSchema,
-  addUserActivity: addUserActivitySchema
+  historyCategoryObjectsByName: historyCategoryObjectsByNameSchema
+  //addUserActivity: addUserActivitySchema
 } = require('./schemas')
 
 module.exports = async function(fastify, opts) {
   // All APIs are under authentication here!
   fastify.addHook('preHandler', fastify.authPreHandler)
 
-  // fastify.get(
-  //   '/companies/:cid',
-  //   {schema: historyInfoSchema},
-  //   getHistoryInfoHandler
-  // )
   fastify.get('/', {schema: historyInfoSchema}, getHistoryInfoHandler)
   fastify.get(
     '/categories',
@@ -23,15 +20,20 @@ module.exports = async function(fastify, opts) {
     historyCategoriesHandler
   )
   fastify.get(
-    '/categories/:cname/objects',
+    '/categories/objects',
     {schema: historyCategoryObjectsSchema},
     historyCategoryObjectsHandler
   )
-  fastify.post(
-    '/companies/:cid/uid/:uid',
-    {schema: addUserActivitySchema},
-    addUserActivityHandler
+  fastify.get(
+    '/categories/:cname/objects',
+    {schema: historyCategoryObjectsByNameSchema},
+    historyCategoryObjectsByNameHandler
   )
+  // fastify.post(
+  //   '/companies/:cid/uid/:uid',
+  //   {schema: addUserActivitySchema},
+  //   addUserActivityHandler
+  // )
 }
 
 module.exports[Symbol.for('plugin-meta')] = {
@@ -55,7 +57,7 @@ async function getHistoryInfoHandler(req, reply) {
 
 async function historyCategoriesHandler(req, reply) {
   const query = req.query
-
+  console.log('query=', query)
   let acc
   req.jwtVerify(function(err, decoded) {
     if (!err) {
@@ -72,7 +74,6 @@ async function historyCategoriesHandler(req, reply) {
 
 async function historyCategoryObjectsHandler(req, reply) {
   const query = req.query
-  const {cname} = req.params
 
   let acc
   req.jwtVerify(function(err, decoded) {
@@ -81,11 +82,30 @@ async function historyCategoryObjectsHandler(req, reply) {
     }
   })
 
-  const categories = await this.histLoggerService.getHistoryCategoryObjects({
+  const result = await this.histLoggerService.getHistoryCategoryObjects({
     acc,
-    query,
-    cname
+    query
   })
-  return categories
+
+  console.log('result=', result)
+  return result
 }
-async function addUserActivityHandler(rec, reply) {}
+
+async function historyCategoryObjectsByNameHandler(req, reply) {
+  const query = req.query
+  const {cname} = req.params
+  query.categories = cname
+
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  return await this.histLoggerService.getHistoryCategoryObjects({
+    acc,
+    query
+  })
+}
+//async function addUserActivityHandler(rec, reply) {}

@@ -66,16 +66,24 @@ const historyCategories = {
 
 const historyCategoryObjects = {
   tags: ['historyInfo'],
+  querystring: {
+    type: 'object',
+    properties: {
+      ...queryStringJsonSchema,
+      categories: {type: 'string'}
+    },
+    required: ['categories']
+  },
+  response: {
+    200: {type: 'array', items: {type: 'string'}}
+  }
+}
+
+const historyCategoryObjectsByName = {
+  tags: ['historyInfo'],
   params: {
     type: 'object',
     properties: {
-      cid: {
-        type: 'string',
-        pattern: '^[0-9]?'
-      },
-      uid: {
-        type: 'string'
-      },
       cname: {
         type: 'string'
       }
@@ -86,4 +94,12 @@ const historyCategoryObjects = {
   response: {
     200: {type: 'array', items: {type: 'string'}}
   }
+}
+
+module.exports = {
+  getHistoryInfo,
+  historyCategories,
+  historyCategoryObjects,
+  historyCategoryObjectsByName
+
 }
