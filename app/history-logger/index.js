@@ -87,8 +87,7 @@ async function historyCategoryObjectsHandler(req, reply) {
     query
   })
 
-  console.log('result=', result)
-  return result
+  return result.arr && Array.isArray(result.arr) ? result.arr : []
 }
 
 async function historyCategoryObjectsByNameHandler(req, reply) {
@@ -103,9 +102,11 @@ async function historyCategoryObjectsByNameHandler(req, reply) {
     }
   })
 
-  return await this.histLoggerService.getHistoryCategoryObjects({
+  const result = await this.histLoggerService.getHistoryCategoryObjects({
     acc,
     query
   })
+
+  return result.arr && Array.isArray(result.arr) ? result.arr : []
 }
 //async function addUserActivityHandler(rec, reply) {}

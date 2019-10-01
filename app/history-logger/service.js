@@ -98,7 +98,6 @@ class HistoryLoggerService {
   }
 
   async getHistoryCategories(payload) {
-    console.log('getHistoryCategories')
     let client = undefined
     const {acc} = payload
     const {company_id: cid, uid, timezone, is_admin} = acc
@@ -151,6 +150,7 @@ class HistoryLoggerService {
       categories
     } = query
 
+
     const qSort = db_api.sorting(sort, 'history')
     let qFilter = Boolean(filter) ? db_api.filtration(filter, 'history') : ''
     qFilter = db_api.setFilterTz(qFilter, timezone)
@@ -165,23 +165,23 @@ class HistoryLoggerService {
       }
 
       const re = new RegExp(';', 'gi')
-      const _list = categories.replace(re, '').split(',')
-      const cat_list = "'" + _list.join("','") + "'"
+      const cat_list = categories.replace(re, '').split(',')
 
-      console.log('cat_list=', cat_list)
       client = await this.db.connect()
-      const {rows} = await client.query(
-        `SELECT array_agg(obj_name) arr from (
+      const query = {
+        text: `SELECT array_agg(obj_name) arr from (
           SELECT userhist_object_name AS obj_name
           FROM users_history_log
           WHERE  userhist_company_id = $1 
-          AND userhist_category in ($3)
+          AND userhist_category = ANY ($3)
           AND userhist_object_name is not null
           GROUP BY userhist_object_name
-        ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2) abc;`,
-        [cid, offset, cat_list]
-      )
-      return rows
+          ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2) abc;`,
+        values: [cid, offset, cat_list]
+      }
+      const {rows} = await client.query(query)
+
+      return rows[0]
     } catch (error) {
       throw Error(error)
     } finally {
