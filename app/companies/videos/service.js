@@ -270,7 +270,7 @@ class VideoService {
           RETURNING *`,
         [cid, uuid]
       )
-      histData.object_name = rows[0].title
+      histData.object_name = rows[0].video_title
       histData.result = rows.length === 1
       return rows.length
     } catch (error) {
@@ -332,7 +332,7 @@ class VideoService {
         values: [...Object.values(fields), cid, uuid]
       }
       const {rows} = await client.query(query)
-      histData.object_name = rows[0].title
+      histData.object_name = rows[0].video_title
       histData.result = rows.length === 1
       return rows.length
     } catch (error) {
@@ -383,7 +383,7 @@ class VideoService {
       }
 
       const {rows} = await client.query(query)
-      histData.object_name = rows[0].title
+      histData.object_name = rows[0].video_title
       histData.result = rows.length === 1
       return rows
     } catch (error) {
@@ -433,7 +433,7 @@ class VideoService {
         values: [cid, uuid, value.toLowerCase() === 'public']
       }
       const {rows} = await client.query(query)
-      histData.object_name = rows[0].title
+      histData.object_name = rows[0].video_title
       histData.result = rows.length === 1
       return rows.length
     } catch (error) {
