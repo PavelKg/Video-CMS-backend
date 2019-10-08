@@ -72,6 +72,16 @@ const login = {
   }
 }
 
+const logout = {
+  tags: ['person'],
+  response: {
+    200: {
+      type: 'string',
+      additionalProperties: false
+    }
+  }
+}
+
 const passwordResetRequest = {
   tags: ['person'],
   body: {
@@ -83,7 +93,7 @@ const passwordResetRequest = {
       },
       locale: {
         type: 'string'
-      }      
+      }
     },
     additionalProperties: false
   },
@@ -106,7 +116,7 @@ const passwordUpdate = {
       },
       password: {
         type: 'string'
-      }      
+      }
     },
     additionalProperties: false
   },
@@ -155,6 +165,7 @@ const getProfile = {
 module.exports = {
   registration,
   login,
+  logout,
   passwordResetRequest,
   passwordUpdate,
   getProfile

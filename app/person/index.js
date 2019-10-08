@@ -2,6 +2,7 @@
 
 const {
   login: loginSchema,
+  logout: logoutSchema,
   passwordResetRequest: passwordResetRequestSchema,
   passwordUpdate: passwordUpdateSchema,
   //registration: registrationSchema,
@@ -35,6 +36,7 @@ module.exports = async function(fastify, opts) {
   fastify.register(async function(fastify) {
     fastify.addHook('preHandler', fastify.authPreHandler)
     fastify.get('/me', {schema: getProfileSchema}, meHandler)
+    fastify.post('/logout', {schema: logoutSchema}, logoutHandler)
     //fastify.get('/:userId', {schema: getProfileSchema}, userHandler)
     //fastify.get('/search', {schema: searchSchema}, searchHandler)
   })
@@ -62,6 +64,17 @@ async function loginHandler(req, reply) {
   const {username, password} = req.body
   const person = await this.personService.login(username, password)
   return {token: this.jwt.sign({user: person})}
+}
+
+async function logoutHandler(req, reply) {
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+  await this.personService.logout(acc)
+  reply.code(200).send()
 }
 
 async function meHandler(req, reply) {

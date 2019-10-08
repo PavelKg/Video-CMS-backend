@@ -26,6 +26,7 @@ class VideoService {
     const {acc, query} = payload
     const storage_type = 'gcs'
     const {name, size, type, uuid} = query
+    const title = name.match(/^([\w\-. ]+).[\w]{3,4}$/i)[1]
 
     const {user_id, company_id: cid, uid} = acc
     let histData = {
@@ -35,7 +36,7 @@ class VideoService {
       user_id,
       user_uid: uid,
       cid,
-      object_name: uuid,
+      object_name: title ? title : name,
       target_data: {...query}
     }
 
@@ -60,7 +61,6 @@ class VideoService {
       storage_bucket_input = rows[0].storage_bucket_input
       storage_bucket_output = rows[0].storage_bucket_output
       const storage_content_limit = rows[0].storage_content_limit
-      const title = name.match(/^([\w\-. ]+).[\w]{3,4}$/i)[1]
       const {rowCount} = await client.query(
         `INSERT INTO videos (video_filename, video_type, video_filesize,
         video_uuid, video_status, video_bucket_input, 
@@ -252,7 +252,7 @@ class VideoService {
       user_id,
       user_uid: uid,
       cid: company_id,
-      object_name: uuid,
+      object_name: '',
       target_data: {cid, uuid}
     }
 
@@ -262,15 +262,17 @@ class VideoService {
       }
 
       client = await this.db.connect()
-      const {rowCount} = await client.query(
+      const {rows} = await client.query(
         ` UPDATE videos 
           SET deleted_at = now()
           WHERE video_company_id=$1 and video_uuid=$2
-          AND deleted_at IS NULL`,
+          AND deleted_at IS NULL 
+          RETURNING *`,
         [cid, uuid]
       )
-      histData.result = rowCount === 1
-      return rowCount
+      histData.object_name = rows[0].title
+      histData.result = rows.length === 1
+      return rows.length
     } catch (error) {
     } finally {
       if (client) {
@@ -293,7 +295,7 @@ class VideoService {
       user_id,
       user_uid: uid,
       cid: company_id,
-      object_name: uuid,
+      object_name: '',
       target_data: {...data}
     }
 
@@ -325,12 +327,14 @@ class VideoService {
       const query = {
         text: `UPDATE videos SET (${Object.keys(fields)}) = (${select}) 
          WHERE deleted_at IS NULL AND video_company_id=$${fields_length +
-           1} AND video_uuid=$${fields_length + 2}`,
+           1} AND video_uuid=$${fields_length + 2} 
+           RETURNING *`,
         values: [...Object.values(fields), cid, uuid]
       }
-      const {rowCount} = await client.query(query)
-      histData.result = rowCount === 1
-      return rowCount
+      const {rows} = await client.query(query)
+      histData.object_name = rows[0].title
+      histData.result = rows.length === 1
+      return rows.length
     } catch (error) {
       throw Error(error)
     } finally {
@@ -354,7 +358,7 @@ class VideoService {
       user_id,
       user_uid: uid,
       cid: company_id,
-      object_name: uuid,
+      object_name: '',
       target_data: {...data}
     }
 
@@ -379,6 +383,7 @@ class VideoService {
       }
 
       const {rows} = await client.query(query)
+      histData.object_name = rows[0].title
       histData.result = rows.length === 1
       return rows
     } catch (error) {
@@ -404,7 +409,7 @@ class VideoService {
       user_id,
       user_uid: uid,
       cid: company_id,
-      object_name: uuid,
+      object_name: '',
       target_data: {...data}
     }
 
@@ -423,12 +428,14 @@ class VideoService {
       const query = {
         text: `UPDATE videos SET video_public = $3
          WHERE video_company_id=$1 
-          AND video_uuid=$2 AND deleted_at IS NULL`,
+          AND video_uuid=$2 AND deleted_at IS NULL 
+          RETURNING *`,
         values: [cid, uuid, value.toLowerCase() === 'public']
       }
-      const {rowCount} = await client.query(query)
-      histData.result = rowCount === 1
-      return rowCount
+      const {rows} = await client.query(query)
+      histData.object_name = rows[0].title
+      histData.result = rows.length === 1
+      return rows.length
     } catch (error) {
       throw Error(error)
     } finally {

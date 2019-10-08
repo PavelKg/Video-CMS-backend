@@ -12,7 +12,7 @@ class PersonService {
     this.db = db
     this.nodemailer = nodemailer
     this.histLogger = histLogger
-    this.history_category = 'Others-system'
+    this.history_category = 'System'
   }
 
   // async register(username, password) {
@@ -33,7 +33,7 @@ class PersonService {
     let histData = {
       category: this.history_category,
       action: 'logged-in',
-      object_name: username
+      object_name: 'system'
     }
     try {
       const {rows} = await client.query(
@@ -77,6 +77,31 @@ class PersonService {
       throw Error(error)
     } finally {
       client.release()
+      this.histLogger.saveHistoryInfo(histData)
+    }
+  }
+
+  async logout(acc) {
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'logged-out',
+      object_name: 'system'
+    }
+    try {
+      histData = {
+        ...histData,
+        user_id,
+        user_uid: uid,
+        cid: company_id,
+        result: true,
+        target_data: {uid}
+      }
+
+      return
+    } catch (error) {
+      throw Error(error)
+    } finally {
       this.histLogger.saveHistoryInfo(histData)
     }
   }

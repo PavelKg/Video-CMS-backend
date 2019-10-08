@@ -20,7 +20,7 @@ const historyInfoObject = {
 }
 
 const getHistoryInfo = {
-  tags: ['historyInfo'],
+  tags: ['history'],
   params: {
     type: 'object',
     properties: {
@@ -44,7 +44,7 @@ const getHistoryInfo = {
 }
 
 const historyCategories = {
-  tags: ['historyInfo'],
+  tags: ['history'],
   params: {
     type: 'object',
     properties: {
@@ -65,7 +65,7 @@ const historyCategories = {
 }
 
 const historyCategoryObjects = {
-  tags: ['historyInfo'],
+  tags: ['history'],
   querystring: {
     type: 'object',
     properties: {
@@ -80,7 +80,7 @@ const historyCategoryObjects = {
 }
 
 const historyCategoryObjectsByName = {
-  tags: ['historyInfo'],
+  tags: ['history'],
   params: {
     type: 'object',
     properties: {
