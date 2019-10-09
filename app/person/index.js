@@ -7,7 +7,8 @@ const {
   passwordUpdate: passwordUpdateSchema,
   //registration: registrationSchema,
   //search: searchSchema,
-  getProfile: getProfileSchema
+  getProfile: getProfileSchema,
+  companyInfo: companyInfoSchema
 } = require('./schemas')
 
 const errors = require('../errors')
@@ -36,6 +37,7 @@ module.exports = async function(fastify, opts) {
   fastify.register(async function(fastify) {
     fastify.addHook('preHandler', fastify.authPreHandler)
     fastify.get('/me', {schema: getProfileSchema}, meHandler)
+    fastify.get('/company', {schema: companyInfoSchema}, companyInfoHandler)
     fastify.post('/logout', {schema: logoutSchema}, logoutHandler)
     //fastify.get('/:userId', {schema: getProfileSchema}, userHandler)
     //fastify.get('/search', {schema: searchSchema}, searchHandler)
@@ -86,6 +88,17 @@ async function meHandler(req, reply) {
   })
 
   return this.personService.getProfile(acc)
+}
+
+async function companyInfoHandler(req, reply){
+  let acc = null
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  return this.personService.getCompanyInfo(acc)
 }
 
 async function passwordResetRequestHandler(req, reply) {

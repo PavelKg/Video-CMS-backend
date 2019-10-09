@@ -19,7 +19,7 @@ const historyInfoObject = {
   }
 }
 
-const getHistoryInfo = {
+const historyInfo = {
   tags: ['history'],
   params: {
     type: 'object',
@@ -97,7 +97,7 @@ const historyCategoryObjectsByName = {
 }
 
 module.exports = {
-  getHistoryInfo,
+  historyInfo,
   historyCategories,
   historyCategoryObjects,
   historyCategoryObjectsByName

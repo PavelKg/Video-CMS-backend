@@ -49,7 +49,7 @@ const login = {
   tags: ['person'],
   body: {
     type: 'object',
-    require: ['username', 'password'],
+    required: ['username', 'password'],
     properties: {
       username: {
         type: 'string'
@@ -63,7 +63,7 @@ const login = {
   response: {
     200: {
       type: 'object',
-      require: ['token'],
+      required: ['token'],
       properties: {
         token: {type: 'string'}
       },
@@ -86,7 +86,7 @@ const passwordResetRequest = {
   tags: ['person'],
   body: {
     type: 'object',
-    require: ['email'],
+    required: ['email'],
     properties: {
       email: {
         type: 'string'
@@ -109,7 +109,7 @@ const passwordUpdate = {
   tags: ['person'],
   body: {
     type: 'object',
-    require: ['token', 'password'],
+    required: ['token', 'password'],
     properties: {
       token: {
         type: 'string'
@@ -162,11 +162,25 @@ const getProfile = {
   }
 }
 
+const companyInfo = {
+  tags: ['person'],
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        company_name: {type: 'string'},
+        created_at: {type: 'string'}
+      }
+    }
+  }
+}
+
 module.exports = {
   registration,
   login,
   logout,
   passwordResetRequest,
   passwordUpdate,
-  getProfile
+  getProfile,
+  companyInfo
 }

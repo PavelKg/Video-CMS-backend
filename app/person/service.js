@@ -141,6 +141,27 @@ class PersonService {
     }
   }
 
+  async getCompanyInfo(acc) {
+    const client = await this.db.connect()
+    const {company_id: cid} = acc
+
+    try {
+      const {rows} = await client.query(
+        `SELECT
+          company_name,
+          created_at
+        FROM companies 
+        WHERE companies.company_id = $1;`,
+        [cid]
+      )
+      return rows[0]
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
+  }
+
   async findUserByEmail(email) {
     if (!email) {
       throw Error(errors.WRONG_EMAIL_TYPE)
