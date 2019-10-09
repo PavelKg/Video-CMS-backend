@@ -79,7 +79,7 @@ class MessageService {
       category: this.history_category,
       action: 'posted',
       result: false,
-      object_name: receiver_uid,
+      object_name: receiver_uid
     }
 
     const client = await this.db.connect()
@@ -138,7 +138,7 @@ class MessageService {
 
     const client = await this.db.connect()
     try {
-      const {rowCount} = await client.query(
+      const {rows} = await client.query(
         `WITH acc_user AS ( 
           SELECT user_id 
           FROM users 
@@ -149,11 +149,13 @@ class MessageService {
         SET message_${dir_target}_deleted_at = now() 
         WHERE message_id=$1
         AND message_${dir_target} = (select user_id from acc_user)
-        AND message_${dir_target}_deleted_at is null;`,
+        AND message_${dir_target}_deleted_at is null 
+        RETURNING *;`,
         [mid, uid, cid]
       )
-
-      return rowCount
+      histData.result = rows.length === 1
+      histData.object_name = rows[0].receiver_uid
+      return rows.length
     } catch (error) {
       throw Error(error.message)
     } finally {
