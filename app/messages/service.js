@@ -73,14 +73,14 @@ class MessageService {
     const {acc, message} = payload
     const sender_cid = acc.company_id
     const sender_uid = acc.uid
+    const {receiver_cid, receiver_uid, subject, text, important} = message
+
     let histData = {
       category: this.history_category,
       action: 'posted',
       result: false,
-      object_name: sender_uid,
+      object_name: receiver_uid,
     }
-
-    const {receiver_cid, receiver_uid, subject, text, important} = message
 
     const client = await this.db.connect()
     try {
