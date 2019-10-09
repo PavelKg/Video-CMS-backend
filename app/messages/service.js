@@ -93,8 +93,8 @@ class MessageService {
       )
 
       INSERT INTO messages ( message_sender, message_receiver,
-          message_subject, message_text) 
-      SELECT sender.user_id, receiver.user_id, $5, $6 FROM sender, receiver  
+          message_subject, message_text, message_receiver_uid, message_sender_uid) 
+      SELECT sender.user_id, receiver.user_id, $5, $6, $2, $4 FROM sender, receiver  
       RETURNING *;`,
         [receiver_cid, receiver_uid, sender_cid, sender_uid, subject, text]
       )
@@ -123,6 +123,7 @@ class MessageService {
   async delMessage(payload) {
     const {acc, mid, direction} = payload
     const dir_target = direction === 'inbox' ? 'receiver' : 'sender'
+    const dir_oposit = direction === 'inbox' ? 'sender' : 'receiver'
 
     const {uid, company_id: cid, user_id} = acc
     let histData = {
@@ -132,7 +133,6 @@ class MessageService {
       user_id,
       user_uid: uid,
       cid: cid,
-      object_name: uid,
       target_data: {message: mid}
     }
 
@@ -154,7 +154,8 @@ class MessageService {
         [mid, uid, cid]
       )
       histData.result = rows.length === 1
-      histData.object_name = rows[0].receiver_uid
+      histData.object_name = rows[0][`message_${dir_oposit}_uid`]
+
       return rows.length
     } catch (error) {
       throw Error(error.message)
