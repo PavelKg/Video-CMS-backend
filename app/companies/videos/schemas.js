@@ -23,6 +23,7 @@ const uuidObj = {
 const videoCatalogObject = {
   type: 'object',
   properties: {
+    video_id: {type: 'string'},
     video_uuid: {type: 'string'},
     video_filename: {type: 'string'},
     video_status: {type: 'string'},

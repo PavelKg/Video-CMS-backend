@@ -96,10 +96,11 @@ class GroupService {
       const {rows} = await client.query(
         `INSERT INTO groups (group_company_id, group_name) 
         VALUES ($1, $2) 
-        RETURNING group_gid;`,
+        RETURNING *;`,
         [cid, name]
       )
       histData.result = typeof rows[0] === 'object'
+      histData.object_name = `g_${rows[0].group_gid}`
       histData.target_data = {...histData.target_data, gid: rows[0].group_gid}
 
       return rows[0].group_gid
@@ -136,15 +137,18 @@ class GroupService {
       }
 
       client = await this.db.connect()
-      const {rowCount} = await client.query(
+      const {rows} = await client.query(
         `UPDATE groups 
           SET group_name=$3 
           WHERE group_company_id=$2 and group_gid =$1
-          AND deleted_at IS NULL;`,
+          AND deleted_at IS NULL
+          RETURNING *;`,
         [gid, cid, name]
       )
-      histData.result = rowCount === 1
-      return rowCount
+
+      histData.object_name = `g_${rows[0].group_gid}`
+      histData.result = rows.length === 1
+      return rows.length
     } catch (error) {
       throw Error(error.message)
     } finally {
@@ -199,10 +203,8 @@ class GroupService {
         [gid, cid]
       )
 
+      histData.object_name = `g_${rows[0].group_gid}`
       histData.result = rows.length === 1
-      if (histData.result) {
-        histData.object_name = rows[0].group_name
-      }
       return rows.length
     } catch (error) {
       throw Error(error.message)

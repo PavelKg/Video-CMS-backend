@@ -36,7 +36,7 @@ class VideoService {
       user_id,
       user_uid: uid,
       cid,
-      object_name: title ? title : name,
+      object_name: '00000',
       target_data: {...query}
     }
 
@@ -61,11 +61,12 @@ class VideoService {
       storage_bucket_input = rows[0].storage_bucket_input
       storage_bucket_output = rows[0].storage_bucket_output
       const storage_content_limit = rows[0].storage_content_limit
-      const {rowCount} = await client.query(
+      const {rows: insRows} = await client.query(
         `INSERT INTO videos (video_filename, video_type, video_filesize,
         video_uuid, video_status, video_bucket_input, 
         video_bucket_output,video_company_id, video_public, video_title)
-       values ($1, $2, $3, $4, 'create', $5, $6, $7, false, $8)`,
+       values ($1, $2, $3, $4, 'create', $5, $6, $7, false, $8)
+       RETURNING video_id;`,
         [
           name,
           type,
@@ -77,7 +78,9 @@ class VideoService {
           title ? title : ''
         ]
       )
-      histData.result = rowCount === 1
+      histData.object_name = `v_${insRows[0].video_id}`
+      histData.result = insRows.length === 1
+      //return insRows.length
     } catch (error) {
     } finally {
       if (client) {
@@ -161,6 +164,7 @@ class VideoService {
         )
 
         SELECT 
+          'v_'||video_id AS video_id,
           video_uuid,
           video_status,
           video_public,
@@ -193,7 +197,8 @@ class VideoService {
           select user_groups AS groups from users where user_company_id=$1 and user_uid=$5
         )
 
-        SELECT video_uuid,
+        SELECT 'v_'||video_id AS video_id,
+          video_uuid,
           video_filename,
           video_status,
           video_title,
@@ -270,7 +275,7 @@ class VideoService {
           RETURNING *`,
         [cid, uuid]
       )
-      histData.object_name = rows[0].video_title
+      histData.object_name = `v_${rows[0].video_id}`
       histData.result = rows.length === 1
       return rows.length
     } catch (error) {
@@ -332,7 +337,7 @@ class VideoService {
         values: [...Object.values(fields), cid, uuid]
       }
       const {rows} = await client.query(query)
-      histData.object_name = rows[0].video_title
+      histData.object_name = `v_${rows[0].video_id}`
       histData.result = rows.length === 1
       return rows.length
     } catch (error) {
@@ -383,7 +388,7 @@ class VideoService {
       }
 
       const {rows} = await client.query(query)
-      histData.object_name = rows[0].video_title
+      histData.object_name = `v_${rows[0].video_id}`
       histData.result = rows.length === 1
       return rows
     } catch (error) {
@@ -433,7 +438,7 @@ class VideoService {
         values: [cid, uuid, value.toLowerCase() === 'public']
       }
       const {rows} = await client.query(query)
-      histData.object_name = rows[0].video_title
+      histData.object_name = `v_${rows[0].video_id}`
       histData.result = rows.length === 1
       return rows.length
     } catch (error) {

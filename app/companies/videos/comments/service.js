@@ -117,11 +117,10 @@ class CommentService {
           SELECT user_id, $2,  $1, 
             video_id, $3, $4, true 
           FROM  adv_info
-          RETURNING comment_id
-        ;`,
+          RETURNING *;`,
         [cid, uid, uuid, comment_text]
       )
-
+      histData.object_name = `v_${rows[0].comment_vid}`
       histData.result = typeof rows[0] === 'object'
       return rows[0].comment_id
     } catch (error) {
@@ -158,13 +157,15 @@ class CommentService {
       client = await this.db.connect()
       const query = {
         text: `UPDATE comments SET comment_visible = $4
-         WHERE comment_company_id=$1 AND comment_video_uuid=$2 AND comment_id=$3`,
+         WHERE comment_company_id=$1 AND comment_video_uuid=$2 AND comment_id=$3
+         RETURNING *;`,
         values: [cid, uuid, comid, Boolean(value)]
       }
 
-      const {rowCount} = await client.query(query)
-      histData.result = rowCount === 1
-      return rowCount
+      const {rows} = await client.query(query)
+      histData.object_name = `v_${rows[0].comment_vid}`
+      histData.result = rows.lenght === 1
+      return rows.lenght
     } catch (error) {
       throw Error(error)
     } finally {
@@ -201,7 +202,7 @@ class CommentService {
       const query_check = {
         text: `SELECT comment_id FROM comments 
          WHERE comment_company_id=$1 AND comment_video_uuid=$2 
-          AND comment_id=$3 AND deleted_at is not null`,
+          AND comment_id=$3 AND deleted_at is not null;`,
         values: [cid, uuid, comid]
       }
       const cntDeleted = await client.query(query_check)
@@ -216,12 +217,14 @@ class CommentService {
          WHERE comment_company_id=$1 
           AND comment_video_uuid=$2 
           AND comment_id=$3
-          AND ($4 = true OR ($1=$5 AND comment_user_uid = $6))`,
+          AND ($4 = true OR ($1=$5 AND comment_user_uid = $6))
+          RETURNING *;`,
         values: [cid, uuid, comid, acc.is_admin, acc.company_id, acc.uid]
       }
-      const {rowCount} = await client.query(query)
-      histData.result = rowCount === 1
-      return rowCount
+      const {rows} = await client.query(query)
+      histData.object_name = `v_${rows[0].comment_vid}`
+      histData.result = rows.lenght === 1
+      return rows.lenght === 1
     } catch (error) {
       throw Error(error)
     } finally {
