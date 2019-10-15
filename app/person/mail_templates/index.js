@@ -47,7 +47,6 @@ const templates = {
 }
 
 const letter = function(lang = 'en', replace_data) {
-  
   const {
     system_name = 'Video-CMS',
     name = 'UserName',
@@ -55,8 +54,6 @@ const letter = function(lang = 'en', replace_data) {
     valid,
     url
   } = replace_data
-
-console.log(system_name, name, email, valid, url)
 
   const subject = templates[lang].subject.replace(
     /{{template_system_name}}/g,
@@ -67,7 +64,7 @@ console.log(system_name, name, email, valid, url)
     .replace(/{{template_user_email}}/g, email)
     .replace(/{{template_URL}}/g, url)
     .replace(/{{template_valid_date}}/g, valid)
-    
+
   return {subject, body}
 }
 module.exports = letter

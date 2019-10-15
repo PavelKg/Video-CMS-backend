@@ -224,7 +224,7 @@ class CommentService {
       const {rows} = await client.query(query)
       histData.object_name = `v_${rows[0].comment_vid}`
       histData.result = rows.lenght === 1
-      return rows.lenght === 1
+      return rows.lenght
     } catch (error) {
       throw Error(error)
     } finally {

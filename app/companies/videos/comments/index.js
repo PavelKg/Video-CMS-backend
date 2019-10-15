@@ -51,7 +51,6 @@ async function getCommentInfoHandler(req, reply) {
     }
   })
   const info =  await this.commentService.commentInfo({acc, params})
-  console.log('info=', info)
   if (info) {
     reply.code(200).send(info)
   } else {
