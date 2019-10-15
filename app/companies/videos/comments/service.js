@@ -164,8 +164,8 @@ class CommentService {
 
       const {rows} = await client.query(query)
       histData.object_name = `v_${rows[0].comment_vid}`
-      histData.result = rows.lenght === 1
-      return rows.lenght
+      histData.result = rows.length === 1
+      return rows.length
     } catch (error) {
       throw Error(error)
     } finally {
@@ -223,8 +223,8 @@ class CommentService {
       }
       const {rows} = await client.query(query)
       histData.object_name = `v_${rows[0].comment_vid}`
-      histData.result = rows.lenght === 1
-      return rows.lenght
+      histData.result = rows.length === 1
+      return rows.length
     } catch (error) {
       throw Error(error)
     } finally {

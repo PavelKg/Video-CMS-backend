@@ -50,7 +50,7 @@ async function getCommentInfoHandler(req, reply) {
       acc = decoded.user
     }
   })
-  const info =  await this.commentService.commentInfo({acc, params})
+  const info = await this.commentService.commentInfo({acc, params})
   if (info) {
     reply.code(200).send(info)
   } else {
@@ -109,6 +109,7 @@ async function delCommentHandler(req, reply) {
     }
   })
   const deleted = await this.commentService.delComment({acc, comment})
+
   const _code = deleted === 1 ? 204 : 404
   reply.code(_code).send()
 }
