@@ -31,6 +31,7 @@ class MessageService {
         message_cp_uid AS cp_uid,
         message_cp_cid AS cp_cid,
         message_cp_cname AS cp_cname,
+        message_cp_deleted_at AS cp_deleted_at,
         subject,
         text,
         starred,

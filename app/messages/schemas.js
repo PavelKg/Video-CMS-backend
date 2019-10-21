@@ -14,6 +14,7 @@ const messageObject = {
     cp_uid: {type: 'string'},
     cp_cid: {type: 'string'},
     cp_cname: {type: 'string'},
+    cp_deleted_at: {type: 'string'},
     subject: {type: 'string'},
     text: {type: 'string'},
     starred: {type: 'boolean'},
@@ -118,7 +119,7 @@ const delMessage = {
   tags: ['messages'],
   params: {
     type: 'object',
-    required: ['direction','mid'],
+    required: ['direction', 'mid'],
     properties: {
       mid: {
         type: 'string',
@@ -127,7 +128,7 @@ const delMessage = {
       direction: {
         type: 'string',
         pattern: '^(inbox|outbox)$'
-      }      
+      }
     },
     additionalProperties: false
   }
