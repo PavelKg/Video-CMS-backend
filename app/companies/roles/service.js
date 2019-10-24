@@ -93,6 +93,7 @@ class RoleService {
       user_uid: uid,
       cid: company_id,
       object_name: rid,
+      details: 'Failure',
       target_data: {}
     }
 
@@ -116,6 +117,7 @@ class RoleService {
 
       histData.result = typeof rows[0] === 'object'
       histData.target_data = {...rows[0]}
+      histData.details = 'Success'
 
       return rows[0].rid
     } catch (error) {
@@ -142,6 +144,7 @@ class RoleService {
       user_uid: uid,
       cid: company_id,
       object_name: rid,
+      details: `Failure [${name}]`,
       target_data: {...role}
     }
 
@@ -160,6 +163,7 @@ class RoleService {
         [rid, cid, name, is_admin]
       )
       histData.result = rowCount === 1
+      histData.details = `[${name}] information updated`
       return rowCount
     } catch (error) {
       throw Error(error)
@@ -183,6 +187,7 @@ class RoleService {
       user_uid: uid,
       cid: company_id,
       object_name: rid,
+      details: 'Failure',
       target_data: {...role}
     }
 
@@ -212,6 +217,7 @@ class RoleService {
         [rid, cid]
       )
       histData.result = rowCount === 1
+      histData.details = 'Success'
       return rowCount
     } catch (error) {
       throw Error(error)

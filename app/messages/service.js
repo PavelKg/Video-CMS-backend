@@ -80,6 +80,7 @@ class MessageService {
       category: this.history_category,
       action: 'posted',
       result: false,
+      details: 'Failure',
       object_name: receiver_uid
     }
 
@@ -106,6 +107,7 @@ class MessageService {
         user_uid: sender_uid,
         cid: sender_cid,
         result: rows.length === 1,
+        details: 'Success',
         target_data: {message: rows[0].message_id}
       }
 
@@ -134,6 +136,7 @@ class MessageService {
       user_id,
       user_uid: uid,
       cid: cid,
+      details: 'Failure',
       target_data: {message: mid}
     }
 
@@ -156,6 +159,7 @@ class MessageService {
       )
       histData.result = rows.length === 1
       histData.object_name = rows[0][`message_${dir_oposit}_uid`]
+      histData.details = 'Success'
 
       return rows.length
     } catch (error) {
@@ -178,6 +182,7 @@ class MessageService {
       user_uid: uid,
       cid: company_id,
       object_name: uid,
+      details: 'Failure',
       target_data: {message: mid}
     }
 
@@ -191,6 +196,7 @@ class MessageService {
         [mid, uid, company_id]
       )
       histData.result = rowCount === 1
+      histData.details = ''
       return rowCount
     } catch (err) {
       switch (err.code) {
@@ -218,6 +224,7 @@ class MessageService {
       user_uid: uid,
       cid: company_id,
       object_name: uid,
+      details: 'Failure',
       target_data: {message: mid}
     }
 
@@ -232,6 +239,7 @@ class MessageService {
         [mid, uid, company_id]
       )
       histData.result = rowCount === 1
+      details = ''
       return rowCount
     } catch (err) {
       throw Error(err.message)

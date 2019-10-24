@@ -111,6 +111,7 @@ class UserService {
       user_uid: acc.uid,
       cid: acc.company_id,
       object_name: uid,
+      details: `Failure [${fullname}]`,
       target_data: {uid, cid, fullname, rid, email, gids}
     }
 
@@ -138,6 +139,7 @@ class UserService {
         [uid, cid, fullname, gids, rid, email, password]
       )
       histData.result = typeof rows[0] === 'object'
+      histData.details = `Success [${fullname}]`
       return rows[0].user_uid
     } catch (error) {
       throw Error(error)
@@ -163,6 +165,7 @@ class UserService {
       user_uid: acc.uid,
       cid: acc.company_id,
       object_name: uid,
+      details: `Failure [${fullname}]`,
       target_data: {uid, cid, fullname, rid, email, gids}
     }
 
@@ -182,6 +185,7 @@ class UserService {
         [uid, cid, fullname, gids, rid, email, password]
       )
       histData.result = rowCount === 1
+      histData.details = `[ ${fullname} ] information updated`
       return rowCount
     } catch (error) {
       throw Error(error)
@@ -206,6 +210,7 @@ class UserService {
       user_uid: acc.uid,
       cid: acc.company_id,
       object_name: uid,
+      details: 'Failure',
       target_data: {...user}
     }
 
@@ -222,6 +227,7 @@ class UserService {
         [uid, cid]
       )
       histData.result = rowCount === 1
+      histData.details = 'Success'
       return rowCount
     } catch (error) {
       throw Error(error)

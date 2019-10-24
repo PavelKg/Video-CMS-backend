@@ -65,6 +65,7 @@ class PersonService {
         user_uid,
         cid,
         result: typeof user === 'object',
+        details: typeof user === 'object' ? 'Success' : 'Failure',
         target_data: {uid: username}
       }
 
@@ -95,6 +96,7 @@ class PersonService {
         user_uid: uid,
         cid: company_id,
         result: true,
+        details: 'Success',
         target_data: {uid}
       }
 
@@ -197,6 +199,7 @@ class PersonService {
         user_uid,
         cid,
         result: typeof user === 'object',
+        details: typeof user === 'object' ? 'Success' : 'Failure',
         object_name: user_uid,
         target_data: {email, uid: user_uid}
       }
@@ -298,6 +301,7 @@ class PersonService {
         user_uid,
         cid,
         result: pr.length > 0,
+        details: pr.length ? 'Success' : 'Failure',
         object_name: user_uid,
         target_data: {token}
       }

@@ -37,6 +37,7 @@ class VideoService {
       user_uid: uid,
       cid,
       object_name: '00000',
+      details: `Failure [${title}]`,
       target_data: {...query}
     }
 
@@ -80,6 +81,7 @@ class VideoService {
       )
       histData.object_name = `v_${insRows[0].video_id}`
       histData.result = insRows.length === 1
+      histData.details = `Success [${title}]`
       //return insRows.length
     } catch (error) {
     } finally {
@@ -258,6 +260,7 @@ class VideoService {
       user_uid: uid,
       cid: company_id,
       object_name: '',
+      details: 'Failure',
       target_data: {cid, uuid}
     }
 
@@ -277,6 +280,7 @@ class VideoService {
       )
       histData.object_name = `v_${rows[0].video_id}`
       histData.result = rows.length === 1
+      histData.details = 'Success'
       return rows.length
     } catch (error) {
     } finally {
@@ -301,6 +305,7 @@ class VideoService {
       user_uid: uid,
       cid: company_id,
       object_name: '',
+      details: 'Failure',
       target_data: {...data}
     }
 
@@ -339,6 +344,7 @@ class VideoService {
       const {rows} = await client.query(query)
       histData.object_name = `v_${rows[0].video_id}`
       histData.result = rows.length === 1
+      histData.details = `Updated information of [${rows[0].video_title}].`
       return rows.length
     } catch (error) {
       throw Error(error)
@@ -364,6 +370,7 @@ class VideoService {
       user_uid: uid,
       cid: company_id,
       object_name: '',
+      details: 'Failure',
       target_data: {...data}
     }
 
@@ -390,6 +397,7 @@ class VideoService {
       const {rows} = await client.query(query)
       histData.object_name = `v_${rows[0].video_id}`
       histData.result = rows.length === 1
+      histData.details = `Success [${value.toLowerCase()}]`
       return rows
     } catch (error) {
       throw Error(error)
@@ -415,6 +423,7 @@ class VideoService {
       user_uid: uid,
       cid: company_id,
       object_name: '',
+      details: 'Failed',
       target_data: {...data}
     }
 
@@ -440,6 +449,7 @@ class VideoService {
       const {rows} = await client.query(query)
       histData.object_name = `v_${rows[0].video_id}`
       histData.result = rows.length === 1
+      histData.details = value
       return rows.length
     } catch (error) {
       throw Error(error)

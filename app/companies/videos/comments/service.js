@@ -95,6 +95,7 @@ class CommentService {
       user_uid: uid,
       cid: company_id,
       object_name: uuid,
+      details: 'Failure',
       target_data: {...comment}
     }
 
@@ -122,6 +123,7 @@ class CommentService {
       )
       histData.object_name = `v_${rows[0].comment_vid}`
       histData.result = typeof rows[0] === 'object'
+      histData.details = 'Success'
       return rows[0].comment_id
     } catch (error) {
       throw Error(error.message)
@@ -146,6 +148,7 @@ class CommentService {
       user_uid: uid,
       cid: company_id,
       object_name: uuid,
+      details: 'Failure',
       target_data: {...comment}
     }
 
@@ -165,6 +168,9 @@ class CommentService {
       const {rows} = await client.query(query)
       histData.object_name = `v_${rows[0].comment_vid}`
       histData.result = rows.length === 1
+      histData.details = Boolean(value)
+        ? 'Comment has been display'
+        : 'Comment has been hidden'
       return rows.length
     } catch (error) {
       throw Error(error)
@@ -190,6 +196,7 @@ class CommentService {
       user_uid: uid,
       cid: company_id,
       object_name: uuid,
+      details: 'Failure',
       target_data: {...comment}
     }
 
@@ -224,6 +231,7 @@ class CommentService {
       const {rows} = await client.query(query)
       histData.object_name = `v_${rows[0].comment_vid}`
       histData.result = rows.length === 1
+      histData.details = 'Success'
       return rows.length
     } catch (error) {
       throw Error(error)

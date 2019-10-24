@@ -84,6 +84,7 @@ class GroupService {
       user_uid: uid,
       cid: company_id,
       object_name: name,
+      details: 'Failure',
       target_data: {...group}
     }
 
@@ -102,6 +103,7 @@ class GroupService {
       histData.result = typeof rows[0] === 'object'
       histData.object_name = `g_${rows[0].group_gid}`
       histData.target_data = {...histData.target_data, gid: rows[0].group_gid}
+      histData.details = 'Success'
 
       return rows[0].group_gid
     } catch (error) {
@@ -128,6 +130,7 @@ class GroupService {
       user_uid: uid,
       cid: company_id,
       object_name: name,
+      details: 'Failure [name]',
       target_data: {...group}
     }
 
@@ -148,6 +151,7 @@ class GroupService {
 
       histData.object_name = `g_${rows[0].group_gid}`
       histData.result = rows.length === 1
+      histData.details = `[${name}] information updated`
       return rows.length
     } catch (error) {
       throw Error(error.message)
@@ -173,6 +177,7 @@ class GroupService {
       user_uid: uid,
       cid: company_id,
       object_name: '',
+      details: 'Failure',
       target_data: {...group}
     }
 
@@ -205,6 +210,7 @@ class GroupService {
 
       histData.object_name = `g_${rows[0].group_gid}`
       histData.result = rows.length === 1
+      histData.details = 'Success'
       return rows.length
     } catch (error) {
       throw Error(error.message)

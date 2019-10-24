@@ -17,14 +17,15 @@ class HistoryLoggerService {
       result,
       object_name,
       action_note = null,
-      target_data
+      target_data,
+      details
     } = payload
 
     return {
       text: `INSERT INTO public.users_history_log 
               (userhist_user_id,  userhist_user_uid, userhist_company_id, 
                 userhist_category, userhist_date, userhist_action, 
-                userhist_object_name, userhist_action_note,
+                userhist_object_name, userhist_details,
                 userhist_result, userhist_data) 
             values 
               ($1, $2, $3, $4, now(), $5, $6, $7, $8, $9);`,
@@ -35,7 +36,7 @@ class HistoryLoggerService {
         category,
         action,
         object_name,
-        action_note,
+        details,
         this.resultCheck(result),
         target_data
       ]
@@ -82,7 +83,8 @@ class HistoryLoggerService {
           userhist_action AS action,
           userhist_object_name AS object,
           userhist_result AS result,
-          created_at AT TIME ZONE $3 AS created_at 
+          created_at AT TIME ZONE $3 AS created_at, 
+          userhist_details AS details,
         FROM users_history_log
         WHERE  userhist_company_id = $1 
         AND $4=true
@@ -149,7 +151,6 @@ class HistoryLoggerService {
       filter = undefined,
       categories
     } = query
-
 
     const qSort = db_api.sorting(sort, 'history')
     let qFilter = Boolean(filter) ? db_api.filtration(filter, 'history') : ''
