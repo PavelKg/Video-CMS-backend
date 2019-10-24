@@ -239,7 +239,7 @@ class MessageService {
         [mid, uid, company_id]
       )
       histData.result = rowCount === 1
-      details = ''
+      histData.details = ''
       return rowCount
     } catch (err) {
       throw Error(err.message)
