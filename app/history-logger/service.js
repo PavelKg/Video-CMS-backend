@@ -84,7 +84,7 @@ class HistoryLoggerService {
           userhist_object_name AS object,
           userhist_result AS result,
           created_at AT TIME ZONE $3 AS created_at, 
-          userhist_details AS details,
+          userhist_details AS details
         FROM users_history_log
         WHERE  userhist_company_id = $1 
         AND $4=true
