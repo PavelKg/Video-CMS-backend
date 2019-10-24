@@ -15,6 +15,7 @@ const historyInfoObject = {
     action: {type: 'string'},
     object: {type: 'string'},
     result: {type: 'string'},
+    details: {type: 'string'},
     created_at: {type: 'string'}
   }
 }
@@ -101,5 +102,4 @@ module.exports = {
   historyCategories,
   historyCategoryObjects,
   historyCategoryObjectsByName
-
 }
