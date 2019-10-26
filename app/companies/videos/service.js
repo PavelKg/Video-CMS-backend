@@ -443,7 +443,7 @@ class VideoService {
         text: `UPDATE videos SET video_public = $3
          WHERE video_company_id=$1 
           AND video_uuid=$2 AND deleted_at IS NULL 
-          RETURNING *`,
+          RETURNING video_id`,
         values: [cid, uuid, value.toLowerCase() === 'public']
       }
       const {rows} = await client.query(query)
@@ -496,6 +496,54 @@ class VideoService {
       throw Error(error)
     } finally {
       client.release()
+    }
+  }
+
+  async addPlayerEvent(payload) {
+    let client = undefined
+    const {acc, data} = payload
+    const {
+      cid,
+      uuid,
+      event_action,
+      event_data,
+      event_result,
+      event_details
+    } = data
+
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: event_action,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: '',
+      details: 'Failed',
+      target_data: {...event_data}
+    }
+
+    try {
+      client = await this.db.connect()
+      const query = {
+        text: `SELECT video_id from videos 
+         WHERE video_company_id=$1 
+          AND video_uuid=$2;`,
+        values: [cid, uuid]
+      }
+      const {rows} = await client.query(query)
+      histData.object_name = `v_${rows[0].video_id}`
+      histData.result = rows.length === 1
+      histData.details = event_details
+      histData.result = event_result === 's' ? true : false
+      return rows.length
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
     }
   }
 }

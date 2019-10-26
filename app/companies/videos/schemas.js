@@ -219,6 +219,24 @@ const updVideoPublicStatus = {
   }
 }
 
+const addVideoPlayerEvent = {
+  tags: ['videos'],
+  params: {
+    type: 'object',
+    required: ['cid', 'uuid'],
+    properties: {
+      cid: {
+        type: 'number'
+      },
+      uuid: uuidObj
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: videoCatalogThumbnailObject
+  }
+}
+
 // const gcsUploadSignedPolicy = {
 //   tags: ['videos'],
 //   params: {
@@ -252,6 +270,7 @@ module.exports = {
   delVideo,
   updVideo,
   updVideoStatus,
-  updVideoPublicStatus
+  updVideoPublicStatus,
+  addVideoPlayerEvent
   //gcsUploadSignedPolicy
 }
