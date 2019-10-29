@@ -122,8 +122,8 @@ class PersonService {
           company_id, 
           company_name, 
           user_email AS email,
-          user_activity_start AS activity_start,
-          user_activity_finish AS activity_finish,
+          TO_CHAR(user_activity_start::DATE, 'yyyy-mm-dd') AS activity_start,
+          TO_CHAR(activity_finish::DATE, 'yyyy-mm-dd') AS activity_finish,
           CASE WHEN company_is_super THEN 'super'
                 WHEN role_is_admin THEN 'admin'
             ELSE 'user'
