@@ -35,6 +35,8 @@ class UserService {
         user_fullname as fullname, 
         role_rid as rid, 
         user_company_id as cid,
+        TO_CHAR(user_activity_start::DATE, 'yyyy-mm-dd') as activity_start,
+        TO_CHAR(user_activity_finish::DATE, 'yyyy-mm-dd') as activity_finish,        
         CASE WHEN users.user_groups IS NULL THEN '{}' ELSE users.user_groups END as gids, 
         (select CASE WHEN array_agg(group_name) IS NULL THEN '{}' ELSE array_agg(group_name) END 
           from groups where "groups".group_gid = ANY(users.user_groups))  as groups_name, 
@@ -74,6 +76,8 @@ class UserService {
         user_fullname as fullname, 
         role_rid as rid, 
         user_company_id as cid,
+        TO_CHAR(user_activity_start::DATE, 'yyyy-mm-dd') as activity_start,
+        TO_CHAR(user_activity_finish::DATE, 'yyyy-mm-dd') as activity_finish,        
         CASE WHEN users.user_groups IS NULL THEN '{}' ELSE users.user_groups END as gids, 
         (select CASE WHEN array_agg(group_name) IS NULL THEN '{}' ELSE array_agg(group_name) END 
           from groups where "groups".group_gid = ANY(users.user_groups))  as groups_name, 
@@ -101,7 +105,17 @@ class UserService {
   async addUser(payload) {
     let client = undefined
     const {acc, user} = payload
-    const {uid, cid, fullname, rid, email = '', password, gids = []} = user
+    const {
+      uid,
+      cid,
+      fullname,
+      rid,
+      email = '',
+      password,
+      gids = [],
+      activity_start = '',
+      activity_finish = ''
+    } = user
 
     let histData = {
       category: this.history_category,
@@ -112,7 +126,16 @@ class UserService {
       cid: acc.company_id,
       object_name: uid,
       details: `Failure [${fullname}]`,
-      target_data: {uid, cid, fullname, rid, email, gids}
+      target_data: {
+        uid,
+        cid,
+        fullname,
+        rid,
+        email,
+        gids,
+        activity_start,
+        activity_finish
+      }
     }
 
     try {
@@ -132,11 +155,25 @@ class UserService {
                 user_role_id, 
                 user_email, 
                 user_password,
-                user_company_id) 
-              VALUES ($1, $3, $4, (select id from urole), $6, crypt($7, gen_salt('bf')), $2) 
+                user_company_id,
+                user_activity_start,
+                user_activity_finish) 
+              VALUES ($1, $3, $4, (select id from urole), $6, crypt($7, gen_salt('bf')), $2, 
+              CASE WHEN $8<>'' THEN $8::date ELSE null END, 
+              CASE WHEN $9<>'' THEN $9::date ELSE null END) 
               RETURNING user_uid
         ;`,
-        [uid, cid, fullname, gids, rid, email, password]
+        [
+          uid,
+          cid,
+          fullname,
+          gids,
+          rid,
+          email,
+          password,
+          activity_start,
+          activity_finish
+        ]
       )
       histData.result = typeof rows[0] === 'object'
       histData.details = `Success [${fullname}]`
@@ -154,7 +191,16 @@ class UserService {
   async updUser(payload) {
     let client = undefined
     const {acc, user} = payload
-    const {uid, cid, fullname, rid, email = '', password = ''} = user
+    const {
+      uid,
+      cid,
+      fullname,
+      rid,
+      email = '',
+      password = '',
+      activity_start = '',
+      activity_finish = ''
+    } = user
     const gids = user.gids ? user.gids : []
 
     let histData = {
@@ -166,7 +212,16 @@ class UserService {
       cid: acc.company_id,
       object_name: uid,
       details: `Failure [${fullname}]`,
-      target_data: {uid, cid, fullname, rid, email, gids}
+      target_data: {
+        uid,
+        cid,
+        fullname,
+        rid,
+        email,
+        gids,
+        activity_start,
+        activity_finish
+      }
     }
 
     try {
@@ -180,9 +235,21 @@ class UserService {
           user_groups = $4,
           user_role_id = (select role_id from roles where role_rid=$5 and role_company_id=$2),
           user_email = $6,
-          user_password = CASE WHEN $7<>'' THEN crypt($7, gen_salt('bf')) ELSE user_password END
+          user_password = CASE WHEN $7<>'' THEN crypt($7, gen_salt('bf')) ELSE user_password END,
+          activity_start = CASE WHEN $8<>'' THEN $8::date ELSE null END,
+          activity_finish = CASE WHEN $9<>'' THEN $9::date ELSE null END
         WHERE user_company_id=$2 and user_uid =$1 AND deleted_at IS NULL;`,
-        [uid, cid, fullname, gids, rid, email, password]
+        [
+          uid,
+          cid,
+          fullname,
+          gids,
+          rid,
+          email,
+          password,
+          activity_start,
+          activity_finish
+        ]
       )
       histData.result = rowCount === 1
       histData.details = `[ ${fullname} ] information updated`

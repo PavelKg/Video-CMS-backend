@@ -11,7 +11,9 @@ const userProfileOutput = {
     company_name: {type: 'string'},
     irole: {type: 'string'},
     username: {type: 'string'},
-    timezone: {type: 'string'}
+    timezone: {type: 'string'},
+    activity_start: {type: 'string'},
+    activity_finish: {type: 'string'}
   }
 }
 

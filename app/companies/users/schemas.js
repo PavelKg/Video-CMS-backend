@@ -18,7 +18,9 @@ const userObject = {
     rid: {type: 'string'},
     email: {type: 'string'},
     deleted_at: {type: 'string'},
-    last_login: {type: 'string'}
+    last_login: {type: 'string'},
+    activity_start: {type: 'string'},
+    activity_finish: {type: 'string'}
   }
 }
 
@@ -31,9 +33,20 @@ const user = {
     gids: {type: 'array', items: {type: 'integer'}},
     rid: {type: 'string'},
     email: {type: 'string'},
-    password: {type: 'string'}
+    password: {type: 'string'},
+    activity_start: {type: 'string'},
+    activity_finish: {type: 'string'}
   },
-  required: ['uid', 'fullname', 'gids', 'rid', 'email', 'password'],
+  required: [
+    'uid',
+    'fullname',
+    'gids',
+    'rid',
+    'email',
+    'password',
+    'activity_start',
+    'activity_finish'
+  ],
   additionalProperties: false
 }
 
@@ -116,7 +129,14 @@ const updUser = {
       email: {type: 'string'},
       password: {type: 'string'}
     },
-    required: ['fullname', 'gids', 'rid', 'email']
+    required: [
+      'fullname',
+      'gids',
+      'rid',
+      'email',
+      'activity_start',
+      'activity_finish'
+    ]
   }
 }
 

@@ -46,10 +46,11 @@ class PersonService {
         company_timezone AS timezone 
       FROM users, roles, companies 
       WHERE users.user_company_id=companies.company_id 
-	      and roles.role_company_id=companies.company_id 
-	      and roles.role_id=users.user_role_id
-	      and users.deleted_at IS NULL
-	      and users.user_uid =$1 and users.user_password=crypt($2, user_password);`,
+	      AND roles.role_company_id=companies.company_id 
+	      AND roles.role_id=users.user_role_id
+        AND users.deleted_at IS NULL
+        AND (user_activity_finish is null or now()::date between user_activity_start and user_activity_finish)
+	      AND users.user_uid =$1 and users.user_password=crypt($2, user_password);`,
         [username, password]
       )
 
@@ -121,6 +122,8 @@ class PersonService {
           company_id, 
           company_name, 
           user_email AS email,
+          user_activity_start AS activity_start,
+          user_activity_finish AS activity_finish,
           CASE WHEN company_is_super THEN 'super'
                 WHEN role_is_admin THEN 'admin'
             ELSE 'user'
@@ -182,9 +185,10 @@ class PersonService {
         user_fullname AS fullname
       from users, roles, companies 
       where users.user_company_id=companies.company_id 
-        and roles.role_company_id=companies.company_id 
-        and roles.role_id=users.user_role_id
-        and users.user_email =$1;`,
+        AND roles.role_company_id=companies.company_id 
+        AND roles.role_id=users.user_role_id
+        AND (user_activity_finish is null or now()::date between user_activity_start and user_activity_finish)
+        AND users.user_email =$1;`,
         [email]
       )
       const user = rows[0]
