@@ -236,8 +236,8 @@ class UserService {
           user_role_id = (select role_id from roles where role_rid=$5 and role_company_id=$2),
           user_email = $6,
           user_password = CASE WHEN $7<>'' THEN crypt($7, gen_salt('bf')) ELSE user_password END,
-          activity_start = CASE WHEN $8<>'' THEN $8::date ELSE null END,
-          activity_finish = CASE WHEN $9<>'' THEN $9::date ELSE null END
+          user_activity_start = CASE WHEN $8<>'' THEN $8::date ELSE null END,
+          user_activity_finish = CASE WHEN $9<>'' THEN $9::date ELSE null END
         WHERE user_company_id=$2 and user_uid =$1 AND deleted_at IS NULL;`,
         [
           uid,
