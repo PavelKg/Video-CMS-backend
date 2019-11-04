@@ -34,6 +34,7 @@ const videoCatalogObject = {
     video_public: {type: 'boolean'},
     video_output_file: {type: 'string'},
     video_groups: {type: 'array', items: {type: 'integer'}},
+    commentbox_visible: {type: 'boolean'},    
     created_at: {type: 'string'},
     updated_at: {type: 'string'},
     deleted_at: {type: 'string'}

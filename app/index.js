@@ -19,6 +19,9 @@ const PersonService = require('./person/service')
 const Role = require('./companies/roles')
 const RoleService = require('./companies/roles/service')
 
+const Company = require('./companies')
+const CompanyService = require('./companies/service')
+
 const Group = require('./companies/groups')
 const GroupService = require('./companies/groups/service')
 
@@ -140,6 +143,7 @@ async function decorateFastifyInstance(fastify) {
   fastify.decorate('histLoggerService', histLoggerService)
 
   const personService = new PersonService(db, nodemailer, histLoggerService)
+  const companyService = new CompanyService(db, histLoggerService)
   const roleService = new RoleService(db, histLoggerService)
   const groupService = new GroupService(db, histLoggerService)
   const userService = new UserService(db, histLoggerService)
@@ -149,6 +153,7 @@ async function decorateFastifyInstance(fastify) {
   const bitmovinService = new BitmovinService(bitmovin, histLoggerService)
 
   fastify.decorate('personService', personService)
+  fastify.decorate('companyService', companyService)
   fastify.decorate('roleService', roleService)
   fastify.decorate('groupService', groupService)
   fastify.decorate('userService', userService)
@@ -184,6 +189,7 @@ module.exports = async function(fastify, opts) {
 
     // APIs modules
     .register(Person, {prefix: '/api/users'})
+    .register(Company, {prefix: '/api/companies/:cid/mng'})
     .register(Role, {prefix: '/api/companies/:cid/roles'})
     .register(Group, {prefix: '/api/companies/:cid/groups'})
     .register(User, {prefix: '/api/companies/:cid/users'})

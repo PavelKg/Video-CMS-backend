@@ -209,6 +209,7 @@ class VideoService {
           CASE WHEN video_groups IS NULL THEN '{}' ELSE video_groups END as video_groups,
           video_description,
           'https://'||company_corporate_code||'.${service_domain}'||'/'||video_output_file AS video_output_file,
+          CASE WHEN company_commentbox_visible IS NULL THEN true ELSE company_commentbox_visible END as commentbox_visible,
           videos.created_at AT TIME ZONE $3 AS created_at, 
           videos.updated_at AT TIME ZONE $3 AS updated_at,           
           videos.deleted_at AT TIME ZONE $3 AS deleted_at 
