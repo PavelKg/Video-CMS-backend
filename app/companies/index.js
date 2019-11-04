@@ -1,4 +1,5 @@
 const {
+  getCommentsBoxVisibleState: getCommentsBoxVisibleStateSchema,
   setCommentsBoxVisibleState: setCommentsBoxVisibleStateSchema,
   updCompanyLogo: updCompanyLogoSchema,
   getCompanyLogo: getCompanyLogoSchema
@@ -11,6 +12,11 @@ module.exports = async function(fastify, opts) {
     '/commentbox/:state',
     {schema: setCommentsBoxVisibleStateSchema},
     setCommentsBoxVisibleHendler
+  )
+  fastify.get(
+    '/commentbox',
+    {schema: getCommentsBoxVisibleStateSchema},
+    getCommentsBoxVisibleHendler
   )
   fastify.put('/logo', {schema: updCompanyLogoSchema}, updCompanyLogoHendler)
   fastify.get('/logo', {schema: getCompanyLogoSchema}, getCompanyLogoHendler)
@@ -32,6 +38,24 @@ async function setCommentsBoxVisibleHendler(req, reply) {
   })
   const _code = res === 1 ? 204 : 404
   reply.code(_code).send()
+}
+
+async function getCommentsBoxVisibleHendler(req, reply) {
+  const cid = req.params.cid
+
+  let acc = null
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  const res = await this.companyService.getCommentsBoxState({
+    acc,
+    cid
+  })
+  const _code = typeof res === 'object' ? 200 : 404
+  reply.code(_code).send(res)
 }
 
 async function updCompanyLogoHendler(req, reply) {

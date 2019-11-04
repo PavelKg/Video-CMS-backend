@@ -56,6 +56,34 @@ class CompanyService {
     }
   }
 
+  async getCommentsBoxState(playload) {
+    const {acc, cid} = playload
+
+    let client = undefined
+
+    try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+      client = await this.db.connect()
+      const query = {
+        text: `SELECT company_commentbox_visible AS visible 
+         FROM companies 
+         WHERE company_id=$1`,
+        values: [cid]
+      }
+      const {rows} = await client.query(query)
+
+      return rows[0]
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      if (client) {
+        client.release()
+      }
+    }
+  }
+
   async updLogo(playload) {
     const {acc, body, cid} = playload
     const {data} = body

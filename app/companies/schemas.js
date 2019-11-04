@@ -16,6 +16,30 @@ const setCommentsBoxVisibleState = {
   }
 }
 
+const getCommentsBoxVisibleState = {
+  tags: ['companies'],
+  params: {
+    type: 'object',
+    required: ['cid'],
+    properties: {
+      cid: {
+        type: 'number'
+      }
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        visible: {
+          type: 'boolean'
+        }
+      }
+    }
+  }
+}
+
 const updCompanyLogo = {
   tags: ['companies'],
   params: {
@@ -62,6 +86,8 @@ const getCompanyLogo = {
 }
 
 module.exports = {
+  getCommentsBoxVisibleState,
   setCommentsBoxVisibleState,
+  getCompanyLogo,
   updCompanyLogo
 }
