@@ -109,6 +109,9 @@ class CompanyService {
     let client = undefined
 
     try {
+      if (acc.company_id !== cid) {
+        throw Error(errors.WRONG_ACCESS)
+      }
       client = await this.db.connect()
       const query = {
         text: `SELECT company_logo AS data 
