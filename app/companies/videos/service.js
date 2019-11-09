@@ -163,6 +163,14 @@ class VideoService {
       const {rows} = await client.query(
         `WITH user_group AS (
           select user_groups AS groups from users where user_company_id=$1 and user_uid=$4
+        ),
+        user_series AS (
+          select array_agg (c) AS useries
+			    from (select unnest(group_series) AS series 
+                from groups 
+                where group_company_id=$1 
+                  and group_gid in (select unnest(groups) from user_group where groups IS NOT null)
+                  and group_series IS NOT null) as dt(c)
         )
 
         SELECT 
@@ -175,7 +183,9 @@ class VideoService {
           deleted_at AT TIME ZONE $3 AS deleted_at 
         FROM videos
         WHERE  video_company_id = $1 
-        AND (video_groups && (select groups from user_group) OR $5=true)
+        AND ((video_groups && (select groups from user_group) AND 
+              video_series && (select useries from user_series)) 
+            OR $5=true)
         ${onlyPublic}
         ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
         [cid, offset, timezone, uid, is_admin]
@@ -197,7 +207,15 @@ class VideoService {
       const {rows} = await client.query(
         `WITH user_group AS (
           select user_groups AS groups from users where user_company_id=$1 and user_uid=$5
-        )
+        ),
+        user_series AS (
+          select array_agg (c) AS useries
+			    from (select unnest(group_series) AS series 
+                from groups 
+                where group_company_id=$1 
+                  and group_gid in (select unnest(groups) from user_group where groups IS NOT null)
+                  and group_series IS NOT null) as dt(c)
+        )        
 
         SELECT 'v_'||video_id AS video_id,
           video_uuid,
@@ -207,6 +225,7 @@ class VideoService {
           video_public,
           video_tag,
           CASE WHEN video_groups IS NULL THEN '{}' ELSE video_groups END as video_groups,
+          CASE WHEN video_series IS NULL THEN '{}' ELSE video_series END as video_series,
           video_description,
           'https://'||company_corporate_code||'.${service_domain}'||'/'||video_output_file AS video_output_file,
           CASE WHEN company_commentbox_visible IS NULL THEN true ELSE company_commentbox_visible END as commentbox_visible,
@@ -217,7 +236,8 @@ class VideoService {
         WHERE  video_company_id = company_id and video_uuid = $2 and company_id = $1 
           AND  videos.deleted_at IS NULL
           AND (video_public=true or (video_public=false and $4=true))
-          AND (video_groups && (select groups from user_group) OR $4=true)
+          AND ((video_groups && (select groups from user_group) OR 
+          video_series && (select useries from user_series)) OR $4=true)
           `,
         [cid, uuid, timezone, is_admin, uid]
       )

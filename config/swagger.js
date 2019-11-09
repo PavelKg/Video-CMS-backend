@@ -6,7 +6,7 @@ exports.options = {
     info: {
       title: 'Video-CMS API',
       description: 'Video-CMS backend API',
-      version: '0.1.0'
+      version: '0.1.1'
     },
     display: {docExpansion: 'none'},
     host: 'localhost',
@@ -18,6 +18,7 @@ exports.options = {
       {name: 'companies', description: 'Companies related end-points'},
       {name: 'users', description: 'Companies users related end-points'},
       {name: 'roles', description: 'Companies roles related end-points'},
+      {name: 'series', description: 'Companies series related end-points'},
       {name: 'groups', description: 'Companies groups related end-points'},
       {name: 'messages', description: 'Messages related end-points'},
       {name: 'videos', description: 'Videos related end-points'},

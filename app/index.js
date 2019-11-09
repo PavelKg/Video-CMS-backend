@@ -16,14 +16,17 @@ const {Storage} = require('@google-cloud/storage')
 const Person = require('./person')
 const PersonService = require('./person/service')
 
-const Role = require('./companies/roles')
-const RoleService = require('./companies/roles/service')
-
 const Company = require('./companies')
 const CompanyService = require('./companies/service')
 
+const Role = require('./companies/roles')
+const RoleService = require('./companies/roles/service')
+
 const Group = require('./companies/groups')
 const GroupService = require('./companies/groups/service')
+
+const Series = require('./companies/series')
+const SeriesService = require('./companies/series/service')
 
 const User = require('./companies/users')
 const UserService = require('./companies/users/service')
@@ -146,6 +149,7 @@ async function decorateFastifyInstance(fastify) {
   const companyService = new CompanyService(db, histLoggerService)
   const roleService = new RoleService(db, histLoggerService)
   const groupService = new GroupService(db, histLoggerService)
+  const seriesService = new SeriesService(db, histLoggerService)
   const userService = new UserService(db, histLoggerService)
   const messageService = new MessageService(db, histLoggerService)
   const videoService = new VideoService(db, storage, histLoggerService)
@@ -156,6 +160,7 @@ async function decorateFastifyInstance(fastify) {
   fastify.decorate('companyService', companyService)
   fastify.decorate('roleService', roleService)
   fastify.decorate('groupService', groupService)
+  fastify.decorate('seriesService', seriesService)
   fastify.decorate('userService', userService)
   fastify.decorate('messageService', messageService)
   fastify.decorate('videoService', videoService)
@@ -192,6 +197,7 @@ module.exports = async function(fastify, opts) {
     .register(Company, {prefix: '/api/companies/:cid/mng'})
     .register(Role, {prefix: '/api/companies/:cid/roles'})
     .register(Group, {prefix: '/api/companies/:cid/groups'})
+    .register(Series, {prefix: '/api/companies/:cid/series'})
     .register(User, {prefix: '/api/companies/:cid/users'})
     .register(Message, {prefix: '/api/messages'})
     .register(Video, {prefix: '/api/companies/:cid/videos'})
