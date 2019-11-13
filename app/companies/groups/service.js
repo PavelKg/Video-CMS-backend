@@ -57,6 +57,7 @@ class GroupService {
         group_gid as gid, 
         group_company_id as cid,         
         group_name as name, 
+        CASE WHEN group_series IS NULL THEN '{}' ELSE group_series END as group_series,
         deleted_at AT TIME ZONE $3 AS deleted_at
       FROM "groups"
       WHERE group_company_id=$1 and group_gid=$2;`,
@@ -73,7 +74,7 @@ class GroupService {
   async addGroup(payload) {
     let client = undefined
     const {acc, group} = payload
-    const {cid, name} = group
+    const {cid, name, group_series = []} = group
 
     const {user_id, company_id, uid} = acc
     let histData = {
@@ -95,10 +96,10 @@ class GroupService {
 
       client = await this.db.connect()
       const {rows} = await client.query(
-        `INSERT INTO groups (group_company_id, group_name) 
-        VALUES ($1, $2) 
+        `INSERT INTO groups (group_company_id, group_name, group_series) 
+        VALUES ($1, $2, $3) 
         RETURNING *;`,
-        [cid, name]
+        [cid, name, group_series]
       )
       histData.result = typeof rows[0] === 'object'
       histData.object_name = `g_${rows[0].group_gid}`
@@ -119,7 +120,7 @@ class GroupService {
   async updGroup(payload) {
     let client = undefined
     const {acc, group} = payload
-    const {gid, cid, name} = group
+    const {gid, cid, name, group_series = []} = group
 
     const {user_id, company_id, uid} = acc
     let histData = {
@@ -142,11 +143,11 @@ class GroupService {
       client = await this.db.connect()
       const {rows} = await client.query(
         `UPDATE groups 
-          SET group_name=$3 
+          SET group_name=$3, group_series=$4 
           WHERE group_company_id=$2 and group_gid =$1
           AND deleted_at IS NULL
           RETURNING *;`,
-        [gid, cid, name]
+        [gid, cid, name, group_series]
       )
 
       histData.object_name = `g_${rows[0].group_gid}`

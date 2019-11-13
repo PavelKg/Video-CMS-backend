@@ -41,6 +41,14 @@ const sortableColumns = {
     'userhist_category',
     'userhist_user_uid',
     'userhist_object_name'
+  ],
+  series: [
+    'series.created_at',
+    'series.deleted_at',
+    'series_name',
+    'series_period_type',
+    'series_activity_start',
+    'series_activity_finish'
   ]
 }
 

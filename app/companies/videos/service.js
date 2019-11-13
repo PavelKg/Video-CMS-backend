@@ -166,11 +166,15 @@ class VideoService {
         ),
         user_series AS (
           select array_agg (c) AS useries
-			    from (select unnest(group_series) AS series 
+			    from (select ser from (select unnest(group_series) AS ser
                 from groups 
                 where group_company_id=$1 
                   and group_gid in (select unnest(groups) from user_group where groups IS NOT null)
-                  and group_series IS NOT null) as dt(c)
+                  and group_series IS NOT null ) bbb, series 
+                  where series_id = ser 
+                    AND (series_period_type is null 
+                      OR now()::date between series_activity_start::date and series_activity_start::date)
+                  ) as dt(c)
         )
 
         SELECT 
@@ -210,12 +214,16 @@ class VideoService {
         ),
         user_series AS (
           select array_agg (c) AS useries
-			    from (select unnest(group_series) AS series 
+			    from (select ser from (select unnest(group_series) AS ser
                 from groups 
                 where group_company_id=$1 
                   and group_gid in (select unnest(groups) from user_group where groups IS NOT null)
-                  and group_series IS NOT null) as dt(c)
-        )        
+                  and group_series IS NOT null ) bbb, series 
+                  where series_id = ser 
+                    AND (series_period_type is null 
+                      OR now()::date between series_activity_start::date and series_activity_start::date)
+                  ) as dt(c)
+        )
 
         SELECT 'v_'||video_id AS video_id,
           video_uuid,

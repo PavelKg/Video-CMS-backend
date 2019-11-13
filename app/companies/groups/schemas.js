@@ -13,6 +13,7 @@ const groupObject = {
     gid: {type: 'integer'},
     cid: {type: 'string'},
     name: {type: 'string'},
+    group_series: {type: 'array', items: {type: 'integer'}},
     deleted_at: {type: 'string'}
   }
 }
@@ -20,9 +21,10 @@ const groupObject = {
 const group = {
   type: 'object',
   properties: {
-    name: {type: 'string'}
+    name: {type: 'string'},
+    group_series: {type: 'array', items: {type: 'integer'}},
   },
-  required: ['name'],
+  required: ['name', 'group_series'],
   additionalProperties: false
 }
 
@@ -55,7 +57,7 @@ const getCompanyGroupById = {
     required: ['cid', 'gid'],
     properties: {
       cid: {
-        type: 'number',
+        type: 'number'
       },
       gid: {
         type: 'integer'
@@ -99,13 +101,7 @@ const updGroup = {
     },
     additionalProperties: false
   },
-  body: {
-    type: 'object',
-    properties: {
-      name: {type: 'string'}
-    },
-    required: ['name']
-  }
+  body: group
 }
 
 const delGroup = {

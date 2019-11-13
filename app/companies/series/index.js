@@ -87,7 +87,7 @@ async function updSeriesHandler(req, reply) {
   })
 
   const updated = await this.seriesService.updSeries({acc, series})
-  const _code = updated === 1 ? 200 : 404
+  const _code = updated === 1 ? 204 : 404
   reply.code(_code).send()
 }
 

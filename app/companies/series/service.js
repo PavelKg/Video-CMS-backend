@@ -15,7 +15,7 @@ class SeriesService {
     const {
       limit = 'ALL',
       offset = 0,
-      sort = 'series_id',
+      sort = '-series.created_at',
       filter = ''
     } = payload.query
 
@@ -35,6 +35,7 @@ class SeriesService {
       WHERE series_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
         [cid, offset, timezone]
       )
+      console.log('rows=', rows)
       return rows
     } catch (error) {
       throw Error(error.message)
@@ -45,10 +46,11 @@ class SeriesService {
 
   async companySeriesById(payload) {
     const {acc, cid, sid} = payload
-    const {timezone} = acc
-    if (acc.company_id !== cid || !acc.is_admin) {
-      throw Error(errors.WRONG_ACCESS)
-    }
+    const {timezone, is_admin} = acc
+
+    // if (acc.company_id !== cid || !is_admin) {
+    //   throw Error(errors.WRONG_ACCESS)
+    // }
 
     const client = await this.db.connect()
     try {
@@ -56,7 +58,8 @@ class SeriesService {
         `SELECT 
         series_id as sid, 
         series_company_id as cid,         
-        series_name as name, 
+        series_name as name,
+        series_period_type as period_type, 
         TO_CHAR(series_activity_start::DATE, 'yyyy-mm-dd') as activity_start,
         TO_CHAR(series_activity_finish::DATE, 'yyyy-mm-dd') as activity_finish,                
         deleted_at AT TIME ZONE $3 AS deleted_at
@@ -75,7 +78,13 @@ class SeriesService {
   async addSeries(payload) {
     let client = undefined
     const {acc, series} = payload
-    const {cid, name} = series
+    const {
+      cid,
+      name,
+      period_type = null,
+      activity_start = null,
+      activity_finish = null
+    } = series
 
     const {user_id, company_id, uid} = acc
     let histData = {
@@ -97,10 +106,11 @@ class SeriesService {
 
       client = await this.db.connect()
       const {rows} = await client.query(
-        `INSERT INTO series (series_company_id, series_name) 
-        VALUES ($1, $2) 
+        `INSERT INTO series (series_company_id, series_name, 
+          series_period_type, series_activity_start, series_activity_finish) 
+        VALUES ($1, $2, $3, $4, $5) 
         RETURNING *;`,
-        [cid, name]
+        [cid, name, period_type, activity_start, activity_finish]
       )
       histData.result = typeof rows[0] === 'object'
       histData.object_name = `s_${rows[0].series_id}`
@@ -121,7 +131,14 @@ class SeriesService {
   async updSeries(payload) {
     let client = undefined
     const {acc, series} = payload
-    const {sid, cid, name, activity_start = '', activity_finish = '', period_type} = series
+    const {
+      sid,
+      cid,
+      name,
+      activity_start = null,
+      activity_finish = null,
+      period_type = null
+    } = series
 
     const {user_id, company_id, uid} = acc
     let histData = {
@@ -145,12 +162,13 @@ class SeriesService {
       const {rows} = await client.query(
         `UPDATE series 
           SET series_name=$3, 
-          series_activity_start = CASE WHEN $4<>'' THEN $8::date ELSE null END,
-          series_activity_finish = CASE WHEN $5<>'' THEN $9::date ELSE null END
+          series_period_type = $4,
+          series_activity_start = CASE WHEN $5<>null THEN $5::date ELSE null END,
+          series_activity_finish = CASE WHEN $6<>null THEN $6::date ELSE null END
           WHERE series_company_id=$2 and series_id =$1
           AND deleted_at IS NULL
           RETURNING *;`,
-        [sid, cid, name, activity_start, activity_finish]
+        [sid, cid, name, period_type, activity_start, activity_finish]
       )
 
       histData.object_name = `s_${rows[0].series_id}`
@@ -193,7 +211,7 @@ class SeriesService {
       client = await this.db.connect()
       const {rows: vsrs} = await client.query(
         `SELECT count(videos.video_id) cnt 
-          FROM seriess, videos 
+          FROM series, videos 
           WHERE series_company_id=$2 AND series_id=$1 
             AND series_id = ANY(video_series) 
             AND videos.deleted_at is null;`,
@@ -204,7 +222,7 @@ class SeriesService {
       }
       const {rows: gsrs} = await client.query(
         `SELECT count(groups.group_gid) cnt 
-          FROM seriess, groups 
+          FROM series, groups 
           WHERE series_company_id=$2 AND series_id=$1 
             AND series_id = ANY(group_series) 
             AND groups.deleted_at is null;`,
@@ -218,13 +236,13 @@ class SeriesService {
       const {rows} = await client.query(
         `UPDATE series 
         SET deleted_at = now()
-        WHERE series_company_id=$2 and series_id =$1 
+        WHERE series_company_id=$2 and series_id=$1 
         and deleted_at is null
         RETURNING *;`,
         [sid, cid]
       )
 
-      histData.object_name = `s_${rows[0].series_sid}`
+      histData.object_name = `s_${sid}`
       histData.result = rows.length === 1
       histData.details = 'Success'
       return rows.length
