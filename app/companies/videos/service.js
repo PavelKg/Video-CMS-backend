@@ -187,7 +187,7 @@ class VideoService {
           deleted_at AT TIME ZONE $3 AS deleted_at 
         FROM videos
         WHERE  video_company_id = $1 
-        AND ((video_groups && (select groups from user_group) AND 
+        AND ((video_groups && (select groups from user_group) OR 
               video_series && (select useries from user_series)) 
             OR $5=true)
         ${onlyPublic}
