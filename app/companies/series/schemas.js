@@ -13,7 +13,10 @@ const seriesObject = {
     sid: {type: 'integer'},
     cid: {type: 'string'},
     name: {type: 'string'},
-    deleted_at: {type: 'string'}
+    deleted_at: {type: 'string'},
+    period_type: {type: 'string'},
+    activity_start: {type: 'string'},
+    activity_finish: {type: 'string'}
   }
 }
 
