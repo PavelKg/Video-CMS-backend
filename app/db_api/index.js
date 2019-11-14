@@ -9,7 +9,7 @@ const sortableColumns = {
     'user_email',
     'users.deleted_at'
   ],
-  groups: ['group_gid', 'group_name', 'groups.deleted_at'],
+  groups: ['group_gid', 'group_name', 'groups.deleted_at', 'group_series'],
   roles: ['role_rid', 'role_name', 'role_is_admin', 'roles.deleted_at'],
   messages: [
     'mid',
@@ -78,7 +78,7 @@ function sorting(_sort, _table) {
 
 function filtration(_filter, _table) {
   const filter_arr = _filter.split(/(?<!\\),/)
-  console.log('filter_arr=', _filter.match(/^\\((.*)\\)[ \\t]+\\((.*)\\)$/gi))
+  //console.log('filter_arr=', _filter.match(/^\\((.*)\\)[ \\t]+\\((.*)\\)$/gi))
   const filter_str = filter_arr.map(function(item) {
     const re = /(.*)\[(\w+)\]:(.*)/i
     const parse_item = item.match(re)
