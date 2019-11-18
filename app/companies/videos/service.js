@@ -162,18 +162,23 @@ class VideoService {
     try {
       const {rows} = await client.query(
         `WITH user_group AS (
-          select user_groups AS groups from users where user_company_id=$1 and user_uid=$4
+          select user_groups AS groups, created_at AS reg_date from users where user_company_id=$1 and user_uid=$4
         ),
+
         user_series AS (
           select array_agg (c) AS useries
 			    from (select ser from (select unnest(group_series) AS ser
                 from groups 
                 where group_company_id=$1 
                   and group_gid in (select unnest(groups) from user_group where groups IS NOT null)
-                  and group_series IS NOT null ) bbb, series 
+                  and group_series IS NOT null ) bbb, series, user_group 
                   where series_id = ser 
-                    AND (series_period_type is null 
-                      OR now()::date between series_activity_start::date and series_activity_start::date)
+                    AND (series_period_type is null OR 
+                      (series_period_type='spec_period' AND now()::date between series_activity_start::date and series_activity_start::date) OR 
+                      (series_period_type='user_reg' AND 
+                       now()::date between CASE WHEN series_activity_by_user_start IS NULL THEN now()::date ELSE user_group.reg_date::date + series_activity_by_user_start END
+                          AND CASE WHEN series_activity_by_user_finish IS NULL THEN now()::date ELSE user_group.reg_date::date + series_activity_by_user_finish END)
+                     )
                   ) as dt(c)
         )
 
@@ -184,7 +189,7 @@ class VideoService {
           video_public,
           created_at AT TIME ZONE $3 AS created_at, 
           updated_at AT TIME ZONE $3 AS updated_at,           
-          deleted_at AT TIME ZONE $3 AS deleted_at 
+          deleted_at AT TIME ZONE $3 AS deleted_at
         FROM videos
         WHERE  video_company_id = $1 
         AND ((video_groups && (select groups from user_group) OR 
@@ -210,18 +215,23 @@ class VideoService {
     try {
       const {rows} = await client.query(
         `WITH user_group AS (
-          select user_groups AS groups from users where user_company_id=$1 and user_uid=$5
+          select user_groups AS groups, created_at AS reg_date from users where user_company_id=$1 and user_uid=$4
         ),
+
         user_series AS (
           select array_agg (c) AS useries
 			    from (select ser from (select unnest(group_series) AS ser
                 from groups 
                 where group_company_id=$1 
                   and group_gid in (select unnest(groups) from user_group where groups IS NOT null)
-                  and group_series IS NOT null ) bbb, series 
+                  and group_series IS NOT null ) bbb, series, user_group 
                   where series_id = ser 
-                    AND (series_period_type is null 
-                      OR now()::date between series_activity_start::date and series_activity_start::date)
+                    AND (series_period_type is null OR 
+                      (series_period_type='spec_period' AND now()::date between series_activity_start::date and series_activity_start::date) OR 
+                      (series_period_type='user_reg' AND 
+                       now()::date between CASE WHEN series_activity_by_user_start IS NULL THEN now()::date ELSE user_group.reg_date::date + series_activity_by_user_start END
+                          AND CASE WHEN series_activity_by_user_finish IS NULL THEN now()::date ELSE user_group.reg_date::date + series_activity_by_user_finish END)
+                     )
                   ) as dt(c)
         )
 

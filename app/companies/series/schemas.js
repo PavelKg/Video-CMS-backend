@@ -14,7 +14,7 @@ const seriesObject = {
     cid: {type: 'string'},
     name: {type: 'string'},
     deleted_at: {type: 'string'},
-    period_type: {type: 'string'},
+    period_type: {type: 'string', enum: ['null', 'spec_period', 'user_reg']},
     activity_start: {type: 'string'},
     activity_finish: {type: 'string'}
   }
@@ -24,7 +24,7 @@ const series = {
   type: 'object',
   properties: {
     name: {type: 'string'},
-    period_type: {type: 'string'},
+    period_type: {type: 'string', enum: ['null', 'spec_period', 'user_reg']},
     activity_start: {type: 'string'},
     activity_finish: {type: 'string'}
   },
@@ -109,7 +109,7 @@ const updSeries = {
     type: 'object',
     properties: {
       name: {type: 'string'},
-      period_type: {type: 'string'},
+      period_type: {type: 'string', enum: ['null', 'spec_period', 'user_reg']},
       activity_start: {type: 'string'},
       activity_finish: {type: 'string'}
     },
