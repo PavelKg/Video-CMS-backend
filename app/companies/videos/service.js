@@ -174,7 +174,7 @@ class VideoService {
                   and group_series IS NOT null ) bbb, series, user_group 
                   where series_id = ser 
                     AND (series_period_type is null OR 
-                      (series_period_type='spec_period' AND now()::date between series_activity_start::date and series_activity_start::date) OR 
+                      (series_period_type='spec_period' AND now()::date between series_activity_start::date and series_activity_finish::date) OR 
                       (series_period_type='user_reg' AND 
                        now()::date between CASE WHEN series_activity_by_user_start IS NULL THEN now()::date ELSE user_group.reg_date::date + series_activity_by_user_start END
                           AND CASE WHEN series_activity_by_user_finish IS NULL THEN now()::date ELSE user_group.reg_date::date + series_activity_by_user_finish END)
@@ -215,7 +215,7 @@ class VideoService {
     try {
       const {rows} = await client.query(
         `WITH user_group AS (
-          select user_groups AS groups, created_at AS reg_date from users where user_company_id=$1 and user_uid=$4
+          select user_groups AS groups, created_at AS reg_date from users where user_company_id=$1 and user_uid=$5
         ),
 
         user_series AS (
@@ -227,7 +227,7 @@ class VideoService {
                   and group_series IS NOT null ) bbb, series, user_group 
                   where series_id = ser 
                     AND (series_period_type is null OR 
-                      (series_period_type='spec_period' AND now()::date between series_activity_start::date and series_activity_start::date) OR 
+                      (series_period_type='spec_period' AND now()::date between series_activity_start::date and series_activity_finish::date) OR 
                       (series_period_type='user_reg' AND 
                        now()::date between CASE WHEN series_activity_by_user_start IS NULL THEN now()::date ELSE user_group.reg_date::date + series_activity_by_user_start END
                           AND CASE WHEN series_activity_by_user_finish IS NULL THEN now()::date ELSE user_group.reg_date::date + series_activity_by_user_finish END)

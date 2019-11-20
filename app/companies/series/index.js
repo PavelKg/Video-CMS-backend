@@ -77,7 +77,7 @@ async function addSeriesHandler(req, reply) {
 
 async function updSeriesHandler(req, reply) {
   const {cid, sid} = req.params
-  let series = {...req.body, cid: +cid, sid}
+  let series = {...req.body, cid: cid, sid}
 
   let acc
   req.jwtVerify(function(err, decoded) {
@@ -93,7 +93,7 @@ async function updSeriesHandler(req, reply) {
 
 async function delSeriesHandler(req, reply) {
   const {cid, sid} = req.params
-  let series = {cid: +cid, sid}
+  let series = {cid: cid, sid}
 
   let acc
   req.jwtVerify(function(err, decoded) {

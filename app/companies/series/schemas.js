@@ -11,12 +11,15 @@ const seriesObject = {
   type: 'object',
   properties: {
     sid: {type: 'integer'},
-    cid: {type: 'string'},
+    cid: {type: 'integer'},
     name: {type: 'string'},
     deleted_at: {type: 'string'},
-    period_type: {type: 'string', enum: ['null', 'spec_period', 'user_reg']},
-    activity_start: {type: 'string'},
-    activity_finish: {type: 'string'}
+    period_type: {
+      type: ['string', 'null'],
+      enum: [null, 'spec_period', 'user_reg']
+    },
+    activity_start: {type: ['string', 'null']},
+    activity_finish: {type: ['string', 'null']}
   }
 }
 
@@ -24,9 +27,12 @@ const series = {
   type: 'object',
   properties: {
     name: {type: 'string'},
-    period_type: {type: 'string', enum: ['null', 'spec_period', 'user_reg']},
-    activity_start: {type: 'string'},
-    activity_finish: {type: 'string'}
+    period_type: {
+      type: ['string', 'null'],
+      enum: [null, 'spec_period', 'user_reg']
+    },
+    activity_start: {type: ['string', 'null']},
+    activity_finish: {type: ['string', 'null']}
   },
   required: ['name'],
   additionalProperties: false
@@ -39,8 +45,7 @@ const getCompanySeries = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'string',
-        pattern: '^[0-9]?'
+        type: 'integer'
       }
     },
     additionalProperties: false
@@ -61,7 +66,7 @@ const getCompanySeriesById = {
     required: ['cid', 'sid'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       },
       sid: {
         type: 'integer'
@@ -82,8 +87,7 @@ const addSeries = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'string',
-        pattern: '^[0-9]?'
+        type: 'integer'
       }
     },
     additionalProperties: false
@@ -98,8 +102,7 @@ const updSeries = {
     required: ['cid', 'sid'],
     properties: {
       cid: {
-        type: 'string',
-        pattern: '^[0-9]?'
+        type: 'integer'
       },
       sid: {type: 'integer', pattern: '^[0-9]?'}
     },
@@ -109,9 +112,12 @@ const updSeries = {
     type: 'object',
     properties: {
       name: {type: 'string'},
-      period_type: {type: 'string', enum: ['null', 'spec_period', 'user_reg']},
-      activity_start: {type: 'string'},
-      activity_finish: {type: 'string'}
+      period_type: {
+        type: ['string', 'null'],
+        enum: [null, 'spec_period', 'user_reg']
+      },
+      activity_start: {type: ['string', 'null']},
+      activity_finish: {type: ['string', 'null']}
     },
     required: ['name', 'period_type', 'activity_start', 'activity_finish']
   }
@@ -124,7 +130,7 @@ const delSeries = {
     required: ['cid', 'sid'],
     properties: {
       cid: {
-        type: 'string',
+        type: 'integer',
         pattern: '^[0-9]?'
       },
       sid: {type: 'integer'}

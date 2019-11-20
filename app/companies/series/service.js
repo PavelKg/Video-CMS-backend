@@ -35,7 +35,6 @@ class SeriesService {
       WHERE series_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
         [cid, offset, timezone]
       )
-      console.log('rows=', rows)
       return rows
     } catch (error) {
       throw Error(error.message)
@@ -60,8 +59,12 @@ class SeriesService {
         series_company_id as cid,         
         series_name as name,
         series_period_type as period_type, 
-        TO_CHAR(series_activity_start::DATE, 'yyyy-mm-dd') as activity_start,
-        TO_CHAR(series_activity_finish::DATE, 'yyyy-mm-dd') as activity_finish,                
+        CASE WHEN series_period_type = 'spec_period' THEN TO_CHAR(series_activity_start::DATE, 'yyyy-mm-dd') 
+          WHEN series_period_type = 'user_reg' THEN series_activity_by_user_start::text
+          ELSE '' END as activity_start,
+          CASE WHEN series_period_type = 'spec_period' THEN TO_CHAR(series_activity_finish::DATE, 'yyyy-mm-dd') 
+            WHEN series_period_type = 'user_reg' THEN series_activity_by_user_finish::text
+            ELSE '' END as activity_finish,                
         deleted_at AT TIME ZONE $3 AS deleted_at
       FROM "series"
       WHERE series_company_id=$1 and series_id=$2;`,
@@ -77,6 +80,8 @@ class SeriesService {
 
   async addSeries(payload) {
     let client = undefined
+    let activity_fields = ', series_activity_start, series_activity_finish'
+
     const {acc, series} = payload
     const {
       cid,
@@ -105,12 +110,30 @@ class SeriesService {
       }
 
       client = await this.db.connect()
+
+      switch (period_type) {
+        case null:
+          break
+        case 'spec_period':
+          break
+        case 'user_reg':
+          activity_fields =
+            ', series_activity_by_user_start, series_activity_by_user_finish'
+          break
+        default:
+          break
+      }
+
+      const query_val =
+        period_type === null
+          ? [cid, name, period_type, null, null]
+          : [cid, name, period_type, activity_start, activity_finish]
       const {rows} = await client.query(
         `INSERT INTO series (series_company_id, series_name, 
-          series_period_type, series_activity_start, series_activity_finish) 
+          series_period_type ${activity_fields}) 
         VALUES ($1, $2, $3, $4, $5) 
         RETURNING *;`,
-        [cid, name, period_type, activity_start, activity_finish]
+        query_val
       )
       histData.result = typeof rows[0] === 'object'
       histData.object_name = `s_${rows[0].series_id}`
@@ -130,6 +153,13 @@ class SeriesService {
 
   async updSeries(payload) {
     let client = undefined
+
+    let activity_fields =
+      'series_activity_start = CASE WHEN $5::text IS NOT NULL THEN $5::date ELSE NULL END, \
+      series_activity_finish = CASE WHEN $6::text IS NOT NULL THEN $6::date ELSE NULL END, \
+      series_activity_by_user_start =  NULL, \
+      series_activity_by_user_finish = NULL'
+
     const {acc, series} = payload
     const {
       sid,
@@ -158,22 +188,46 @@ class SeriesService {
         throw Error(errors.WRONG_ACCESS)
       }
 
+      switch (period_type) {
+        case null:
+          activity_fields =
+            'series_activity_by_user_start = NULL, \
+            series_activity_by_user_finish = NULL,  \
+            series_activity_start = NULL, \
+            series_activity_finish = NULL'
+          break
+        case 'spec_period':
+          break
+        case 'user_reg':
+          activity_fields =
+            'series_activity_by_user_start = CASE WHEN $5::integer IS NOT NULL THEN $5::integer ELSE NULL END, \
+            series_activity_by_user_finish = CASE WHEN $6::integer IS NOT NULL THEN $6::integer ELSE NULL END,  \
+            series_activity_start = NULL, \
+            series_activity_finish = NULL'
+          break
+      }
+
+      const query_str = `UPDATE series 
+      SET series_name=$3, 
+      series_period_type = $4,
+      ${activity_fields}
+      WHERE series_company_id=$2 and series_id =$1
+      AND deleted_at IS NULL
+      RETURNING *;`
+
+      let query_val = [sid, cid, name, period_type]
+
+      if (period_type !== null) {
+        query_val = [...query_val, activity_start, activity_finish]
+      }
+
       client = await this.db.connect()
-      const {rows} = await client.query(
-        `UPDATE series 
-          SET series_name=$3, 
-          series_period_type = $4,
-          series_activity_start = CASE WHEN $5<>null THEN $5::date ELSE null END,
-          series_activity_finish = CASE WHEN $6<>null THEN $6::date ELSE null END
-          WHERE series_company_id=$2 and series_id =$1
-          AND deleted_at IS NULL
-          RETURNING *;`,
-        [sid, cid, name, period_type, activity_start, activity_finish]
-      )
+      const {rows} = await client.query(query_str, query_val)
 
       histData.object_name = `s_${rows[0].series_id}`
       histData.result = rows.length === 1
       histData.details = `[${name}] information updated`
+
       return rows.length
     } catch (error) {
       throw Error(error.message)
