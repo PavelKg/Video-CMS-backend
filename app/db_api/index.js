@@ -32,7 +32,8 @@ const sortableColumns = {
     'video_title',
     'video_public',
     'video_tag',
-    'video_description'
+    'video_description',
+    'video_series'
   ],
   comments: ['comments.created_at'],
   history: [
