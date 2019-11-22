@@ -164,6 +164,66 @@ class GroupService {
     }
   }
 
+  async delGroupSeries(payload) {
+    let client = undefined
+    const {acc, group} = payload
+    const {gid, cid, sid} = group
+
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'deleted series',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: '',
+      details: 'Failure [delSeries]',
+      target_data: {...group}
+    }
+
+    try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      client = await this.db.connect()
+
+      const {rows: grps} = await client.query(
+        `SELECT count(group_gid) cnt 
+          FROM groups 
+          WHERE group_company_id=$2 AND group_gid=$1 
+          AND group_series && ARRAY[$3::integer];`,
+        [gid, cid, sid]
+      )
+
+      if (grps[0].cnt === '0') {
+        throw Error(errors.THERE_IS_NOT_SERIES_IN_THE_GROUP )
+      }
+
+      const {rows} = await client.query(
+        `UPDATE groups 
+          SET group_series = array_remove(group_series, $3) 
+          WHERE group_company_id=$2 and group_gid =$1
+          AND deleted_at IS NULL
+          RETURNING *;`,
+        [gid, cid, sid]
+      )
+
+      histData.object_name = `g_${rows[0].group_gid}`
+      histData.result = rows.length === 1
+      histData.details = `Success`
+      return rows.length
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
+    }
+  }
+
   async delGroup(payload) {
     let client = undefined
     const {acc, group} = payload

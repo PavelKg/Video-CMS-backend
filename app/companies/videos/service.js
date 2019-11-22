@@ -187,6 +187,7 @@ class VideoService {
           video_uuid,
           video_status,
           video_public,
+          video_title,
           created_at AT TIME ZONE $3 AS created_at, 
           updated_at AT TIME ZONE $3 AS updated_at,           
           deleted_at AT TIME ZONE $3 AS deleted_at
@@ -322,6 +323,65 @@ class VideoService {
       histData.details = 'Success'
       return rows.length
     } catch (error) {
+    } finally {
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
+    }
+  }
+
+  async delVideoSeries(payload) {
+    let client = undefined
+    const {acc, video} = payload
+    const {cid, uuid, sid} = video
+
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'deleted series',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: '',
+      details: 'Failure',
+      target_data: {...video}
+    }
+
+    try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+      client = await this.db.connect()
+
+      const {rows: vids} = await client.query(
+        `SELECT count(video_id) cnt 
+          FROM videos 
+          WHERE video_company_id=$2 AND video_uuid=$1 
+          AND video_series && ARRAY[$3::integer];`,
+        [uuid, cid, sid]
+      )
+
+      if (vids[0].cnt === '0') {
+        throw Error(errors.THERE_IS_NOT_SERIES_IN_THE_VIDEO)
+      }
+
+      const {rows} = await client.query(
+        `UPDATE videos 
+          SET video_series = array_remove(video_series, $3) 
+          WHERE video_company_id=$1 and video_uuid=$2
+          RETURNING *`,
+        [cid, uuid, sid]
+      )
+
+      console.log('rows=', rows)
+      histData.object_name = `v_${rows[0].video_id}`
+      histData.result = rows.length === 1
+      histData.details = 'Success'
+      return rows.length
+    } catch (error) {
+      throw Error(error)
     } finally {
       if (client) {
         client.release()

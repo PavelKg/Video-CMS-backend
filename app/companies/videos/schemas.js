@@ -153,6 +153,24 @@ const delVideo = {
   }
 }
 
+const delVideoSeries ={
+  tags: ['videos'],
+  params: {
+    type: 'object',
+    required: ['cid', 'uuid', 'sid'],
+    properties: {
+      uuid: uuidObj,
+      cid: {
+        type: 'integer'
+      },
+      sid: {
+        type: 'integer'
+      }      
+    },
+    additionalProperties: false
+  }
+}
+
 const updVideo = {
   tags: ['videos'],
   params: {
@@ -274,6 +292,7 @@ module.exports = {
   updVideo,
   updVideoStatus,
   updVideoPublicStatus,
-  addVideoPlayerEvent
+  addVideoPlayerEvent,
+  delVideoSeries
   //gcsUploadSignedPolicy
 }

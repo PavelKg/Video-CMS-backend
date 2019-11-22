@@ -11,7 +11,7 @@ const groupObject = {
   type: 'object',
   properties: {
     gid: {type: 'integer'},
-    cid: {type: 'string'},
+    cid: {type: 'integer'},
     name: {type: 'string'},
     group_series: {type: 'array', items: {type: 'integer'}},
     deleted_at: {type: 'string'}
@@ -22,7 +22,7 @@ const group = {
   type: 'object',
   properties: {
     name: {type: 'string'},
-    group_series: {type: 'array', items: {type: 'integer'}},
+    group_series: {type: 'array', items: {type: 'integer'}}
   },
   required: ['name', 'group_series'],
   additionalProperties: false
@@ -35,7 +35,7 @@ const getCompanyGroups = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'string',
+        type: 'integer',
         pattern: '^[0-9]?'
       }
     },
@@ -57,7 +57,7 @@ const getCompanyGroupById = {
     required: ['cid', 'gid'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       },
       gid: {
         type: 'integer'
@@ -78,7 +78,7 @@ const addGroup = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'string',
+        type: 'integer',
         pattern: '^[0-9]?'
       }
     },
@@ -94,7 +94,7 @@ const updGroup = {
     required: ['cid', 'gid'],
     properties: {
       cid: {
-        type: 'string',
+        type: 'integer',
         pattern: '^[0-9]?'
       },
       gid: {type: 'integer', pattern: '^[0-9]?'}
@@ -111,10 +111,27 @@ const delGroup = {
     required: ['cid', 'gid'],
     properties: {
       cid: {
-        type: 'string',
+        type: 'integer',
         pattern: '^[0-9]?'
       },
       gid: {type: 'integer'}
+    },
+    additionalProperties: false
+  }
+}
+
+const delGroupSeries = {
+  tags: ['groups'],
+  params: {
+    type: 'object',
+    required: ['cid', 'gid', 'sid'],
+    properties: {
+      cid: {
+        type: 'integer',
+        pattern: '^[0-9]?'
+      },
+      gid: {type: 'integer'},
+      sid: {type: 'integer'}
     },
     additionalProperties: false
   }
@@ -125,5 +142,6 @@ module.exports = {
   getCompanyGroupById,
   addGroup,
   updGroup,
-  delGroup
+  delGroup,
+  delGroupSeries
 }
