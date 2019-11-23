@@ -375,7 +375,6 @@ class VideoService {
         [cid, uuid, sid]
       )
 
-      console.log('rows=', rows)
       histData.object_name = `v_${rows[0].video_id}`
       histData.result = rows.length === 1
       histData.details = 'Success'
@@ -425,6 +424,9 @@ class VideoService {
             select += ` $${idx + 1}::boolean`
             break
           case 'video_groups':
+            select += ` $${idx + 1}::integer[]`
+            break
+          case 'video_series':
             select += ` $${idx + 1}::integer[]`
             break
           default:
