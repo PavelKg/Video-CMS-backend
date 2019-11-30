@@ -13,6 +13,7 @@ const seriesObject = {
     sid: {type: 'integer'},
     cid: {type: 'integer'},
     name: {type: 'string'},
+    is_private: {type: 'boolean'},
     deleted_at: {type: 'string'},
     period_type: {
       type: ['string', 'null'],
@@ -27,6 +28,7 @@ const series = {
   type: 'object',
   properties: {
     name: {type: 'string'},
+    is_private: {type: 'boolean'},
     period_type: {
       type: ['string', 'null'],
       enum: [null, 'spec_period', 'user_reg']

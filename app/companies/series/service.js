@@ -29,7 +29,15 @@ class SeriesService {
         `SELECT 
         series_id as sid, 
         series_company_id as cid,         
-        series_name as name, 
+        series_name as name,
+        series_period_type as period_type, 
+        series_is_private as is_private,
+        CASE WHEN series_period_type = 'spec_period' THEN TO_CHAR(series_activity_start::DATE, 'yyyy-mm-dd') 
+          WHEN series_period_type = 'user_reg' THEN series_activity_by_user_start::text
+          ELSE '' END as activity_start,
+          CASE WHEN series_period_type = 'spec_period' THEN TO_CHAR(series_activity_finish::DATE, 'yyyy-mm-dd') 
+            WHEN series_period_type = 'user_reg' THEN series_activity_by_user_finish::text
+            ELSE '' END as activity_finish,     
         deleted_at AT TIME ZONE $3 AS deleted_at
       FROM "series"
       WHERE series_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
@@ -59,6 +67,7 @@ class SeriesService {
         series_company_id as cid,         
         series_name as name,
         series_period_type as period_type, 
+        series_is_private as is_private,
         CASE WHEN series_period_type = 'spec_period' THEN TO_CHAR(series_activity_start::DATE, 'yyyy-mm-dd') 
           WHEN series_period_type = 'user_reg' THEN series_activity_by_user_start::text
           ELSE '' END as activity_start,
@@ -86,6 +95,7 @@ class SeriesService {
     const {
       cid,
       name,
+      is_private = false,
       period_type = null,
       activity_start = null,
       activity_finish = null
@@ -126,12 +136,19 @@ class SeriesService {
 
       const query_val =
         period_type === null
-          ? [cid, name, period_type, null, null]
-          : [cid, name, period_type, activity_start, activity_finish]
+          ? [cid, name, period_type, null, null, Boolean(is_private)]
+          : [
+              cid,
+              name,
+              period_type,
+              activity_start,
+              activity_finish,
+              Boolean(is_private)
+            ]
       const {rows} = await client.query(
         `INSERT INTO series (series_company_id, series_name, 
-          series_period_type ${activity_fields}) 
-        VALUES ($1, $2, $3, $4, $5) 
+          series_period_type ${activity_fields}, series_is_private) 
+        VALUES ($1, $2, $3, $4, $5, $6) 
         RETURNING *;`,
         query_val
       )
@@ -155,8 +172,8 @@ class SeriesService {
     let client = undefined
 
     let activity_fields =
-      'series_activity_start = CASE WHEN $5::text IS NOT NULL THEN $5::date ELSE NULL END, \
-      series_activity_finish = CASE WHEN $6::text IS NOT NULL THEN $6::date ELSE NULL END, \
+      'series_activity_start = CASE WHEN $6::text IS NOT NULL THEN $6::date ELSE NULL END, \
+      series_activity_finish = CASE WHEN $7::text IS NOT NULL THEN $7::date ELSE NULL END, \
       series_activity_by_user_start =  NULL, \
       series_activity_by_user_finish = NULL'
 
@@ -165,6 +182,7 @@ class SeriesService {
       sid,
       cid,
       name,
+      is_private = false,
       activity_start = null,
       activity_finish = null,
       period_type = null
@@ -200,8 +218,8 @@ class SeriesService {
           break
         case 'user_reg':
           activity_fields =
-            'series_activity_by_user_start = CASE WHEN $5::integer IS NOT NULL THEN $5::integer ELSE NULL END, \
-            series_activity_by_user_finish = CASE WHEN $6::integer IS NOT NULL THEN $6::integer ELSE NULL END,  \
+            'series_activity_by_user_start = CASE WHEN $6::integer IS NOT NULL THEN $6::integer ELSE NULL END, \
+            series_activity_by_user_finish = CASE WHEN $7::integer IS NOT NULL THEN $7::integer ELSE NULL END,  \
             series_activity_start = NULL, \
             series_activity_finish = NULL'
           break
@@ -210,12 +228,13 @@ class SeriesService {
       const query_str = `UPDATE series 
       SET series_name=$3, 
       series_period_type = $4,
+      series_is_private = $5,
       ${activity_fields}
       WHERE series_company_id=$2 and series_id =$1
       AND deleted_at IS NULL
       RETURNING *;`
 
-      let query_val = [sid, cid, name, period_type]
+      let query_val = [sid, cid, name, period_type, Boolean(is_private)]
 
       if (period_type !== null) {
         query_val = [...query_val, activity_start, activity_finish]
