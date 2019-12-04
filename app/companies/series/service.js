@@ -282,17 +282,17 @@ class SeriesService {
       }
 
       client = await this.db.connect()
-      const {rows: vsrs} = await client.query(
-        `SELECT count(videos.video_id) cnt 
-          FROM series, videos 
-          WHERE series_company_id=$2 AND series_id=$1 
-            AND series_id = ANY(video_series) 
-            AND videos.deleted_at is null;`,
-        [sid, cid]
-      )
-      if (Array.isArray(vsrs) && vsrs[0].cnt > 0) {
-        throw Error(errors.CANNOT_DELETE_A_SERIES_WITH_EXISTING_VIDEOS)
-      }
+      // const {rows: vsrs} = await client.query(
+      //   `SELECT count(videos.video_id) cnt
+      //     FROM series, videos
+      //     WHERE series_company_id=$2 AND series_id=$1
+      //       AND series_id = ANY(video_series)
+      //       AND videos.deleted_at is null;`,
+      //   [sid, cid]
+      // )
+      // if (Array.isArray(vsrs) && vsrs[0].cnt > 0) {
+      //   throw Error(errors.CANNOT_DELETE_A_SERIES_WITH_EXISTING_VIDEOS)
+      // }
       const {rows: gsrs} = await client.query(
         `SELECT count(groups.group_gid) cnt 
           FROM series, groups 
@@ -305,6 +305,12 @@ class SeriesService {
       if (Array.isArray(gsrs) && gsrs[0].cnt > 0) {
         throw Error(errors.CANNOT_DELETE_A_SERIES_WITH_EXISTING_GROUPS)
       }
+
+      await client.query(
+        `UPDATE videos SET video_series = array_remove(video_series, $2) 
+          WHERE video_company_id = $1 AND video_series && Array[$2::integer]`,
+        [cid, sid]
+      )
 
       const {rows} = await client.query(
         `UPDATE series 
