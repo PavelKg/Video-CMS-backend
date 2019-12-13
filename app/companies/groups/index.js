@@ -4,6 +4,7 @@ const {
   group: groupSchema,
   getCompanyGroups: getCompanyGroupsSchema,
   getCompanyGroupById: getCompanyGroupByIdSchema,
+  getGroupsBindingSeries: getGroupsBindingSeriesSchema,
   addGroup: addGroupSchema,
   updGroup: updGroupSchema,
   delGroupSeries: delGroupSeriesSchema,
@@ -19,6 +20,11 @@ module.exports = async function(fastify, opts) {
     '/:gid',
     {schema: getCompanyGroupByIdSchema},
     getCompanyGroupsByIdHandler
+  )
+  fastify.get(
+    '/bind-series/:sid',
+    {schema: getGroupsBindingSeriesSchema},
+    getGroupsBindingSeriesHandler
   )
   fastify.post('/', {schema: addGroupSchema}, addGroupHandler)
   fastify.put('/:gid', {schema: updGroupSchema}, updGroupHandler)
@@ -131,4 +137,19 @@ async function delGroupHandler(req, reply) {
   const deleted = await this.groupService.delGroup({acc, group})
   const _code = deleted === 1 ? 204 : 404
   reply.code(_code).send()
+}
+
+async function getGroupsBindingSeriesHandler(req, reply) {
+  const {cid, sid} = req.params
+
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  const groups = await this.groupService.groupsBindedWithSeries({acc, cid, sid})
+  const _code = groups.length > 0 ? 200 : 404
+  reply.code(_code).send(groups)
 }

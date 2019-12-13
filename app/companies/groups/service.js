@@ -198,7 +198,7 @@ class GroupService {
       )
 
       if (grps[0].cnt === '0') {
-        throw Error(errors.THERE_IS_NOT_SERIES_IN_THE_GROUP )
+        throw Error(errors.THERE_IS_NOT_SERIES_IN_THE_GROUP)
       }
 
       const {rows} = await client.query(
@@ -280,6 +280,33 @@ class GroupService {
         client.release()
       }
       this.histLogger.saveHistoryInfo(histData)
+    }
+  }
+  async groupsBindedWithSeries(payload) {
+    const {acc, cid, sid} = payload
+
+    if (acc.company_id !== cid || !acc.is_admin) {
+      throw Error(errors.WRONG_ACCESS)
+    }
+
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `SELECT 
+        group_gid as gid, 
+        group_company_id as cid,         
+        group_name as name, 
+        CASE WHEN group_series && ARRAY[$2::integer] THEN true ELSE false END as binded,
+        deleted_at 
+      FROM "groups"
+      WHERE group_company_id=$1;`,
+        [cid, sid]
+      )
+      return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
     }
   }
 }

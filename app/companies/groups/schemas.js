@@ -18,6 +18,17 @@ const groupObject = {
   }
 }
 
+const groupBindingObject = {
+  type: 'object',
+  properties: {
+    gid: {type: 'integer'},
+    cid: {type: 'integer'},
+    name: {type: 'string'},
+    binded: {type: 'boolean'},
+    deleted_at: {type: 'string'}
+  }
+}
+
 const group = {
   type: 'object',
   properties: {
@@ -68,6 +79,29 @@ const getCompanyGroupById = {
   querystring: queryStringJsonSchema,
   response: {
     200: groupObject
+  }
+}
+
+const getGroupsBindingSeries = {
+  tags: ['groups'],
+  params: {
+    type: 'object',
+    required: ['cid', 'sid'],
+    properties: {
+      cid: {
+        type: 'integer'
+      },
+      sid: {
+        type: 'integer'
+      }
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: {
+      type: 'array',
+      items: groupBindingObject
+    }
   }
 }
 
@@ -143,5 +177,6 @@ module.exports = {
   addGroup,
   updGroup,
   delGroup,
-  delGroupSeries
+  delGroupSeries,
+  getGroupsBindingSeries
 }

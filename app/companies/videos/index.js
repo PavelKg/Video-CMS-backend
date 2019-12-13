@@ -6,6 +6,8 @@ const {
   getVideosCatalog: getVideosCatalogSchema,
   getVideo: getVideoSchema,
   getVideoThumbnail: getVideoThumbnailSchema,
+  getVideoBindingSeries: getVideoBindingSeriesSchema,
+  getVideoBindingGroup: getVideoBindingGroupSchema,
   delVideo: delVideoSchema,
   updVideo: updVideoSchema,
   updVideoStatus: updVideoStatusSchema,
@@ -55,6 +57,17 @@ module.exports = async function(fastify, opts) {
     {schema: gcsUploadSignedUrlSchema},
     gcsUploadSignedUrlHandler
   )
+  fastify.get(
+    '/bind-series/:sid',
+    {schema: getVideoBindingSeriesSchema},
+    getVideoBindingSeriesHandler
+  )
+  fastify.get(
+    '/bind-group/:gid',
+    {schema: getVideoBindingGroupSchema},
+    getVideoBindingGroupHandler
+  )
+
   // fastify.get(
   //   '/gcs-upload-spolicy',
   //   {schema: gcsUploadSignedPolicySchema},
@@ -129,6 +142,32 @@ async function getVideoThumbnailHandler(req, replay) {
   })
 
   return await this.videoService.getVideoThumbnail({acc, cid, uuid})
+}
+
+async function getVideoBindingSeriesHandler(req, replay) {
+  const {cid, sid} = req.params
+
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  return await this.videoService.videosBindedWithSeries({acc, cid, sid})
+}
+
+async function getVideoBindingGroupHandler(req, replay) {
+  const {cid, gid} = req.params
+
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  return await this.videoService.videosBindedWithGroup({acc, cid, gid})
 }
 
 async function delVideoHandler(req, reply) {

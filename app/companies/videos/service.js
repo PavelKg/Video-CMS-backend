@@ -287,6 +287,54 @@ class VideoService {
     }
   }
 
+  async videosBindedWithSeries(payload) {
+    const {acc, cid, sid} = payload
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `SELECT 
+        video_uuid as uuid,
+        'v_'||video_id AS video_id, 
+        video_company_id as cid,         
+        video_title as name, 
+        CASE WHEN video_series && ARRAY[$2::integer] THEN true ELSE false END as binded,
+        deleted_at 
+      FROM "videos"
+      WHERE video_company_id=$1;`,
+        [cid, sid]
+      )
+      return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
+  }
+
+  async videosBindedWithGroup(payload) {
+    const {acc, cid, gid} = payload
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `SELECT 
+        video_uuid as uuid, 
+        'v_'||video_id AS video_id,
+        video_company_id as cid,         
+        video_title as name, 
+        CASE WHEN video_groups && ARRAY[$2::integer] THEN true ELSE false END as binded,
+        deleted_at 
+      FROM "videos"
+      WHERE video_company_id=$1;`,
+        [cid, gid]
+      )
+      return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
+  }
+
   async delVideo(payload) {
     let client = undefined
     const {acc, cid, uuid} = payload
