@@ -14,7 +14,9 @@ const {
   updVideoPublicStatus: updVideoPublicStatusSchema,
   addVideoPlayerEvent: addVideoPlayerEventShema,
   delVideoSeries: delVideoSeriesSchema,
-  delVideoSeries: addVideoSeriesSchema
+  delVideoSeries: addVideoSeriesSchema,
+  delVideoGroup: delVideoGroupSchema,
+  delVideoGroup: addVideoGroupSchema
 } = require('./schemas')
 
 module.exports = async function(fastify, opts) {
@@ -43,6 +45,18 @@ module.exports = async function(fastify, opts) {
     {schema: addVideoSeriesSchema},
     addVideoSeriesHandler
   )
+
+  fastify.put(
+    '/:uuid/delete-group/:gid',
+    {schema: delVideoGroupSchema},
+    delVideoGroupHandler
+  )
+  fastify.put(
+    '/:uuid/add-group/:gid',
+    {schema: addVideoGroupSchema},
+    addVideoGroupHandler
+  )
+
   fastify.put(
     '/:uuid/status',
     {schema: updVideoStatusSchema},
@@ -235,6 +249,38 @@ async function addVideoSeriesHandler(req, reply) {
   })
 
   const updated = await this.videoService.addVideoSeries({acc, video})
+  const _code = updated === 1 ? 204 : 404
+  reply.code(_code).send()
+}
+
+async function delVideoGroupHandler(req, reply) {
+  const {cid, uuid, gid} = req.params
+  const video = {cid, uuid, gid}
+
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  const updated = await this.videoService.delVideoGroup({acc, video})
+  const _code = updated === 1 ? 204 : 404
+  reply.code(_code).send()
+}
+
+async function addVideoGroupHandler(req, reply) {
+  const {cid, uuid, gid} = req.params
+  const video = {cid, uuid, gid}
+
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  const updated = await this.videoService.addVideoGroup({acc, video})
   const _code = updated === 1 ? 204 : 404
   reply.code(_code).send()
 }

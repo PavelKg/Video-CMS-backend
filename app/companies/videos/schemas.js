@@ -35,7 +35,7 @@ const videoCatalogObject = {
     video_output_file: {type: 'string'},
     video_groups: {type: 'array', items: {type: 'integer'}},
     video_series: {type: 'array', items: {type: 'integer'}},
-    commentbox_visible: {type: 'boolean'},    
+    commentbox_visible: {type: 'boolean'},
     created_at: {type: 'string'},
     updated_at: {type: 'string'},
     deleted_at: {type: 'string'}
@@ -153,7 +153,7 @@ const delVideo = {
   }
 }
 
-const delVideoSeries ={
+const delVideoSeries = {
   tags: ['videos'],
   params: {
     type: 'object',
@@ -165,7 +165,25 @@ const delVideoSeries ={
       },
       sid: {
         type: 'integer'
-      }      
+      }
+    },
+    additionalProperties: false
+  }
+}
+
+const delVideoGroup = {
+  tags: ['videos'],
+  params: {
+    type: 'object',
+    required: ['cid', 'uuid', 'gid'],
+    properties: {
+      uuid: uuidObj,
+      cid: {
+        type: 'integer'
+      },
+      gid: {
+        type: 'integer'
+      }
     },
     additionalProperties: false
   }
@@ -293,6 +311,7 @@ module.exports = {
   updVideoStatus,
   updVideoPublicStatus,
   addVideoPlayerEvent,
-  delVideoSeries
+  delVideoSeries,
+  delVideoGroup
   //gcsUploadSignedPolicy
 }
