@@ -437,6 +437,65 @@ class VideoService {
     }
   }
 
+  async addVideoSeries(payload) {
+    let client = undefined
+    const {acc, video} = payload
+    const {cid, uuid, sid} = video
+
+    const {user_id, company_id, uid} = acc
+    let histData = {
+      category: this.history_category,
+      action: 'added video series',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: '',
+      details: 'Failure',
+      target_data: {...video}
+    }
+
+    try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+      client = await this.db.connect()
+
+      const {rows: vids} = await client.query(
+        `SELECT count(video_id) cnt 
+          FROM videos 
+          WHERE video_company_id=$2 AND video_uuid=$1 
+          AND video_series && ARRAY[$3::integer];`,
+        [uuid, cid, sid]
+      )
+
+      if (vids[0].cnt > 0) {
+        throw Error(errors.THE_GROUP_ALREADY_CONTAINS_THIS_SERIES)
+      }
+
+      const {rows} = await client.query(
+        `UPDATE videos 
+          SET video_series = array_append(video_series, $3) 
+          WHERE video_company_id=$1 AND video_uuid=$2 AND deleted_at IS NULL
+          RETURNING *`,
+        [cid, uuid, sid]
+      )
+
+      histData.object_name =
+        rows.length === 1 ? `v_${rows[0].video_id}` : 'v_nofing'
+      histData.result = rows.length === 1
+      histData.details = 'Success'
+      return rows.length
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
+    }
+  }
+
   async updVideo(payload) {
     let client = undefined
     const {acc, data} = payload

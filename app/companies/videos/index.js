@@ -13,7 +13,8 @@ const {
   updVideoStatus: updVideoStatusSchema,
   updVideoPublicStatus: updVideoPublicStatusSchema,
   addVideoPlayerEvent: addVideoPlayerEventShema,
-  delVideoSeries: delVideoSeriesSchema
+  delVideoSeries: delVideoSeriesSchema,
+  delVideoSeries: addVideoSeriesSchema
 } = require('./schemas')
 
 module.exports = async function(fastify, opts) {
@@ -36,6 +37,11 @@ module.exports = async function(fastify, opts) {
     '/:uuid/delete-series/:sid',
     {schema: delVideoSeriesSchema},
     delVideoSeriesHandler
+  )
+  fastify.put(
+    '/:uuid/add-series/:sid',
+    {schema: addVideoSeriesSchema},
+    addVideoSeriesHandler
   )
   fastify.put(
     '/:uuid/status',
@@ -213,6 +219,22 @@ async function delVideoSeriesHandler(req, reply) {
   })
 
   const updated = await this.videoService.delVideoSeries({acc, video})
+  const _code = updated === 1 ? 204 : 404
+  reply.code(_code).send()
+}
+
+async function addVideoSeriesHandler(req, reply) {
+  const {cid, uuid, sid} = req.params
+  const video = {cid, uuid, sid}
+
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  const updated = await this.videoService.addVideoSeries({acc, video})
   const _code = updated === 1 ? 204 : 404
   reply.code(_code).send()
 }

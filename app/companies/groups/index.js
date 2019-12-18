@@ -8,6 +8,7 @@ const {
   addGroup: addGroupSchema,
   updGroup: updGroupSchema,
   delGroupSeries: delGroupSeriesSchema,
+  delGroupSeries: addGroupSeriesSchema,
   delGroup: delGroupSchema
 } = require('./schemas')
 
@@ -32,6 +33,11 @@ module.exports = async function(fastify, opts) {
     '/:gid/delete-series/:sid',
     {schema: delGroupSeriesSchema},
     delGroupSeriesHandler
+  )
+  fastify.put(
+    '/:gid/add-series/:sid',
+    {schema: addGroupSeriesSchema},
+    addGroupSeriesHandler
   )
   fastify.delete('/:gid', {schema: delGroupSchema}, delGroupHandler)
 }
@@ -119,6 +125,22 @@ async function delGroupSeriesHandler(req, reply) {
   })
 
   const updated = await this.groupService.delGroupSeries({acc, group})
+  const _code = updated === 1 ? 204 : 404
+  reply.code(_code).send()
+}
+
+async function addGroupSeriesHandler(req, reply) {
+  const {cid, gid, sid} = req.params
+  let group = {cid, gid, sid}
+
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  const updated = await this.groupService.addGroupSeries({acc, group})
   const _code = updated === 1 ? 204 : 404
   reply.code(_code).send()
 }
