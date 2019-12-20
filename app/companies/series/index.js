@@ -14,7 +14,11 @@ module.exports = async function(fastify, opts) {
   fastify.addHook('preHandler', fastify.authPreHandler)
 
   fastify.get('/', {schema: getCompanySeriesSchema}, getCompanySeriesHandler)
-  fastify.get('/:sid', {schema: getCompanySeriesByIdSchema}, getCompanySeriesByIdHandler)
+  fastify.get(
+    '/:sid',
+    {schema: getCompanySeriesByIdSchema},
+    getCompanySeriesByIdHandler
+  )
   fastify.post('/', {schema: addSeriesSchema}, addSeriesHandler)
   fastify.put('/:sid', {schema: updSeriesSchema}, updSeriesHandler)
   fastify.delete('/:sid', {schema: delSeriesSchema}, delSeriesHandler)
@@ -28,7 +32,7 @@ module.exports[Symbol.for('plugin-meta')] = {
 
 async function getCompanySeriesHandler(req, reply) {
   const cid = req.params.cid
-  const query =  req.query
+  const query = req.query
   let acc = null
   req.jwtVerify(function(err, decoded) {
     if (!err) {

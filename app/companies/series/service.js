@@ -189,8 +189,8 @@ class SeriesService {
     let client = undefined
 
     let activity_fields =
-      'series_activity_start = CASE WHEN $6::text IS NOT NULL THEN $6::date ELSE NULL END, \
-      series_activity_finish = CASE WHEN $7::text IS NOT NULL THEN $7::date ELSE NULL END, \
+      'series_activity_start = CASE WHEN $8::text IS NOT NULL THEN $8::date ELSE NULL END, \
+      series_activity_finish = CASE WHEN $9::text IS NOT NULL THEN $9::date ELSE NULL END, \
       series_activity_by_user_start =  NULL, \
       series_activity_by_user_finish = NULL'
 
@@ -237,8 +237,8 @@ class SeriesService {
           break
         case 'user_reg':
           activity_fields =
-            'series_activity_by_user_start = CASE WHEN $6::integer IS NOT NULL THEN $6::integer ELSE NULL END, \
-            series_activity_by_user_finish = CASE WHEN $7::integer IS NOT NULL THEN $7::integer ELSE NULL END,  \
+            'series_activity_by_user_start = CASE WHEN $8::integer IS NOT NULL THEN $8::integer ELSE NULL END, \
+            series_activity_by_user_finish = CASE WHEN $9::integer IS NOT NULL THEN $9::integer ELSE NULL END,  \
             series_activity_start = NULL, \
             series_activity_finish = NULL'
           break
