@@ -14,6 +14,8 @@ const seriesObject = {
     cid: {type: 'integer'},
     name: {type: 'string'},
     is_private: {type: 'boolean'},
+    description: {type: 'string'},
+    tags: {type: 'string'},
     deleted_at: {type: 'string'},
     period_type: {
       type: ['string', 'null'],
@@ -29,6 +31,8 @@ const series = {
   properties: {
     name: {type: 'string'},
     is_private: {type: 'boolean'},
+    description: {type: 'string'},
+    tags: {type: 'string'},
     period_type: {
       type: ['string', 'null'],
       enum: [null, 'spec_period', 'user_reg']
@@ -114,6 +118,8 @@ const updSeries = {
     type: 'object',
     properties: {
       name: {type: 'string'},
+      description: {type: 'string'},
+      tags: {type: 'string'},
       period_type: {
         type: ['string', 'null'],
         enum: [null, 'spec_period', 'user_reg']

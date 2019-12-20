@@ -32,6 +32,8 @@ class SeriesService {
         series_name as name,
         series_period_type as period_type, 
         series_is_private as is_private,
+        series_description as description, 
+        array_to_string(series_tags, ',', ' ') as tags,
         CASE WHEN series_period_type = 'spec_period' THEN TO_CHAR(series_activity_start::DATE, 'yyyy-mm-dd') 
           WHEN series_period_type = 'user_reg' THEN series_activity_by_user_start::text
           ELSE '' END as activity_start,
@@ -68,6 +70,8 @@ class SeriesService {
         series_name as name,
         series_period_type as period_type, 
         series_is_private as is_private,
+        series_description as description, 
+        array_to_string(series_tags, ',', ' ') as tags,        
         CASE WHEN series_period_type = 'spec_period' THEN TO_CHAR(series_activity_start::DATE, 'yyyy-mm-dd') 
           WHEN series_period_type = 'user_reg' THEN series_activity_by_user_start::text
           ELSE '' END as activity_start,
@@ -96,6 +100,8 @@ class SeriesService {
       cid,
       name,
       is_private = false,
+      tags = '',
+      description = '',
       period_type = null,
       activity_start = null,
       activity_finish = null
@@ -136,19 +142,30 @@ class SeriesService {
 
       const query_val =
         period_type === null
-          ? [cid, name, period_type, null, null, Boolean(is_private)]
+          ? [
+              cid,
+              name,
+              period_type,
+              null,
+              null,
+              Boolean(is_private),
+              description,
+              tags
+            ]
           : [
               cid,
               name,
               period_type,
               activity_start,
               activity_finish,
-              Boolean(is_private)
+              Boolean(is_private),
+              description,
+              tags
             ]
       const {rows} = await client.query(
         `INSERT INTO series (series_company_id, series_name, 
-          series_period_type ${activity_fields}, series_is_private) 
-        VALUES ($1, $2, $3, $4, $5, $6) 
+          series_period_type ${activity_fields}, series_is_private, series_description, series_tags) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, string_to_array($8,',')) 
         RETURNING *;`,
         query_val
       )
@@ -183,6 +200,8 @@ class SeriesService {
       cid,
       name,
       is_private = false,
+      description = '',
+      tags = '',
       activity_start = null,
       activity_finish = null,
       period_type = null
@@ -229,12 +248,22 @@ class SeriesService {
       SET series_name=$3, 
       series_period_type = $4,
       series_is_private = $5,
+      series_description =$6,
+      series_tags = string_to_array($7, ','),            
       ${activity_fields}
       WHERE series_company_id=$2 and series_id =$1
       AND deleted_at IS NULL
       RETURNING *;`
 
-      let query_val = [sid, cid, name, period_type, Boolean(is_private)]
+      let query_val = [
+        sid,
+        cid,
+        name,
+        period_type,
+        Boolean(is_private),
+        description,
+        tags
+      ]
 
       if (period_type !== null) {
         query_val = [...query_val, activity_start, activity_finish]
