@@ -264,15 +264,17 @@ class GroupService {
       const {rows} = await client.query(
         `UPDATE groups 
           SET group_series = array_append(group_series, $3) 
-          WHERE group_company_id=$2 and group_gid =$1
+          WHERE group_company_id=$2 AND group_gid=$1
           AND deleted_at IS NULL
           RETURNING *;`,
         [gid, cid, sid]
       )
 
-      histData.object_name = `g_${rows[0].group_gid}`
+      histData.object_name = `g_${gid}`
       histData.result = rows.length === 1
-      histData.details = `Success`
+      if (rows.length === 1) {
+        histData.details = `Success`
+      }
       return rows.length
     } catch (error) {
       throw Error(error.message)
