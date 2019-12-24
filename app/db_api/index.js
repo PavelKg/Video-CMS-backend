@@ -46,6 +46,7 @@ const sortableColumns = {
   series: [
     'series.created_at',
     'series.deleted_at',
+    'series_id',
     'series_name',
     'series_period_type',
     'series_activity_start',
