@@ -62,7 +62,7 @@ async function addUserHandler(req, reply) {
   let url = req.raw.url
   let user = {...req.body, cid}
 
- let acc
+  let acc
   req.jwtVerify(function(err, decoded) {
     if (!err) {
       acc = decoded.user

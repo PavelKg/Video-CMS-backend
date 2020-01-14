@@ -144,6 +144,19 @@ class UserService {
       }
 
       client = await this.db.connect()
+
+      const {rows: cntExEmail} = await client.query(
+        `SELECT count(*) cnt 
+        FROM users 
+        WHERE user_company_id=$1 and user_email=$2;`,
+        [cid, email]
+      )
+
+      if (cntExEmail[0].cnt > 0) {
+        histData.details = `Error [Email already exists]`
+        throw Error(errors.THIS_EMAIL_IS_NOT_ALLOWED)
+      }
+
       const {rows} = await client.query(
         `with urole as (
         select role_id id from roles where role_company_id=$2 and role_rid=$5)
@@ -229,6 +242,19 @@ class UserService {
         throw Error(errors.WRONG_ACCESS)
       }
       client = await this.db.connect()
+
+      const {rows: cntExEmail} = await client.query(
+        `SELECT count(*) cnt 
+        FROM users 
+        WHERE user_company_id=$1 and user_email=$2 and user_uid<>$3;`,
+        [cid, email, uid]
+      )
+
+      if (cntExEmail[0].cnt > 0) {
+        histData.details = `Error [Email already exists]`
+        throw Error(errors.THIS_EMAIL_IS_NOT_ALLOWED)
+      }
+
       const {rowCount} = await client.query(
         `UPDATE users 
         SET user_fullname=$3, 
