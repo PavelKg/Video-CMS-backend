@@ -26,7 +26,9 @@ class VideoService {
     const {acc, query} = payload
     const storage_type = 'gcs'
     const {name, size, type, uuid} = query
-    const title = name.match(/^([\w\-. ]+).[\w]{3,4}$/i)[1]
+    const title = name.match(/^(.+).[\w]{3,4}$/iu)[1]
+
+  
 
     const {user_id, company_id: cid, uid} = acc
     let histData = {
@@ -84,6 +86,7 @@ class VideoService {
       histData.details = `Success [${title}]`
       //return insRows.length
     } catch (error) {
+      console.log('error=', error)
     } finally {
       if (client) {
         client.release()
