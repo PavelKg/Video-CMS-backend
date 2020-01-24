@@ -28,8 +28,6 @@ class VideoService {
     const {name, size, type, uuid} = query
     const title = name.match(/^(.+).[\w]{3,4}$/iu)[1]
 
-  
-
     const {user_id, company_id: cid, uid} = acc
     let histData = {
       category: this.history_category,
@@ -639,7 +637,7 @@ class VideoService {
         throw Error(errors.WRONG_ACCESS)
       }
 
-      const client = await this.db.connect()
+      client = await this.db.connect()
       const fields_length = Object.keys(fields).length
       let select = 'SELECT'
       Object.keys(fields).forEach((element, idx) => {
