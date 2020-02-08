@@ -160,7 +160,7 @@ class UserService {
       const {rows: cntExUid} = await client.query(
         `SELECT count(*) cnt 
         FROM users 
-        WHERE user_uid=$2;`,
+        WHERE user_uid=$1;`,
         [uid]
       )
 
