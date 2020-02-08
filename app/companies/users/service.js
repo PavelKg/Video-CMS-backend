@@ -148,13 +148,25 @@ class UserService {
       const {rows: cntExEmail} = await client.query(
         `SELECT count(*) cnt 
         FROM users 
-        WHERE user_company_id=$1 and user_email=$2;`,
-        [cid, email]
+        WHERE user_email=$1;`,
+        [email]
       )
 
       if (cntExEmail[0].cnt > 0) {
         histData.details = `Error [Email already exists]`
         throw Error(errors.THIS_EMAIL_IS_NOT_ALLOWED)
+      }
+
+      const {rows: cntExUid} = await client.query(
+        `SELECT count(*) cnt 
+        FROM users 
+        WHERE user_uid=$2;`,
+        [uid]
+      )
+
+      if (cntExUid[0].cnt > 0) {
+        histData.details = `Error [Uid already exists]`
+        throw Error(errors.THIS_UID_IS_NOT_ALLOWED)
       }
 
       const {rows} = await client.query(

@@ -27,7 +27,7 @@ const userObject = {
 const user = {
   type: 'object',
   properties: {
-    uid: {type: 'string'},
+    uid: {type: 'string', maxLength: 10, minLength: 3},
     fullname: {type: 'string'},
     cid: {type: 'string'},
     gids: {type: 'array', items: {type: 'integer'}},
@@ -123,7 +123,7 @@ const updUser = {
   body: {
     type: 'object',
     properties: {
-      fullname: {type: 'string'},
+      fullname: {type: 'string', minLength: 3},
       gids: {type: 'array', items: {type: 'integer'}},
       rid: {type: 'string'},
       email: {type: 'string'},
