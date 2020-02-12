@@ -258,8 +258,8 @@ class UserService {
       const {rows: cntExEmail} = await client.query(
         `SELECT count(*) cnt 
         FROM users 
-        WHERE user_company_id=$1 and user_email=$2 and user_uid<>$3;`,
-        [cid, email, uid]
+        WHERE user_email=$1 and user_uid<>$2;`,
+        [email, uid]
       )
 
       if (cntExEmail[0].cnt > 0) {

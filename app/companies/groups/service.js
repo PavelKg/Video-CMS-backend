@@ -95,6 +95,19 @@ class GroupService {
       }
 
       client = await this.db.connect()
+
+      const {rows: cntExName} = await client.query(
+        `SELECT count(*) cnt 
+        FROM groups 
+        WHERE group_name=$1 and group_company_id=$2;`,
+        [name, cid]
+      )
+
+      if (cntExName[0].cnt > 0) {
+        histData.details = `Error [Group name already exists]`
+        throw Error(errors.THIS_GROUP_NAME_IS_NOT_ALLOWED)
+      }
+
       const {rows} = await client.query(
         `INSERT INTO groups (group_company_id, group_name, group_series) 
         VALUES ($1, $2, $3) 
@@ -141,6 +154,19 @@ class GroupService {
       }
 
       client = await this.db.connect()
+
+      const {rows: cntExName} = await client.query(
+        `SELECT count(*) cnt 
+        FROM groups 
+        WHERE group_name=$1 and group_company_id=$2 and group_gid<>$3;`,
+        [name, cid, gid]
+      )
+
+      if (cntExName[0].cnt > 0) {
+        histData.details = `Error [Group name already exists]`
+        throw Error(errors.THIS_GROUP_NAME_IS_NOT_ALLOWED)
+      }
+
       const {rows} = await client.query(
         `UPDATE groups 
           SET group_name=$3, group_series=$4 

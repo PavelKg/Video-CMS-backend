@@ -32,7 +32,7 @@ const groupBindingObject = {
 const group = {
   type: 'object',
   properties: {
-    name: {type: 'string'},
+    name: {type: 'string', minLength: 3, maxLength: 20},
     group_series: {type: 'array', items: {type: 'integer'}}
   },
   required: ['name', 'group_series'],
