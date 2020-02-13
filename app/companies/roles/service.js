@@ -104,6 +104,18 @@ class RoleService {
 
       client = await this.db.connect()
 
+      const {rows: cntExRid} = await client.query(
+        `SELECT count(*) cnt 
+        FROM roles 
+        WHERE role_rid=$1 and role_company_id=$2;`,
+        [rid, cid]
+      )
+
+      if (cntExRid[0].cnt > 0) {
+        histData.details = `Error [Role rid already exists]`
+        throw Error(errors.THIS_ROLE_RID_IS_NOT_ALLOWED)
+      }      
+
       const {rows} = await client.query(
         `INSERT INTO roles (role_rid, role_company_id, role_name, role_is_admin) 
       VALUES ($1, $2, $3, $4) 
@@ -155,6 +167,7 @@ class RoleService {
 
       client = await this.db.connect()
 
+      
       const {rowCount} = await client.query(
         `UPDATE roles 
         SET role_name=$3, role_is_admin=$4 
