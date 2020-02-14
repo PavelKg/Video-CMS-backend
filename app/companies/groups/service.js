@@ -158,7 +158,8 @@ class GroupService {
       const {rows: cntExName} = await client.query(
         `SELECT count(*) cnt 
         FROM groups 
-        WHERE group_name=$1 and group_company_id=$2 and group_gid<>$3;`,
+        WHERE group_name=$1 and group_company_id=$2 
+          and group_gid<>$3 and deleted_at is null;`,
         [name, cid, gid]
       )
 
