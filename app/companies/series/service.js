@@ -127,6 +127,19 @@ class SeriesService {
 
       client = await this.db.connect()
 
+      const {rows: cntExName} = await client.query(
+        `SELECT count(*) cnt 
+        FROM series 
+        WHERE series_name=$1 AND series_company_id=$2 
+        AND deleted_at is null;`,
+        [name, cid]
+      )
+
+      if (cntExName[0].cnt > 0) {
+        histData.details = `Error [Series name already exists]`
+        throw Error(errors.THIS_SERIES_NAME_IS_NOT_ALLOWED)
+      }
+
       switch (period_type) {
         case null:
           break
@@ -270,6 +283,20 @@ class SeriesService {
       }
 
       client = await this.db.connect()
+
+      const {rows: cntExName} = await client.query(
+        `SELECT count(*) cnt 
+        FROM series 
+        WHERE series_name=$1 AND series_company_id=$2 
+          AND series_id<>$3 AND deleted_at is null;`,
+        [name, cid, sid]
+      )
+
+      if (cntExName[0].cnt > 0) {
+        histData.details = `Error [Series name already exists]`
+        throw Error(errors.THIS_SERIES_NAME_IS_NOT_ALLOWED)
+      }
+
       const {rows} = await client.query(query_str, query_val)
 
       histData.object_name = `s_${rows[0].series_id}`
