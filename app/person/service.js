@@ -50,7 +50,9 @@ class PersonService {
 	      AND roles.role_id=users.user_role_id
         AND users.deleted_at IS NULL
         AND (user_activity_finish is null or now()::date between user_activity_start and user_activity_finish)
-	      AND users.user_uid =$1 and users.user_password=crypt($2, user_password);`,
+	      AND ((users.user_uid = $1 and users.created_at::date < '2020-02-17'::date) 
+          OR (users.user_email = $1 and users.created_at::date >= '2020-02-17'::date)) 
+        AND users.user_password=crypt($2, user_password);`,
         [username, password]
       )
 
