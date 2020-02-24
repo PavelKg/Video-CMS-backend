@@ -40,9 +40,11 @@ class SeriesService {
           CASE WHEN series_period_type = 'spec_period' THEN TO_CHAR(series_activity_finish::DATE, 'yyyy-mm-dd') 
             WHEN series_period_type = 'user_reg' THEN series_activity_by_user_finish::text
             ELSE '' END as activity_finish,     
-        deleted_at AT TIME ZONE $3 AS deleted_at
-      FROM "series"
-      WHERE series_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
+        series.deleted_at AT TIME ZONE $3 AS deleted_at
+      FROM "series", companies
+      WHERE series_company_id=$1 AND companies.company_id=series.series_company_id 
+        AND ((series.deleted_at is NOT NULL AND companies.company_show_deleted=true) OR series.deleted_at IS NULL)  
+        ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
         [cid, offset, timezone]
       )
       return rows

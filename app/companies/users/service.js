@@ -49,7 +49,11 @@ class UserService {
       FROM users
       LEFT OUTER JOIN roles
       ON users.user_role_id = roles.role_id
-      WHERE user_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
+      LEFT JOIN companies
+      ON users.user_company_id = companies.company_id
+      WHERE user_company_id=$1 
+        AND ((users.deleted_at is NOT NULL AND companies.company_show_deleted=true) OR users.deleted_at IS NULL)
+        ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
         [cid, offset, timezone]
       )
       return rows

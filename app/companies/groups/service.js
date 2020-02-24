@@ -30,9 +30,11 @@ class GroupService {
         group_gid as gid, 
         group_company_id as cid,         
         group_name as name, 
-        deleted_at AT TIME ZONE $3 AS deleted_at
-      FROM "groups"
-      WHERE group_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
+        groups.deleted_at AT TIME ZONE $3 AS deleted_at
+      FROM "groups", companies
+      WHERE group_company_id=$1 AND companies.company_id=groups.group_company_id
+        AND ((groups.deleted_at is NOT NULL AND companies.company_show_deleted=true) OR groups.deleted_at IS NULL) 
+        ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
         [cid, offset, timezone]
       )
       return rows

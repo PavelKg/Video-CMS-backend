@@ -35,9 +35,11 @@ class RoleService {
           role_name as name, 
           role_company_id as cid, 
           role_is_admin as is_admin, 
-          deleted_at AT TIME ZONE $3 AS deleted_at 
-        from roles
-        where role_company_id=$1 ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
+          roles.deleted_at AT TIME ZONE $3 AS deleted_at 
+        FROM roles, companies
+        WHERE role_company_id=$1 AND companies.company_id=roles.role_company_id
+          AND ((roles.deleted_at is NOT NULL AND companies.company_show_deleted=true) OR roles.deleted_at IS NULL) 
+          ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
         [cid, offset, timezone]
       )
 
@@ -114,7 +116,7 @@ class RoleService {
       if (cntExRid[0].cnt > 0) {
         histData.details = `Error [Role rid already exists]`
         throw Error(errors.THIS_ROLE_RID_IS_NOT_ALLOWED)
-      }      
+      }
 
       const {rows} = await client.query(
         `INSERT INTO roles (role_rid, role_company_id, role_name, role_is_admin) 
@@ -167,7 +169,6 @@ class RoleService {
 
       client = await this.db.connect()
 
-      
       const {rowCount} = await client.query(
         `UPDATE roles 
         SET role_name=$3, role_is_admin=$4 
