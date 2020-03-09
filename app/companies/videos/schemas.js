@@ -276,6 +276,38 @@ const addVideoPlayerEvent = {
   }
 }
 
+const getVideoBindingSeries = {
+  tags: ['videos'],
+  params: {
+    type: 'object',
+    required: ['cid', 'sid'],
+    properties: {
+      cid: {
+        type: 'integer'
+      },
+      sid: {
+        type: 'integer'
+      }
+    },
+    additionalProperties: false
+  }
+}
+const getVideoBindingGroup = {
+  tags: ['videos'],
+  params: {
+    type: 'object',
+    required: ['cid', 'gid'],
+    properties: {
+      cid: {
+        type: 'integer'
+      },
+      gid: {
+        type: 'integer'
+      }
+    },
+    additionalProperties: false
+  }
+}
 // const gcsUploadSignedPolicy = {
 //   tags: ['videos'],
 //   params: {
@@ -312,6 +344,8 @@ module.exports = {
   updVideoPublicStatus,
   addVideoPlayerEvent,
   delVideoSeries,
-  delVideoGroup
+  delVideoGroup,
+  getVideoBindingSeries,
+  getVideoBindingGroup
   //gcsUploadSignedPolicy
 }

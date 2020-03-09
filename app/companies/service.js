@@ -9,6 +9,83 @@ class CompanyService {
     this.histLogger = histLogger
   }
 
+  async setVideoInfoLocation(payload) {
+    const {acc, location, params} = payload
+    const {cid} = params
+    const {user_id, company_id, uid} = acc
+
+    let client = undefined
+
+    let histData = {
+      category: this.history_category,
+      action: 'Video Info Location',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: '',
+      details: 'Failed',
+      target_data: {location}
+    }
+
+    try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+
+      client = await this.db.connect()
+      const query = {
+        text: `UPDATE companies SET company_video_info_location_bottom = $2
+         WHERE company_id=$1 
+         RETURNING company_id`,
+        values: [cid, location === 'bottom']
+      }
+      const {rows} = await client.query(query)
+
+      histData.object_name = rows[0].company_id
+      histData.result = rows.length === 1
+      histData.details = 'Success'
+      return rows.length
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
+    }
+  }
+
+  async getVideoInfoLocation(playload) {
+    const {acc, cid} = playload
+
+    let client = undefined
+
+    try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+      client = await this.db.connect()
+      const query = {
+        text: `SELECT CASE 
+          WHEN company_video_info_location_bottom = true THEN 'bottom' 
+          ELSE 'next' END AS location 
+         FROM companies 
+         WHERE company_id=$1`,
+        values: [cid]
+      }
+      const {rows} = await client.query(query)
+
+      return rows[0]
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      if (client) {
+        client.release()
+      }
+    }
+  }
+
   async setCommentsBoxState(playload) {
     const {acc, params} = playload
     const {cid, state} = params

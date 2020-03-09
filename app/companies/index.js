@@ -2,7 +2,8 @@ const {
   getCommentsBoxVisibleState: getCommentsBoxVisibleStateSchema,
   setCommentsBoxVisibleState: setCommentsBoxVisibleStateSchema,
   updCompanyLogo: updCompanyLogoSchema,
-  getCompanyLogo: getCompanyLogoSchema
+  getCompanyLogo: getCompanyLogoSchema,
+  videoInfoLocation: videoInfoLocationSchema
 } = require('./schemas')
 
 module.exports = async function(fastify, opts) {
@@ -11,18 +12,72 @@ module.exports = async function(fastify, opts) {
   fastify.put(
     '/commentbox/:state',
     {schema: setCommentsBoxVisibleStateSchema},
-    setCommentsBoxVisibleHendler
+    setCommentsBoxVisibleHandler
   )
   fastify.get(
     '/commentbox',
     {schema: getCommentsBoxVisibleStateSchema},
-    getCommentsBoxVisibleHendler
+    getCommentsBoxVisibleHandler
   )
-  fastify.put('/logo', {schema: updCompanyLogoSchema}, updCompanyLogoHendler)
-  fastify.get('/logo', {schema: getCompanyLogoSchema}, getCompanyLogoHendler)
+  fastify.put(
+    '/videoinfobottomlocation',
+    {schema: videoInfoLocationSchema, config: {location: 'bottom'}},
+    setVideoInfoLocationHandler
+  )
+  fastify.put(
+    '/videoinfonextlocation',
+    {schema: videoInfoLocationSchema, config: {location: 'next'}},
+    setVideoInfoLocationHandler
+  )
+  fastify.get(
+    '/videoinfolocation',
+    {schema: videoInfoLocationSchema},
+    getVideoInfoLocationHandler
+  )
+  fastify.put('/logo', {schema: updCompanyLogoSchema}, updCompanyLogoHandler)
+  fastify.get('/logo', {schema: getCompanyLogoSchema}, getCompanyLogoHandler)
 }
 
-async function setCommentsBoxVisibleHendler(req, reply) {
+async function setVideoInfoLocationHandler(req, reply) {
+  const {location} = reply.context.config
+  const params = req.params
+
+  let acc = null
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  const res = await this.companyService.setVideoInfoLocation({
+    acc,
+    params,
+    location
+  })
+
+  const _code = res === 1 ? 204 : 404
+  reply.code(_code).send()
+}
+
+async function getVideoInfoLocationHandler(req, reply) {
+  const cid = req.params.cid
+
+  let acc = null
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  const res = await this.companyService.getVideoInfoLocation({
+    acc,
+    cid
+  })
+  const _code = typeof res === 'object' ? 200 : 404
+  reply.code(_code).send(res)
+}
+
+async function setCommentsBoxVisibleHandler(req, reply) {
   const params = req.params
 
   let acc = null
@@ -40,7 +95,7 @@ async function setCommentsBoxVisibleHendler(req, reply) {
   reply.code(_code).send()
 }
 
-async function getCommentsBoxVisibleHendler(req, reply) {
+async function getCommentsBoxVisibleHandler(req, reply) {
   const cid = req.params.cid
 
   let acc = null
@@ -58,7 +113,7 @@ async function getCommentsBoxVisibleHendler(req, reply) {
   reply.code(_code).send(res)
 }
 
-async function updCompanyLogoHendler(req, reply) {
+async function updCompanyLogoHandler(req, reply) {
   const body = req.body
   const cid = req.params.cid
 
@@ -78,7 +133,7 @@ async function updCompanyLogoHendler(req, reply) {
   reply.code(_code).send()
 }
 
-async function getCompanyLogoHendler(req, reply) {
+async function getCompanyLogoHandler(req, reply) {
   const cid = req.params.cid
 
   let acc = null

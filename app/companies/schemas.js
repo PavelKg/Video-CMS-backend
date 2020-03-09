@@ -1,3 +1,17 @@
+const videoInfoLocation = {
+  tags: ['companies'],
+  params: {
+    type: 'object',
+    required: ['cid'],
+    properties: {
+      cid: {
+        type: 'number'
+      }
+    },
+    additionalProperties: false
+  }
+}
+
 const setCommentsBoxVisibleState = {
   tags: ['companies'],
   params: {
@@ -89,5 +103,6 @@ module.exports = {
   getCommentsBoxVisibleState,
   setCommentsBoxVisibleState,
   getCompanyLogo,
-  updCompanyLogo
+  updCompanyLogo,
+  videoInfoLocation
 }
