@@ -5,6 +5,7 @@ const {
   getCompanyUsers: getCompanyUsersSchema,
   getCompanyUserInfo: getCompanyUserInfoSchema,
   addUser: addUserSchema,
+  addUserCSV: addUserCSVSchema,
   updUser: updUserSchema,
   delUser: delUserSchema
 } = require('./schemas')
@@ -12,7 +13,7 @@ const {
 module.exports = async function(fastify, opts) {
   // All APIs are under authentication here!
   fastify.addHook('preHandler', fastify.authPreHandler)
-
+  fastify.addContentTypeParser()
   fastify.get('/', {schema: getCompanyUsersSchema}, getCompanyUsersHandler)
   fastify.get(
     '/:uid',
@@ -20,6 +21,7 @@ module.exports = async function(fastify, opts) {
     getCompanyUserInfoHandler
   )
   fastify.post('/', {schema: addUserSchema}, addUserHandler)
+  fastify.post('/import', {schema: addUserCSVSchema}, addUserCSVHandler)
   fastify.put('/:uid', {schema: updUserSchema}, updUserHandler)
   fastify.delete('/:uid', {schema: delUserSchema}, delUserHandler)
 }
@@ -55,6 +57,21 @@ async function getCompanyUserInfoHandler(req, reply) {
   } else {
     reply.code(404).send()
   }
+}
+
+async function addUserCSVHandler(req, reply) {
+  let acc
+  req.jwtVerify(function(err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+  return 0
+  // const newUser = await this.userService.addUser({acc, user})
+  // reply
+  //   .code(201)
+  //   .header('Location', `${url}${newUser}`)
+  //   .send()
 }
 
 async function addUserHandler(req, reply) {
