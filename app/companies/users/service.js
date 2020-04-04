@@ -106,6 +106,33 @@ class UserService {
     }
   }
 
+  async importUsers(payload) {
+    const {acc, fileInfo} = payload
+    const cid = acc.company_id
+
+    let histData = {
+      category: this.history_category,
+      action: 'users-import',
+      result: true,
+      user_id: acc.user_id,
+      user_uid: acc.uid,
+      cid: cid,
+      object_name: fileInfo.name,
+      details: `success`,
+      target_data: fileInfo
+    }
+
+    try {
+      if (acc.company_id !== cid || !acc.is_admin) {
+        throw Error(errors.WRONG_ACCESS)
+      }
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      this.histLogger.saveHistoryInfo(histData)
+    }
+  }
+
   async addUser(payload) {
     let client = undefined
     const {acc, user} = payload

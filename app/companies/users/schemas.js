@@ -92,6 +92,27 @@ const getCompanyUserInfo = {
   }
 }
 
+const importUsers = {
+  summary: 'upload file',
+  params: {
+    type: 'object',
+    required: ['cid'],
+    properties: {
+      cid: {
+        type: 'number'
+      }
+    },
+    additionalProperties: false
+  },
+  body: {
+    type: 'object',
+    properties: {
+      userlist: {type: 'object'}
+    },
+    required: ['userlist']
+  }
+}
+
 const addUser = {
   tags: ['users'],
   params: {
@@ -158,6 +179,7 @@ const delUser = {
 module.exports = {
   getCompanyUsers,
   getCompanyUserInfo,
+  importUsers,
   addUser,
   updUser,
   delUser

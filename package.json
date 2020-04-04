@@ -6,9 +6,11 @@
   "dependencies": {
     "@google-cloud/storage": "^2.5.0",
     "bitmovin-javascript": "^2.25.0",
+    "csv-parse": "^4.8.8",
     "dotenv": "^7.0.0",
     "fastify": "^2.7.1",
     "fastify-cors": "^2.1.3",
+    "fastify-file-upload": "^2.0.1",
     "fastify-jwt": "^0.9.6",
     "fastify-nodemailer": "^4.1.1",
     "fastify-postgres": "^2.0.0",
