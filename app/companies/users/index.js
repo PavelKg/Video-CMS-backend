@@ -145,12 +145,12 @@ async function importUsersHandler(req, reply) {
       await this.userService.addUser({acc, user})
       resLog = 'success'
     } catch (err) {
-      resLog = err.message
+      resLog = `${err.message}`
     } finally {
       report.push({
         row: record,
         id: records[record].id ? records[record].id : '',
-        result: resLog
+        result: `"${resLog}"`
       })
     }
   }
