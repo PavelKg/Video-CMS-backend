@@ -13,7 +13,7 @@ const {
   delUser: delUserSchema
 } = require('./schemas')
 
-module.exports = async function(fastify, opts) {
+module.exports = async function (fastify, opts) {
   fastify.register(fileUpload)
   // All APIs are under authentication here!
   fastify.addHook('preHandler', fastify.authPreHandler)
@@ -44,7 +44,7 @@ module.exports[Symbol.for('plugin-meta')] = {
 async function getCompanyUsersHandler(req, reply) {
   const {cid} = req.params
   let acc = null
-  req.jwtVerify(function(err, decoded) {
+  req.jwtVerify(function (err, decoded) {
     if (!err) {
       acc = decoded.user
     }
@@ -55,7 +55,7 @@ async function getCompanyUsersHandler(req, reply) {
 async function getCompanyUserInfoHandler(req, reply) {
   const {cid, uid} = req.params
   let acc = null
-  req.jwtVerify(function(err, decoded) {
+  req.jwtVerify(function (err, decoded) {
     if (!err) {
       acc = decoded.user
     }
@@ -83,7 +83,7 @@ async function importUsersHandler(req, reply) {
   ]
 
   let acc
-  req.jwtVerify(function(err, decoded) {
+  req.jwtVerify(function (err, decoded) {
     if (!err) {
       acc = decoded.user
     }
@@ -147,7 +147,11 @@ async function importUsersHandler(req, reply) {
     } catch (err) {
       resLog = err.message
     } finally {
-      report.push({row: record, id: records[record].id, result: resLog})
+      report.push({
+        row: record,
+        id: records[record].id ? records[record].id : '',
+        result: resLog
+      })
     }
   }
   await this.userService.importUsers({acc, fileInfo})
@@ -160,7 +164,7 @@ async function addUserHandler(req, reply) {
   let user = {...req.body, cid}
 
   let acc
-  req.jwtVerify(function(err, decoded) {
+  req.jwtVerify(function (err, decoded) {
     if (!err) {
       acc = decoded.user
     }
@@ -170,10 +174,7 @@ async function addUserHandler(req, reply) {
     url += '/'
   }
   const newUser = await this.userService.addUser({acc, user})
-  reply
-    .code(201)
-    .header('Location', `${url}${newUser}`)
-    .send()
+  reply.code(201).header('Location', `${url}${newUser}`).send()
 }
 
 async function updUserHandler(req, reply) {
@@ -181,7 +182,7 @@ async function updUserHandler(req, reply) {
   let user = {...req.body, cid: +cid, uid}
 
   let acc
-  req.jwtVerify(function(err, decoded) {
+  req.jwtVerify(function (err, decoded) {
     if (!err) {
       acc = decoded.user
     }
@@ -197,7 +198,7 @@ async function delUserHandler(req, reply) {
   let user = {cid: +cid, uid}
 
   let acc
-  req.jwtVerify(function(err, decoded) {
+  req.jwtVerify(function (err, decoded) {
     if (!err) {
       acc = decoded.user
     }
