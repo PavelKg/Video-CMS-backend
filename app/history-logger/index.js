@@ -57,7 +57,6 @@ async function getHistoryInfoHandler(req, reply) {
 
 async function historyCategoriesHandler(req, reply) {
   const query = req.query
-  console.log('query=', query)
   let acc
   req.jwtVerify(function(err, decoded) {
     if (!err) {

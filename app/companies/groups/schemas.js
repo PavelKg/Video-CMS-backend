@@ -13,6 +13,7 @@ const groupObject = {
     gid: {type: 'integer'},
     cid: {type: 'integer'},
     name: {type: 'string'},
+    parent: {type: ['integer', 'null']},
     group_series: {type: 'array', items: {type: 'integer'}},
     deleted_at: {type: 'string'}
   }
@@ -33,6 +34,7 @@ const group = {
   type: 'object',
   properties: {
     name: {type: 'string', minLength: 3, maxLength: 20},
+    parent: {type: ['number', 'null']},
     group_series: {type: 'array', items: {type: 'integer'}}
   },
   required: ['name', 'group_series'],

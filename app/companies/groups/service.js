@@ -29,7 +29,8 @@ class GroupService {
         `SELECT 
         group_gid as gid, 
         group_company_id as cid,         
-        group_name as name, 
+        group_name as name,
+        group_parent as parent, 
         groups.deleted_at AT TIME ZONE $3 AS deleted_at
       FROM "groups", companies
       WHERE group_company_id=$1 AND companies.company_id=groups.group_company_id
@@ -59,6 +60,7 @@ class GroupService {
         group_gid as gid, 
         group_company_id as cid,         
         group_name as name, 
+        group_parent as parent,
         CASE WHEN group_series IS NULL THEN '{}' ELSE group_series END as group_series,
         deleted_at AT TIME ZONE $3 AS deleted_at
       FROM "groups"
@@ -76,7 +78,7 @@ class GroupService {
   async addGroup(payload) {
     let client = undefined
     const {acc, group} = payload
-    const {cid, name, group_series = []} = group
+    const {cid, name, parent = null, group_series = []} = group
 
     const {user_id, company_id, uid} = acc
     let histData = {
@@ -104,17 +106,31 @@ class GroupService {
         WHERE group_name=$1 and group_company_id=$2;`,
         [name, cid]
       )
-
       if (cntExName[0].cnt > 0) {
         histData.details = `Error [Group name already exists]`
         throw Error(errors.THIS_GROUP_NAME_IS_NOT_ALLOWED)
       }
 
+      if (parent) {
+        const {rows: cntParent} = await client.query(
+          `SELECT count(*) cnt 
+          FROM groups 
+          WHERE group_gid=$1 AND group_company_id=$2
+          AND deleted_at IS NOT NULL;`,
+          [parent, cid]
+        )
+
+        if (cntParent[0].cnt === '0') {
+          histData.details = `Error [Parent group does not exist]`
+          throw Error(errors.PARENT_GROUP_DOES_NOT_EXIST)
+        }
+      }
+
       const {rows} = await client.query(
-        `INSERT INTO groups (group_company_id, group_name, group_series) 
-        VALUES ($1, $2, $3) 
+        `INSERT INTO groups (group_company_id, group_name, group_parent, group_series) 
+        VALUES ($1, $2, $3, $4) 
         RETURNING *;`,
-        [cid, name, group_series]
+        [cid, name, parent, group_series]
       )
       histData.result = typeof rows[0] === 'object'
       histData.object_name = `g_${rows[0].group_gid}`
@@ -135,7 +151,7 @@ class GroupService {
   async updGroup(payload) {
     let client = undefined
     const {acc, group} = payload
-    const {gid, cid, name, group_series = []} = group
+    const {gid, cid, name, parent = null, group_series = []} = group
 
     const {user_id, company_id, uid} = acc
     let histData = {
@@ -170,13 +186,28 @@ class GroupService {
         throw Error(errors.THIS_GROUP_NAME_IS_NOT_ALLOWED)
       }
 
+      if (parent) {
+        const {rows: cntParent} = await client.query(
+          `SELECT count(*) cnt 
+          FROM groups 
+          WHERE group_gid=$1 AND group_company_id=$2 
+            AND deleted_at IS NOT NULL;`,
+          [parent, cid]
+        )
+
+        if (cntParent[0].cnt === '0') {
+          histData.details = `Error [Parent group does not exist]`
+          throw Error(errors.PARENT_GROUP_DOES_NOT_EXIST)
+        }
+      }
+
       const {rows} = await client.query(
         `UPDATE groups 
-          SET group_name=$3, group_series=$4 
+          SET group_name=$3, group_series=$4, group_parent=$5 
           WHERE group_company_id=$2 and group_gid =$1
           AND deleted_at IS NULL
           RETURNING *;`,
-        [gid, cid, name, group_series]
+        [gid, cid, name, group_series, parent]
       )
 
       histData.object_name = `g_${rows[0].group_gid}`
@@ -351,6 +382,18 @@ class GroupService {
         throw Error(errors.CANNOT_DELETE_A_GROUP_WITH_EXISTING_USERS)
       }
 
+      const {rows: grpr} = await client.query(
+        `SELECT count(group_gid) cnt 
+          FROM groups 
+          WHERE group_parent = $1;`,
+        [gid]
+      )
+
+      if (grpr[0].cnt !== '0') {
+        histData.details = `Error [Group has children]`
+        throw Error(errors.THIS_GROUP_HAS_CHILDREN)
+      }
+
       const {rows} = await client.query(
         `UPDATE groups 
         SET deleted_at = now()
@@ -360,7 +403,7 @@ class GroupService {
         [gid, cid]
       )
 
-      histData.object_name = `g_${rows[0].group_gid}`
+      histData.object_name = `g_${gid}`
       histData.result = rows.length === 1
       histData.details = 'Success'
       return rows.length
