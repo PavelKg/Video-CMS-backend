@@ -56,6 +56,7 @@ const sortableColumns = {
 
 const db_oper = {
   eq: '= ',
+  noteq: '!= ',
   lt: '< ',
   gt: '> ',
   lte: '<= ',

@@ -46,6 +46,46 @@ class GroupService {
     }
   }
 
+  async companyGroupsParents(payload) {
+    const {acc, cid} = payload
+    const {timezone, uid} = acc
+    const {
+      limit = 'ALL',
+      offset = 0,
+      sort = 'group_gid',
+      filter = ''
+    } = payload.query
+
+    const qSort = db_api.sorting(sort, 'groups')
+    let qFilter = filter !== '' ? db_api.filtration(filter, 'groups') : ''
+    qFilter = db_api.setFilterTz(qFilter, timezone)
+
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `WITH 
+          usrgroups AS (
+            select get_user_groups($3, $1) AS ids
+          )
+
+        SELECT 
+          group_gid as gid, 
+          group_name as name
+        FROM "groups", companies
+        WHERE group_company_id=$1 AND companies.company_id=groups.group_company_id
+          AND groups.deleted_at IS NULL 
+          AND group_gid IN (SELECT unnest(ids) FROM usrgroups)
+        ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
+        [cid, offset, uid]
+      )
+      return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
+  }
+
   async companyGroupById(payload) {
     const {acc, cid, gid} = payload
     const {timezone} = acc

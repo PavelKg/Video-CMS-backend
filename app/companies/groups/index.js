@@ -4,6 +4,7 @@ const {
   group: groupSchema,
   getCompanyGroups: getCompanyGroupsSchema,
   getCompanyGroupById: getCompanyGroupByIdSchema,
+  getCompanyGroupsParents: getCompanyGroupsParentsSchema,
   getGroupsBindingSeries: getGroupsBindingSeriesSchema,
   addGroup: addGroupSchema,
   updGroup: updGroupSchema,
@@ -12,11 +13,16 @@ const {
   delGroup: delGroupSchema
 } = require('./schemas')
 
-module.exports = async function(fastify, opts) {
+module.exports = async function (fastify, opts) {
   // All APIs are under authentication here!
   fastify.addHook('preHandler', fastify.authPreHandler)
 
   fastify.get('/', {schema: getCompanyGroupsSchema}, getCompanyGroupsHandler)
+  fastify.get(
+    '/parents',
+    {schema: getCompanyGroupsParentsSchema},
+    getCompanyGroupsParentsHandler
+  )
   fastify.get(
     '/:gid',
     {schema: getCompanyGroupByIdSchema},
@@ -52,7 +58,7 @@ async function getCompanyGroupsHandler(req, reply) {
   const cid = req.params.cid
   const query = req.query
   let acc = null
-  req.jwtVerify(function(err, decoded) {
+  req.jwtVerify(function (err, decoded) {
     if (!err) {
       acc = decoded.user
     }
@@ -61,10 +67,23 @@ async function getCompanyGroupsHandler(req, reply) {
   return await this.groupService.companyGroups({acc, cid, query})
 }
 
+async function getCompanyGroupsParentsHandler(req, reply) {
+  const cid = req.params.cid
+  const query = req.query
+  let acc = null
+  req.jwtVerify(function (err, decoded) {
+    if (!err) {
+      acc = decoded.user
+    }
+  })
+
+  return await this.groupService.companyGroupsParents({acc, cid, query})
+}
+
 async function getCompanyGroupsByIdHandler(req, reply) {
   const {cid, gid} = req.params
   let acc = null
-  req.jwtVerify(function(err, decoded) {
+  req.jwtVerify(function (err, decoded) {
     if (!err) {
       acc = decoded.user
     }
@@ -81,7 +100,7 @@ async function addGroupHandler(req, reply) {
   const group = {...req.body, cid}
 
   let acc
-  req.jwtVerify(function(err, decoded) {
+  req.jwtVerify(function (err, decoded) {
     if (!err) {
       acc = decoded.user
     }
@@ -91,10 +110,7 @@ async function addGroupHandler(req, reply) {
     url += '/'
   }
   const newGroup = await this.groupService.addGroup({acc, group})
-  reply
-    .code(201)
-    .header('Location', `${url}${newGroup}`)
-    .send()
+  reply.code(201).header('Location', `${url}${newGroup}`).send()
 }
 
 async function updGroupHandler(req, reply) {
@@ -102,7 +118,7 @@ async function updGroupHandler(req, reply) {
   let group = {...req.body, cid: +cid, gid}
 
   let acc
-  req.jwtVerify(function(err, decoded) {
+  req.jwtVerify(function (err, decoded) {
     if (!err) {
       acc = decoded.user
     }
@@ -118,7 +134,7 @@ async function delGroupSeriesHandler(req, reply) {
   let group = {cid, gid, sid}
 
   let acc
-  req.jwtVerify(function(err, decoded) {
+  req.jwtVerify(function (err, decoded) {
     if (!err) {
       acc = decoded.user
     }
@@ -134,7 +150,7 @@ async function addGroupSeriesHandler(req, reply) {
   let group = {cid, gid, sid}
 
   let acc
-  req.jwtVerify(function(err, decoded) {
+  req.jwtVerify(function (err, decoded) {
     if (!err) {
       acc = decoded.user
     }
@@ -150,7 +166,7 @@ async function delGroupHandler(req, reply) {
   let group = {cid: +cid, gid}
 
   let acc
-  req.jwtVerify(function(err, decoded) {
+  req.jwtVerify(function (err, decoded) {
     if (!err) {
       acc = decoded.user
     }
@@ -165,7 +181,7 @@ async function getGroupsBindingSeriesHandler(req, reply) {
   const {cid, sid} = req.params
 
   let acc
-  req.jwtVerify(function(err, decoded) {
+  req.jwtVerify(function (err, decoded) {
     if (!err) {
       acc = decoded.user
     }
