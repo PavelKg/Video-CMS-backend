@@ -156,7 +156,7 @@ class GroupService {
           `SELECT count(*) cnt 
           FROM groups 
           WHERE group_gid=$1 AND group_company_id=$2
-          AND deleted_at IS NOT NULL;`,
+          AND deleted_at IS NULL;`,
           [parent, cid]
         )
 
@@ -231,7 +231,7 @@ class GroupService {
           `SELECT count(*) cnt 
           FROM groups 
           WHERE group_gid=$1 AND group_company_id=$2 
-            AND deleted_at IS NOT NULL;`,
+            AND deleted_at IS NULL;`,
           [parent, cid]
         )
 
