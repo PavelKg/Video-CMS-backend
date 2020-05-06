@@ -10,6 +10,8 @@ const cors = require('fastify-cors')
 
 const nodemailer = require('fastify-nodemailer')
 const bitmovinApi = require('bitmovin-javascript').default
+//const amqp = require('fastify-amqp')
+const amqpClient = require('amqplib/callback_api')
 
 const {Storage} = require('@google-cloud/storage')
 
@@ -40,6 +42,9 @@ const VideoService = require('./companies/videos/service')
 const Comment = require('./companies/videos/comments')
 const CommentService = require('./companies/videos/comments/service')
 
+const Telegram = require('./companies/telegram')
+const TelegramService = require('./companies/telegram/service')
+
 const BitmovinService = require('./bm')
 
 const HistoryLogger = require('./history-logger')
@@ -47,7 +52,7 @@ const HistoryLoggerService = require('./history-logger/service')
 
 async function connectToDatabase(fastify) {
   console.log('DB Connecting...')
-  pgo.types.setTypeParser(1114, function(stringValue) {
+  pgo.types.setTypeParser(1114, function (stringValue) {
     return stringValue
   })
   const {DB_HOST, DB_USER, DB_PASS, DB_NAME} = process.env
@@ -57,6 +62,47 @@ async function connectToDatabase(fastify) {
     pg: pgo
   })
   console.log('Finish DB Connecting.')
+}
+
+async function connectToAMQP(fastify, opts, next) {
+  console.log('AMQP Connecting...')
+  const {AMQP_HOST, AMQP_USER, AMQP_PASS, AMQP_PORT} = process.env
+  const amqpClients = ['Produce', 'Consume']
+
+  amqpClients.forEach((client) => {
+    amqpClient.connect(
+      `amqp://${AMQP_USER}:${AMQP_PASS}@${AMQP_HOST}:${AMQP_PORT}/`,
+      function (err, connection) {
+        if (err) {
+          next(err)
+          return
+        }
+        fastify.addHook('onClose', () => connection.close())
+        fastify.decorate(`amqp${client}Conn`, connection)
+
+        connection.createChannel(function (err1, channel) {
+          if (err1) {
+            next(err1)
+            return
+          }
+
+          fastify.decorate(`amqp${client}Channel`, channel)
+          next()
+        })
+      }
+    )
+  })
+
+  // await fastify.register(amqp, {
+  //   host: AMQP_HOST,
+  //   port: AMQP_PORT,
+  //   user: AMQP_USER,
+  //   pass: AMQP_PASS
+  // })
+  // await fastify.after(function (err) {
+  //   if (err) console.log('AMQP Connecting:', err)
+  //   console.log('AMQP Ready.')
+  // })
 }
 
 async function fastifyNodemailer(fastify) {
@@ -141,7 +187,9 @@ async function decorateFastifyInstance(fastify) {
   const storage = fastify.googleCloudStorage
   const nodemailer = fastify.nodemailer
   const bitmovin = fastify.bitmovin
-  
+  const amqpProduceChannel = fastify.amqpProduceChannel
+  const amqpConsumeChannel = fastify.amqpConsumeChannel
+
   const histLoggerService = new HistoryLoggerService(db)
   fastify.decorate('histLoggerService', histLoggerService)
 
@@ -154,6 +202,12 @@ async function decorateFastifyInstance(fastify) {
   const messageService = new MessageService(db, histLoggerService)
   const videoService = new VideoService(db, storage, histLoggerService)
   const commentService = new CommentService(db, histLoggerService)
+  const telegramService = new TelegramService(
+    db,
+    nodemailer,
+    {amqpProduceChannel, amqpConsumeChannel},
+    histLoggerService
+  )
   const bitmovinService = new BitmovinService(bitmovin, histLoggerService)
 
   fastify.decorate('personService', personService)
@@ -165,6 +219,7 @@ async function decorateFastifyInstance(fastify) {
   fastify.decorate('messageService', messageService)
   fastify.decorate('videoService', videoService)
   fastify.decorate('commentService', commentService)
+  fastify.decorate('telegramService', telegramService)
   fastify.decorate('bitmovinService', bitmovinService)
 
   fastify.decorate('authPreHandler', async function auth(request, reply) {
@@ -177,11 +232,12 @@ async function decorateFastifyInstance(fastify) {
   console.log('Finish Decorate Loading.')
 }
 
-module.exports = async function(fastify, opts) {
+module.exports = async function (fastify, opts) {
   fastify
     .register(fp(authenticator))
     .register(fp(connectToDatabase))
     .register(fp(fastifyNodemailer))
+    .register(fp(connectToAMQP))
     .register(fp(fastifyGoogleCloudStorage))
     .register(fp(fastifyBitmovin))
     .register(fp(decorateFastifyInstance))
@@ -202,5 +258,6 @@ module.exports = async function(fastify, opts) {
     .register(Message, {prefix: '/api/messages'})
     .register(Video, {prefix: '/api/companies/:cid/videos'})
     .register(Comment, {prefix: '/api/companies/:cid/videos/:uuid/comments'})
+    .register(Telegram, {prefix: '/api/companies/:cid/telegram'})
     .register(HistoryLogger, {prefix: '/api/history'})
 }

@@ -3,9 +3,17 @@ module.exports = {
     name      : 'Video-CMS-backend',
     script    : 'server.js',
     env: {
-      NODE_ENV: 'emphy',
+      NODE_ENV: 'development',
       PORT: 8769
     },
+    env_development: {
+      NODE_ENV: 'development',
+      PORT: 8769
+    },    
+    env_local: {
+      NODE_ENV: 'local',
+      PORT: 8769
+    },        
     env_production : {
       NODE_ENV: 'production',
       PORT: 8769
