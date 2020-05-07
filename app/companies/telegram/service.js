@@ -276,7 +276,7 @@ class TelegramService {
         bot_name: botname,
         chatId: user_id,
         type: 'welcome',
-        content: {first_name: first_name ? `${first_name}-${i}` : username}
+        content: {first_name: first_name ? `${first_name}` : username}
       })
 
       histData.result = typeof rows[0] === 'object'
