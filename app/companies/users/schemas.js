@@ -93,6 +93,7 @@ const getCompanyUserInfo = {
 }
 
 const importUsers = {
+  tags: ['users'],
   summary: 'upload file',
   params: {
     type: 'object',

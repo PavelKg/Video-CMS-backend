@@ -57,5 +57,6 @@ async function deeplinkAuthHandler(req, reply) {
     cid,
     botname
   })
-  return `https://t.me/${urlBotname}?start=${token}`
+  const url = `https://t.me/${urlBotname}?start=${token}`
+  reply.code(200).send({url})
 }

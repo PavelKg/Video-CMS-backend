@@ -7,8 +7,30 @@ const queryStringJsonSchema = {
   filter: {type: 'string'}
 }
 
+const loginAuth = {
+  tags: ['telegram'],
+  params: {
+    type: 'object',
+    required: ['cid', 'botname'],
+    properties: {
+      cid: {
+        type: 'number'
+      },
+      botname: {type: 'string'}
+    },
+    additionalProperties: false
+  },
+  response: {
+    201: {
+      properties: {
+        url: {type: 'string'}
+      }
+    }
+  }
+}
+
 const deeplinkAuth = {
-  tags: ['roles'],
+  tags: ['telegram'],
   params: {
     type: 'object',
     required: ['cid', 'botname'],
@@ -29,4 +51,4 @@ const deeplinkAuth = {
   }
 }
 
-module.exports = {deeplinkAuth}
+module.exports = {deeplinkAuth, loginAuth}
