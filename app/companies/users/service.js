@@ -11,8 +11,8 @@ class UserService {
   }
 
   async companyUsers(payload) {
-    const {acc, cid} = payload
-    const {timezone} = acc
+    const {autz, cid} = payload
+    const {timezone} = autz
     const {
       limit = 'ALL',
       offset = 0,
@@ -20,7 +20,7 @@ class UserService {
       filter = ''
     } = payload.query
 
-    if (acc.company_id !== cid || !acc.is_admin) {
+    if (autz.company_id !== cid || !autz.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
@@ -65,10 +65,10 @@ class UserService {
   }
 
   async companyUserInfo(payload) {
-    const {acc, cid, uid} = payload
-    const {timezone} = acc
+    const {autz, cid, uid} = payload
+    const {timezone} = autz
 
-    if (acc.company_id !== cid || !acc.is_admin) {
+    if (autz.company_id !== cid || !autz.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
@@ -107,15 +107,15 @@ class UserService {
   }
 
   async importUsers(payload) {
-    const {acc, fileInfo} = payload
-    const cid = acc.company_id
+    const {autz, fileInfo} = payload
+    const cid = autz.company_id
 
     let histData = {
       category: this.history_category,
       action: 'users-import',
       result: true,
-      user_id: acc.user_id,
-      user_uid: acc.uid,
+      user_id: autz.user_id,
+      user_uid: autz.uid,
       cid: cid,
       object_name: fileInfo.name,
       details: `success`,
@@ -123,7 +123,7 @@ class UserService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
     } catch (error) {
@@ -135,7 +135,7 @@ class UserService {
 
   async addUser(payload) {
     let client = undefined
-    const {acc, user} = payload
+    const {autz, user} = payload
     const {
       uid,
       cid,
@@ -152,9 +152,9 @@ class UserService {
       category: this.history_category,
       action: 'created',
       result: false,
-      user_id: acc.user_id,
-      user_uid: acc.uid,
-      cid: acc.company_id,
+      user_id: autz.user_id,
+      user_uid: autz.uid,
+      cid: autz.company_id,
       object_name: uid,
       details: `Failure [${fullname}]`,
       target_data: {
@@ -170,7 +170,7 @@ class UserService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -246,7 +246,7 @@ class UserService {
 
   async updUser(payload) {
     let client = undefined
-    const {acc, user} = payload
+    const {autz, user} = payload
     const {
       uid,
       cid,
@@ -263,9 +263,9 @@ class UserService {
       category: this.history_category,
       action: 'edited',
       result: false,
-      user_id: acc.user_id,
-      user_uid: acc.uid,
-      cid: acc.company_id,
+      user_id: autz.user_id,
+      user_uid: autz.uid,
+      cid: autz.company_id,
       object_name: uid,
       details: `Failure [${fullname}]`,
       target_data: {
@@ -281,7 +281,7 @@ class UserService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
       client = await this.db.connect()
@@ -335,23 +335,23 @@ class UserService {
 
   async delUser(payload) {
     let client = undefined
-    const {acc, user} = payload
+    const {autz, user} = payload
     const {uid, cid} = user
 
     let histData = {
       category: this.history_category,
       action: 'deleted',
       result: false,
-      user_id: acc.user_id,
-      user_uid: acc.uid,
-      cid: acc.company_id,
+      user_id: autz.user_id,
+      user_uid: autz.uid,
+      cid: autz.company_id,
       object_name: uid,
       details: 'Failure',
       target_data: {...user}
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
       client = await this.db.connect()

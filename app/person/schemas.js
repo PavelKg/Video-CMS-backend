@@ -9,7 +9,7 @@ const userProfileOutput = {
     email: {type: 'string'},
     company_id: {type: 'string'},
     company_name: {type: 'string'},
-    irole: {type: 'string'},
+    //irole: {type: 'string'},
     username: {type: 'string'},
     timezone: {type: 'string'},
     activity_start: {type: 'string'},
@@ -130,23 +130,6 @@ const passwordUpdate = {
   }
 }
 
-// const search = {
-//   querystring: {
-//     type: 'object',
-//     require: [ 'search' ],
-//     properties: {
-//       search: { type: 'string' }
-//     },
-//     additionalProperties: false
-//   },
-//   response: {
-//     200: {
-//       type: 'array',
-//       items: userProfileOutput
-//     }
-//   }
-// }
-
 const getProfile = {
   tags: ['person'],
   params: {
@@ -156,11 +139,39 @@ const getProfile = {
       uid: {
         type: 'string',
         pattern: '^[0-9a-fA-F]{24}'
+      },
+      cid: {
+        type: 'integer'
       }
     }
   },
   response: {
     200: userProfileOutput
+  }
+}
+
+const getProfileMenu = {
+  tags: ['person'],
+  params: {
+    type: 'object',
+    properties: {
+      uid: {
+        type: 'string',
+        pattern: '^[0-9a-fA-F]{24}'
+      },
+      cid: {
+        type: 'integer'
+      }
+    }
+  },
+  response: {
+    200: {
+      type: 'object',
+      // properties: {
+      //   menu: {type: 'object'},
+      // },
+      additionalProperties: true
+    }
   }
 }
 
@@ -184,5 +195,6 @@ module.exports = {
   passwordResetRequest,
   passwordUpdate,
   getProfile,
+  getProfileMenu,
   companyInfo
 }

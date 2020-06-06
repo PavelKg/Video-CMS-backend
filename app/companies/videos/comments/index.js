@@ -1,5 +1,8 @@
 'use strict'
 
+const errors = require('../../../errors')
+const feature = 'comments'
+
 const {
   getComments: getCommentsSchema,
   getCommentInfo: getCommentInfoSchema,
@@ -8,9 +11,10 @@ const {
   delComment: delCommentSchema
 } = require('./schemas')
 
-module.exports = async function(fastify, opts) {
+module.exports = async function (fastify, opts) {
   // All APIs are under authentication here!
-  fastify.addHook('preHandler', fastify.authPreHandler)
+  fastify.addHook('preValidation', fastify.authPreValidation)
+  fastify.addHook('preHandler', fastify.autzPreHandler)
   fastify.get('/', {schema: getCommentsSchema}, getCommentsHandler)
   fastify.get('/:comid', {schema: getCommentInfoSchema}, getCommentInfoHandler)
   fastify.post('/', {schema: addCommentSchema}, addCommentHandler)
@@ -24,33 +28,19 @@ module.exports = async function(fastify, opts) {
 
 module.exports[Symbol.for('plugin-meta')] = {
   decorators: {
-    fastify: ['authPreHandler', 'commentService']
+    fastify: ['authPreValidation', 'autzPreHandler', 'commentService']
   }
 }
 
 async function getCommentsHandler(req, reply) {
-  const params = req.params
-  const query = req.query
-
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-  return await this.commentService.videoComments({acc, params, query})
+  const {autz, query, params} = req
+  return await this.commentService.videoComments({autz, params, query})
 }
 
 async function getCommentInfoHandler(req, reply) {
-  const params = req.params
+  const {autz, params} = req
 
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-  const info = await this.commentService.commentInfo({acc, params})
+  const info = await this.commentService.commentInfo({autz, params})
   if (info) {
     reply.code(200).send(info)
   } else {
@@ -59,56 +49,36 @@ async function getCommentInfoHandler(req, reply) {
 }
 
 async function addCommentHandler(req, reply) {
-  const {cid, uuid} = req.params
+  const {autz, params} = req
+  const {cid, uuid} = params
   let url = req.raw.url
   let comment = {...req.body, cid, uuid}
-
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
 
   if (!url.match(/.*\/$/i)) {
     url += '/'
   }
 
-  const newComment = await this.commentService.addComment({acc, comment})
-  reply
-    .code(201)
-    .header('Location', `${url}${newComment}`)
-    .send()
+  const newComment = await this.commentService.addComment({autz, comment})
+  reply.code(201).header('Location', `${url}${newComment}`).send()
 }
 
 async function updCommentVisibleHandler(req, reply) {
-  const {cid, uuid, comid} = req.params
-  const {value} = req.body
+  const {autz, params, body} = req
+  const {cid, uuid, comid} = params
+  const {value} = body
   const comment = {value, cid, uuid, comid}
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-
-  const updated = await this.commentService.updMessageVisible({acc, comment})
+  const updated = await this.commentService.updMessageVisible({autz, comment})
   const _code = updated === 1 ? 200 : 404
   reply.code(_code).send()
 }
 
 async function delCommentHandler(req, reply) {
-  const {cid, uuid, comid} = req.params
+  const {autz, params} = req
+  const {cid, uuid, comid} = params
   const comment = {cid, uuid, comid}
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-  const deleted = await this.commentService.delComment({acc, comment})
+  const deleted = await this.commentService.delComment({autz, comment})
 
   const _code = deleted === 1 ? 204 : 404
   reply.code(_code).send()

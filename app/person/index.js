@@ -5,15 +5,14 @@ const {
   logout: logoutSchema,
   passwordResetRequest: passwordResetRequestSchema,
   passwordUpdate: passwordUpdateSchema,
-  //registration: registrationSchema,
-  //search: searchSchema,
   getProfile: getProfileSchema,
+  getProfileMenu: getProfileMenuSchema,
   companyInfo: companyInfoSchema
 } = require('./schemas')
 
 const errors = require('../errors')
 
-module.exports = async function(fastify, opts) {
+module.exports = async function (fastify, opts) {
   // Route registration
   // fastify.<method>(<path>, <schema>, <handler>)
   // schema is used to validate the input and serialize the output
@@ -31,19 +30,17 @@ module.exports = async function(fastify, opts) {
     passwordUpdateHandler
   )
 
-  //fastify.post('/register', {schema: registrationSchema}, registerHandler)
-
   // Logged APIs
-  fastify.register(async function(fastify) {
-    fastify.addHook('preHandler', fastify.authPreHandler)
+  fastify.register(async function (fastify) {
+    fastify.addHook('preValidation', fastify.authPreValidation)
+    fastify.addHook('preHandler', fastify.autzPreHandler)
     fastify.get('/me', {schema: getProfileSchema}, meHandler)
     fastify.get('/company', {schema: companyInfoSchema}, companyInfoHandler)
+    fastify.get('/menu', {schema: getProfileMenuSchema}, getProfileMenuHandler)
     fastify.post('/logout', {schema: logoutSchema}, logoutHandler)
-    //fastify.get('/:userId', {schema: getProfileSchema}, userHandler)
-    //fastify.get('/search', {schema: searchSchema}, searchHandler)
   })
 
-  fastify.setErrorHandler(function(error, request, reply) {
+  fastify.setErrorHandler(function (error, request, reply) {
     const message = error.message
     if (errors[message]) {
       reply.code(412)
@@ -55,12 +52,9 @@ module.exports = async function(fastify, opts) {
 // Fastify checks the existance of those decorations before registring `user.js`
 module.exports[Symbol.for('plugin-meta')] = {
   decorators: {
-    fastify: ['authPreHandler', 'personService', 'jwt']
+    fastify: ['authPreValidation', 'autzPreHandler', 'personService', 'jwt']
   }
 }
-
-// In all handlers `this` is the fastify instance
-// The fastify instance used for the handler registration
 
 async function loginHandler(req, reply) {
   const {username, password} = req.body
@@ -69,36 +63,24 @@ async function loginHandler(req, reply) {
 }
 
 async function logoutHandler(req, reply) {
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-  await this.personService.logout(acc)
+  const {autz} = req
+  await this.personService.logout(autz)
   reply.code(200).send()
 }
 
 async function meHandler(req, reply) {
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-
-  return this.personService.getProfile(acc)
+  const {autz} = req
+  return this.personService.getProfile(autz)
 }
 
-async function companyInfoHandler(req, reply){
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+async function getProfileMenuHandler(req, reply) {
+  const {autz} = req
+  return this.personService.getProfileMenu(autz)
+}
 
-  return this.personService.getCompanyInfo(acc)
+async function companyInfoHandler(req, reply) {
+  const {autz} = req
+  return this.personService.getCompanyInfo(autz)
 }
 
 async function passwordResetRequestHandler(req, reply) {

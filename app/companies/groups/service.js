@@ -10,8 +10,8 @@ class GroupService {
   }
 
   async companyGroups(payload) {
-    const {acc, cid} = payload
-    const {timezone} = acc
+    const {autz, cid} = payload
+    const {timezone} = autz
     const {
       limit = 'ALL',
       offset = 0,
@@ -47,8 +47,8 @@ class GroupService {
   }
 
   async companyGroupsParents(payload) {
-    const {acc, cid} = payload
-    const {timezone, uid} = acc
+    const {autz, cid} = payload
+    const {timezone, uid} = autz
     const {
       limit = 'ALL',
       offset = 0,
@@ -87,9 +87,9 @@ class GroupService {
   }
 
   async companyGroupById(payload) {
-    const {acc, cid, gid} = payload
-    const {timezone} = acc
-    if (acc.company_id !== cid || !acc.is_admin) {
+    const {autz, cid, gid} = payload
+    const {timezone} = autz
+    if (autz.company_id !== cid || !autz.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
@@ -117,10 +117,10 @@ class GroupService {
 
   async addGroup(payload) {
     let client = undefined
-    const {acc, group} = payload
+    const {autz, group} = payload
     const {cid, name, parent = null, group_series = []} = group
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'created',
@@ -134,7 +134,7 @@ class GroupService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -190,10 +190,10 @@ class GroupService {
 
   async updGroup(payload) {
     let client = undefined
-    const {acc, group} = payload
+    const {autz, group} = payload
     const {gid, cid, name, parent = null, group_series = []} = group
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'edited',
@@ -207,7 +207,7 @@ class GroupService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -266,10 +266,10 @@ class GroupService {
 
   async delGroupSeries(payload) {
     let client = undefined
-    const {acc, group} = payload
+    const {autz, group} = payload
     const {gid, cid, sid} = group
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'deleted series',
@@ -283,7 +283,7 @@ class GroupService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -326,10 +326,10 @@ class GroupService {
 
   async addGroupSeries(payload) {
     let client = undefined
-    const {acc, group} = payload
+    const {autz, group} = payload
     const {gid, cid, sid} = group
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'added group series',
@@ -343,7 +343,7 @@ class GroupService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -388,10 +388,10 @@ class GroupService {
 
   async delGroup(payload) {
     let client = undefined
-    const {acc, group} = payload
+    const {autz, group} = payload
     const {gid, cid} = group
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'deleted',
@@ -405,7 +405,7 @@ class GroupService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -457,9 +457,9 @@ class GroupService {
     }
   }
   async groupsBindedWithSeries(payload) {
-    const {acc, cid, sid} = payload
+    const {autz, cid, sid} = payload
 
-    if (acc.company_id !== cid || !acc.is_admin) {
+    if (autz.company_id !== cid || !autz.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 

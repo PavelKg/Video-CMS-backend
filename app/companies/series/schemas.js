@@ -138,8 +138,7 @@ const delSeries = {
     required: ['cid', 'sid'],
     properties: {
       cid: {
-        type: 'integer',
-        pattern: '^[0-9]?'
+        type: 'integer'
       },
       sid: {type: 'integer'}
     },

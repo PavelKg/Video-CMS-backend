@@ -10,8 +10,8 @@ class SeriesService {
   }
 
   async companySeries(payload) {
-    const {acc, cid} = payload
-    const {timezone} = acc
+    const {autz, cid} = payload
+    const {timezone} = autz
     const {
       limit = 'ALL',
       offset = 0,
@@ -56,10 +56,10 @@ class SeriesService {
   }
 
   async companySeriesById(payload) {
-    const {acc, cid, sid} = payload
-    const {timezone, is_admin} = acc
+    const {autz, cid, sid} = payload
+    const {timezone, is_admin} = autz
 
-    // if (acc.company_id !== cid || !is_admin) {
+    // if (autz.company_id !== cid || !is_admin) {
     //   throw Error(errors.WRONG_ACCESS)
     // }
 
@@ -97,7 +97,7 @@ class SeriesService {
     let client = undefined
     let activity_fields = ', series_activity_start, series_activity_finish'
 
-    const {acc, series} = payload
+    const {autz, series} = payload
     const {
       cid,
       name,
@@ -109,7 +109,7 @@ class SeriesService {
       activity_finish = null
     } = series
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'created',
@@ -123,7 +123,7 @@ class SeriesService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -209,7 +209,7 @@ class SeriesService {
       series_activity_by_user_start =  NULL, \
       series_activity_by_user_finish = NULL'
 
-    const {acc, series} = payload
+    const {autz, series} = payload
     const {
       sid,
       cid,
@@ -222,7 +222,7 @@ class SeriesService {
       period_type = null
     } = series
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'edited',
@@ -236,7 +236,7 @@ class SeriesService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -318,10 +318,10 @@ class SeriesService {
 
   async delSeries(payload) {
     let client = undefined
-    const {acc, series} = payload
+    const {autz, series} = payload
     const {sid, cid} = series
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'deleted',
@@ -335,7 +335,7 @@ class SeriesService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 

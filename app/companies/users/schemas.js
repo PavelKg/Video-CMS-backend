@@ -12,7 +12,7 @@ const userObject = {
   properties: {
     uid: {type: 'string'},
     fullname: {type: 'string'},
-    cid: {type: 'string'},
+    cid: {type: 'integer'},
     gids: {type: 'array', items: {type: 'integer'}},
     groups_name: {type: 'array', items: {type: 'string'}},
     rid: {type: 'string'},
@@ -29,7 +29,7 @@ const user = {
   properties: {
     uid: {type: 'string', maxLength: 10, minLength: 3},
     fullname: {type: 'string'},
-    cid: {type: 'string'},
+    cid: {type: 'integer'},
     gids: {type: 'array', items: {type: 'integer'}},
     rid: {type: 'string'},
     email: {type: 'string'},
@@ -57,7 +57,7 @@ const getCompanyUsers = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       }
     },
     additionalProperties: false
@@ -78,11 +78,10 @@ const getCompanyUserInfo = {
     required: ['cid', 'uid'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       },
       uid: {
         type: 'string',
-        pattern: '^[0-9]?'
       }
     },
     additionalProperties: false
@@ -100,7 +99,7 @@ const importUsers = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       }
     },
     additionalProperties: false
@@ -121,7 +120,7 @@ const addUser = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       }
     },
     additionalProperties: false
@@ -136,7 +135,7 @@ const updUser = {
     required: ['cid', 'uid'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       },
       uid: {type: 'string'}
     },
@@ -169,7 +168,7 @@ const delUser = {
     required: ['cid', 'uid'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       },
       uid: {type: 'string'}
     },

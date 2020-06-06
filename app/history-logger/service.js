@@ -60,8 +60,8 @@ class HistoryLoggerService {
   }
 
   async getHistoryInfo(payload) {
-    const {acc} = payload
-    const {company_id: cid, uid, timezone, is_admin} = acc
+    const {autz} = payload
+    const {company_id: cid, uid, timezone, is_admin} = autz
 
     const {
       limit = 'ALL',
@@ -101,8 +101,8 @@ class HistoryLoggerService {
 
   async getHistoryCategories(payload) {
     let client = undefined
-    const {acc} = payload
-    const {company_id: cid, uid, timezone, is_admin} = acc
+    const {autz} = payload
+    const {company_id: cid, uid, timezone, is_admin} = autz
 
     const {
       limit = 'ALL',
@@ -116,7 +116,7 @@ class HistoryLoggerService {
     qFilter = db_api.setFilterTz(qFilter, timezone)
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
       client = await this.db.connect()
@@ -141,8 +141,8 @@ class HistoryLoggerService {
 
   async getHistoryCategoryObjects(payload) {
     let client = undefined
-    const {acc, query} = payload
-    const {company_id: cid, uid, timezone, is_admin} = acc
+    const {autz, query} = payload
+    const {company_id: cid, uid, timezone, is_admin} = autz
 
     const {
       limit = 'ALL',
@@ -157,7 +157,7 @@ class HistoryLoggerService {
     qFilter = db_api.setFilterTz(qFilter, timezone)
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 

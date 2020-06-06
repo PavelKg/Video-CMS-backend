@@ -17,6 +17,7 @@ const {Storage} = require('@google-cloud/storage')
 
 const Person = require('./person')
 const PersonService = require('./person/service')
+const AutzService = require('./person/authorization')
 
 const Company = require('./companies')
 const CompanyService = require('./companies/service')
@@ -190,6 +191,10 @@ async function decorateFastifyInstance(fastify) {
   const amqpProduceChannel = fastify.amqpProduceChannel
   const amqpConsumeChannel = fastify.amqpConsumeChannel
 
+  fastify.decorateRequest('autz', '')
+
+  const autzService = new AutzService(db)
+
   const histLoggerService = new HistoryLoggerService(db)
   fastify.decorate('histLoggerService', histLoggerService)
 
@@ -221,8 +226,15 @@ async function decorateFastifyInstance(fastify) {
   fastify.decorate('commentService', commentService)
   fastify.decorate('telegramService', telegramService)
   fastify.decorate('bitmovinService', bitmovinService)
+  fastify.decorate('autzService', autzService)
 
-  fastify.decorate('authPreHandler', async function auth(request, reply) {
+  fastify.decorate('autzPreHandler', async function autz(request, reply) {
+    const person = request.user
+    const person_autz = await fastify.autzService.getPermissions(person)
+    request.autz = {...person_autz}
+  })
+
+  fastify.decorate('authPreValidation', async function auth(request, reply) {
     try {
       await request.jwtVerify()
     } catch (err) {

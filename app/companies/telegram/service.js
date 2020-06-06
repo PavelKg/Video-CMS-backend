@@ -107,7 +107,7 @@ class TelegramService {
       )
 
       if (rows.length === 1) {
-        const acc = {
+        const autz = {
           user_id: rows[0].user_id,
           uid: rows[0].uid,
           company_id: rows[0].cid
@@ -115,7 +115,7 @@ class TelegramService {
         const cid = rows[0].cid
         const botname = rows[0].botname
 
-        const deeplink = await this.deeplinkAuth({acc, cid, botname})
+        const deeplink = await this.deeplinkAuth({autz, cid, botname})
         const {botname: urlBotname, token} = deeplink
 
         await this.nodemailer.sendMail({
@@ -211,16 +211,16 @@ class TelegramService {
 
   async loginAuth(payload) {
     let client = undefined
-    const {acc, cid, body: signature, botname} = payload
-    const {uid} = acc
+    const {autz, cid, body: signature, botname} = payload
+    const {uid, user_id, company_id} = autz
     let histData = {
       category: this.history_category,
       action: 'Auth-login',
       result: false,
-      user_id: acc.user_id,
-      user_uid: acc.uid,
-      cid: acc.company_id,
-      object_name: acc.uid,
+      user_id: user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: uid,
       details: `Failure`,
       target_data: {
         ...signature
@@ -294,16 +294,16 @@ class TelegramService {
 
   async deeplinkAuth(payload) {
     let client = undefined
-    const {acc, cid, botname} = payload
-    const {uid} = acc
+    const {autz, cid, botname} = payload
+    const {uid, user_id, company_id} = autz
     let histData = {
       category: this.history_category,
       action: 'Deeplink-Auth',
       result: false,
-      user_id: acc.user_id,
-      user_uid: acc.uid,
-      cid: acc.company_id,
-      object_name: acc.uid,
+      user_id: user_id,
+      user_uid: uid,
+      cid: company_id,
+      object_name: uid,
       details: `Failure`,
       target_data: {
         botname

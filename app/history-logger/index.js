@@ -1,4 +1,5 @@
 'use strict'
+const feature = 'history'
 const errors = require('../errors')
 
 const {
@@ -9,9 +10,10 @@ const {
   //addUserActivity: addUserActivitySchema
 } = require('./schemas')
 
-module.exports = async function(fastify, opts) {
+module.exports = async function (fastify, opts) {
   // All APIs are under authentication here!
-  fastify.addHook('preHandler', fastify.authPreHandler)
+  fastify.addHook('preValidation', fastify.authPreValidation)
+  fastify.addHook('preHandler', fastify.autzPreHandler)
 
   fastify.get('/', {schema: historyInfoSchema}, getHistoryInfoHandler)
   fastify.get(
@@ -38,51 +40,36 @@ module.exports = async function(fastify, opts) {
 
 module.exports[Symbol.for('plugin-meta')] = {
   decorators: {
-    fastify: ['authPreHandler', 'histLoggerService']
+    fastify: ['authPreValidation', 'autzPreHandler', 'histLoggerService']
   }
 }
 
 async function getHistoryInfoHandler(req, reply) {
-  const query = req.query
+  const {autz, query} = req
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'browse'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  return await this.histLoggerService.getHistoryInfo({acc, query})
+  return await this.histLoggerService.getHistoryInfo({autz, query})
 }
 
 async function historyCategoriesHandler(req, reply) {
-  const query = req.query
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-
+  const {autz, query} = req
   const categories = await this.histLoggerService.getHistoryCategories({
-    acc,
+    autz,
     query
   })
   return categories
 }
 
 async function historyCategoryObjectsHandler(req, reply) {
-  const query = req.query
-
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-
+  const {autz, query} = req
   const result = await this.histLoggerService.getHistoryCategoryObjects({
-    acc,
+    autz,
     query
   })
 
@@ -90,19 +77,12 @@ async function historyCategoryObjectsHandler(req, reply) {
 }
 
 async function historyCategoryObjectsByNameHandler(req, reply) {
-  const query = req.query
-  const {cname} = req.params
+  const {autz, query, params} = req
+  const {cname} = params
   query.categories = cname
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-
   const result = await this.histLoggerService.getHistoryCategoryObjects({
-    acc,
+    autz,
     query
   })
 

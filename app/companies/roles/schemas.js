@@ -11,9 +11,10 @@ const roleObject = {
   type: 'object',
   properties: {
     rid: {type: 'string'},
-    cid: {type: 'string'},
+    cid: {type: 'integer'},
     name: {type: 'string'},
     is_admin: {type: 'boolean'},
+    permits: {},
     deleted_at: {type: 'string'}
   }
 }
@@ -22,8 +23,9 @@ const role = {
   type: 'object',
   properties: {
     rid: {type: 'string'},
-    cid: {type: 'string'},
+    cid: {type: 'integer'},
     name: {type: 'string'},
+    permits: {},
     is_admin: {type: 'boolean'}
   },
   required: ['rid', 'name'],
@@ -37,7 +39,7 @@ const getCompanyRoles = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       }
     },
     additionalProperties: false
@@ -58,7 +60,7 @@ const getCompanyRoleById = {
     required: ['cid', 'rid'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       },
       rid: {
         type: 'string'
@@ -79,8 +81,7 @@ const addRole = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'string',
-        pattern: '^[0-9]?'
+        type: 'integer'
       }
     },
     additionalProperties: false
@@ -95,8 +96,7 @@ const updRole = {
     required: ['cid', 'rid'],
     properties: {
       cid: {
-        type: 'string',
-        pattern: '^[0-9]?'
+        type: 'integer'
       },
       rid: {type: 'string'}
     },
@@ -106,7 +106,8 @@ const updRole = {
     type: 'object',
     properties: {
       name: {type: 'string'},
-      is_admin: {type: 'boolean'}
+      is_admin: {type: 'boolean'},
+      permits: {}
     },
     additionalProperties: false,
     required: ['name']
@@ -120,8 +121,7 @@ const delRole = {
     required: ['cid', 'rid'],
     properties: {
       cid: {
-        type: 'string',
-        pattern: '^[0-9]?'
+        type: 'integer'
       },
       rid: {type: 'string'}
     },

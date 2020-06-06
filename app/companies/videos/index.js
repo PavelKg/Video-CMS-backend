@@ -1,4 +1,6 @@
 'use strict'
+const errors = require('../../errors')
+const feature = 'videos'
 
 const {
   //gcsUploadSignedPolicy: gcsUploadSignedPolicySchema,
@@ -19,9 +21,11 @@ const {
   delVideoGroup: addVideoGroupSchema
 } = require('./schemas')
 
-module.exports = async function(fastify, opts) {
+module.exports = async function (fastify, opts) {
   // All APIs are under authentication here!
-  fastify.addHook('preHandler', fastify.authPreHandler)
+  fastify.addHook('preValidation', fastify.authPreValidation)
+  fastify.addHook('preHandler', fastify.autzPreHandler)
+
   fastify.get(
     '/catalog',
     {schema: getVideosCatalogSchema},
@@ -97,110 +101,74 @@ module.exports = async function(fastify, opts) {
 
 module.exports[Symbol.for('plugin-meta')] = {
   decorators: {
-    fastify: ['authPreHandler', 'videoService']
+    fastify: ['authPreValidation', 'autzPreHandler', 'videoService']
   }
 }
 
 async function gcsUploadSignedUrlHandler(req, reply) {
-  const query = req.query
+  const {query, autz} = req
+  const act = 'upload'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-  return await this.videoService.videosGcsUploadSignedUrl({acc, query})
+  return await this.videoService.videosGcsUploadSignedUrl({autz, query})
 }
 
 // async function gcsUploadSignedPolicyHandler(req, reply) {
-//   const query = req.query
-
-//   let acc = null
-//   req.jwtVerify(function(err, decoded) {
-//     if (!err) {
-//       acc = decoded.user
-//     }
-//   })
-//   return await this.videoService.videosGcsUploadSignedUrl({acc, query})
+//   const {query, autz} = req
+//   return await this.videoService.videosGcsUploadSignedUrl({autz, query})
 // }
 
 async function getVideoCatalogHandler(req, reply) {
-  const query = req.query
-
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-  return await this.videoService.videosCatalog({acc, query})
+  const {query, autz} = req
+  return await this.videoService.videosCatalog({autz, query})
 }
 
 async function getVideoHandler(req, reply) {
   const {cid, uuid} = req.params
+  const {autz} = req
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-  const videos = await this.videoService.getVideo({acc, cid, uuid})
+  const videos = await this.videoService.getVideo({autz, cid, uuid})
   const _code = videos.length === 1 ? 200 : 404
   reply.code(_code).send(videos[0])
 }
 
 async function getVideoThumbnailHandler(req, replay) {
   const {cid, uuid} = req.params
+  const {autz} = req
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-
-  return await this.videoService.getVideoThumbnail({acc, cid, uuid})
+  return await this.videoService.getVideoThumbnail({autz, cid, uuid})
 }
 
 async function getVideoBindingSeriesHandler(req, replay) {
   const {cid, sid} = req.params
+  const {autz} = req
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-
-  return await this.videoService.videosBindedWithSeries({acc, cid, sid})
+  return await this.videoService.videosBindedWithSeries({autz, cid, sid})
 }
 
 async function getVideoBindingGroupHandler(req, replay) {
   const {cid, gid} = req.params
+  const {autz} = req
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-
-  return await this.videoService.videosBindedWithGroup({acc, cid, gid})
+  return await this.videoService.videosBindedWithGroup({autz, cid, gid})
 }
 
 async function delVideoHandler(req, reply) {
   const {cid, uuid} = req.params
+  const {autz} = req
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'delete'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const deleted = await this.videoService.delVideo({acc, cid, uuid})
+  const deleted = await this.videoService.delVideo({autz, cid, uuid})
   const _code = deleted === 1 ? 204 : 404
   reply.code(_code).send()
 }
@@ -208,15 +176,16 @@ async function delVideoHandler(req, reply) {
 async function updVideoHandler(req, reply) {
   const {cid, uuid} = req.params
   const data = {...req.body, cid, uuid}
+  const {autz} = req
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'edit'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const updated = await this.videoService.updVideo({acc, data})
+  const updated = await this.videoService.updVideo({autz, data})
   const _code = updated === 1 ? 200 : 404
   reply.code(_code).send()
 }
@@ -224,15 +193,16 @@ async function updVideoHandler(req, reply) {
 async function delVideoSeriesHandler(req, reply) {
   const {cid, uuid, sid} = req.params
   const video = {cid, uuid, sid}
+  const {autz} = req
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'edit'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const updated = await this.videoService.delVideoSeries({acc, video})
+  const updated = await this.videoService.delVideoSeries({autz, video})
   const _code = updated === 1 ? 204 : 404
   reply.code(_code).send()
 }
@@ -240,15 +210,16 @@ async function delVideoSeriesHandler(req, reply) {
 async function addVideoSeriesHandler(req, reply) {
   const {cid, uuid, sid} = req.params
   const video = {cid, uuid, sid}
+  const {autz} = req
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'edit'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const updated = await this.videoService.addVideoSeries({acc, video})
+  const updated = await this.videoService.addVideoSeries({autz, video})
   const _code = updated === 1 ? 204 : 404
   reply.code(_code).send()
 }
@@ -256,15 +227,16 @@ async function addVideoSeriesHandler(req, reply) {
 async function delVideoGroupHandler(req, reply) {
   const {cid, uuid, gid} = req.params
   const video = {cid, uuid, gid}
+  const {autz} = req
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'edit'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const updated = await this.videoService.delVideoGroup({acc, video})
+  const updated = await this.videoService.delVideoGroup({autz, video})
   const _code = updated === 1 ? 204 : 404
   reply.code(_code).send()
 }
@@ -272,15 +244,16 @@ async function delVideoGroupHandler(req, reply) {
 async function addVideoGroupHandler(req, reply) {
   const {cid, uuid, gid} = req.params
   const video = {cid, uuid, gid}
+  const {autz} = req
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'edit'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const updated = await this.videoService.addVideoGroup({acc, video})
+  const updated = await this.videoService.addVideoGroup({autz, video})
   const _code = updated === 1 ? 204 : 404
   reply.code(_code).send()
 }
@@ -288,15 +261,16 @@ async function addVideoGroupHandler(req, reply) {
 async function updVideoStatusHandler(req, reply) {
   const {cid, uuid} = req.params
   const data = {...req.body, cid, uuid}
+  const {autz} = req
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'edit'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const updated = await this.videoService.updVideoStatus({acc, data})
+  const updated = await this.videoService.updVideoStatus({autz, data})
 
   const file_ext = updated[0].video_filename.match(/\.(\w+)$/i)
   if (data.value === 'uploaded') {
@@ -323,15 +297,16 @@ async function updVideoStatusHandler(req, reply) {
 async function updVideoPublicStatusHandler(req, reply) {
   const {cid, uuid} = req.params
   const data = {...req.body, cid, uuid}
+  const {autz} = req
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'edit'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const updated = await this.videoService.updVideoPublicStatus({acc, data})
+  const updated = await this.videoService.updVideoPublicStatus({autz, data})
   const _code = updated === 1 ? 200 : 404
   reply.code(_code).send()
 }
@@ -339,14 +314,8 @@ async function updVideoPublicStatusHandler(req, reply) {
 async function addVideoPlayerEventHandler(req, reply) {
   const {cid, uuid} = req.params
   const data = {...req.body, cid, uuid}
+  const {autz} = req
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-
-  await this.videoService.addPlayerEvent({acc, data})
+  await this.videoService.addPlayerEvent({autz, data})
   reply.code(204).send()
 }

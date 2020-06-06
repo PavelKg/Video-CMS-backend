@@ -10,8 +10,8 @@ class RoleService {
   }
 
   async companyRoles(payload) {
-    const {acc, cid} = payload
-    const {timezone} = acc
+    const {autz, cid} = payload
+    const {timezone} = autz
     const {
       limit = 'ALL',
       offset = 0,
@@ -19,7 +19,7 @@ class RoleService {
       filter = ''
     } = payload.query
 
-    if (acc.company_id !== cid || !acc.is_admin) {
+    if (autz.company_id !== cid || !autz.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
@@ -55,9 +55,10 @@ class RoleService {
   }
 
   async companyRoleById(payload) {
-    const {acc, cid, rid} = payload
-    const {timezone} = acc
-    if (acc.company_id !== cid || !acc.is_admin) {
+    const {autz, cid, rid} = payload
+    const {timezone} = autz
+
+    if (autz.company_id !== cid || !autz.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
@@ -68,6 +69,7 @@ class RoleService {
           role_name as name, 
           role_company_id as cid, 
           role_is_admin as is_admin, 
+          role_permissions as permits,
           deleted_at AT TIME ZONE $3 AS deleted_at 
         from roles
         where role_company_id=$1 and role_rid=$2;`,
@@ -81,12 +83,95 @@ class RoleService {
     }
   }
 
+  async features(payload) {
+    const {autz, cid} = payload
+
+    // if (autz.company_id !== cid || !autz.is_admin) {
+    //   throw Error(errors.WRONG_ACCESS)
+    // }
+
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `WITH RECURSIVE feature_with_level AS (
+          SELECT feature_name AS "name", feature_caption caption, 
+            feature_menu_order "order", feature_parent parent, feature_id "id",
+            0 AS lvl
+          FROM features
+          WHERE feature_parent IS NULL
+  
+          UNION ALL
+  
+          SELECT child.feature_name "name", child.feature_caption caption, 
+            child.feature_menu_order "order", child.feature_parent parent, child.feature_id "id",
+            parent.lvl + 1
+          FROM features child
+          JOIN feature_with_level parent 
+          ON parent.id = child.feature_parent
+        ),
+        maxlvl AS (
+          SELECT max(lvl) maxlvl FROM feature_with_level
+        ),
+  
+        c_tree AS (
+          SELECT feature_with_level.*,
+           NULL::JSONB children
+          FROM feature_with_level, maxlvl
+          WHERE lvl = maxlvl
+  
+          UNION
+  
+          (
+          SELECT (branch_parent).*,
+              jsonb_agg(branch_child)
+          FROM (
+           SELECT branch_parent,
+                  to_jsonb(branch_child) - 'lvl' - 'parent' - 'id' AS branch_child
+             FROM feature_with_level branch_parent
+             JOIN c_tree branch_child ON branch_child.parent = branch_parent.id
+          ) branch
+          GROUP BY branch.branch_parent
+  
+         UNION
+  
+         SELECT c.*,
+                NULL::JSONB
+         FROM feature_with_level c
+         WHERE NOT EXISTS (SELECT 1
+          FROM feature_with_level hypothetical_child
+          WHERE hypothetical_child.parent = c.id)
+          )
+        )
+  
+        SELECT 
+          array_to_json(
+            array_agg(
+              row_to_json(c_tree)::JSONB - 'lvl' - 'parent_id' - 'node_id' - 'id' - 'parent'
+            )
+          )::JSONB AS features
+        FROM c_tree
+        WHERE lvl=0;`
+      )
+      return rows[0].features
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      if (client) {
+        client.release()
+      }
+    }
+  }
+
   async addRole(payload) {
     let client = undefined
-    const {acc, role} = payload
-    const {rid, cid, name, is_admin = false} = role
+    const {autz, role} = payload
+    const {rid, cid, name, is_admin = false, permits = null} = role
 
-    const {user_id, company_id, uid} = acc
+    if (!is_admin) {
+      permits = null
+    }
+
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'created',
@@ -100,7 +185,7 @@ class RoleService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -119,19 +204,26 @@ class RoleService {
       }
 
       const {rows} = await client.query(
-        `INSERT INTO roles (role_rid, role_company_id, role_name, role_is_admin) 
-      VALUES ($1, $2, $3, $4) 
-      RETURNING role_rid AS rid, 
+        `INSERT INTO roles (role_rid, role_company_id, role_name, role_is_admin, role_permissions) 
+          VALUES ($1, $2, $3, $4, $5) 
+        RETURNING role_rid AS rid, 
         role_id, 
         role_is_admin AS is_admin, 
         role_company_id AS cid, 
         role_name AS name;`,
-        [rid, cid, name, is_admin]
+        [rid, cid, name, is_admin, permits]
       )
 
       histData.result = typeof rows[0] === 'object'
       histData.target_data = {...rows[0]}
       histData.details = 'Success'
+
+      // generate new user's frontend menu
+      await client.query(
+        `UPDATE roles SET role_menu = (select generate_role_menu($1)) 
+          WHERE role_id=$1`,
+        [rows[0].role_id]
+      )
 
       return rows[0].rid
     } catch (error) {
@@ -146,10 +238,14 @@ class RoleService {
 
   async updRole(payload) {
     let client = undefined
-    const {acc, role} = payload
-    const {rid, cid, name, is_admin = false} = role
+    const {autz, role} = payload
+    const {rid, cid, name, is_admin = false, permits = null} = role
 
-    const {user_id, company_id, uid} = acc
+    if (!is_admin) {
+      permits = null
+    }
+
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'edited',
@@ -163,22 +259,31 @@ class RoleService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
       client = await this.db.connect()
-
-      const {rowCount} = await client.query(
+      const {rows} = await client.query(
         `UPDATE roles 
-        SET role_name=$3, role_is_admin=$4 
+        SET role_name=$3, role_is_admin=$4, role_permissions=$5 
         WHERE role_company_id=$2 and role_rid =$1 
-          AND deleted_at IS NULL;`,
-        [rid, cid, name, is_admin]
+          AND deleted_at IS NULL
+          RETURNING role_id;`,
+        [rid, cid, name, is_admin, permits]
       )
-      histData.result = rowCount === 1
+      histData.result = rows.length === 1
       histData.details = `[${name}] information updated`
-      return rowCount
+
+      // generate new user's frontend menu
+      if (rows.length === 1) {
+        await client.query(
+          `UPDATE roles SET role_menu = (select generate_role_menu($1)) 
+          WHERE role_id=$1`,
+          [rows[0].role_id]
+        )
+      }
+      return rows.length
     } catch (error) {
       throw Error(error)
     } finally {
@@ -189,10 +294,10 @@ class RoleService {
 
   async delRole(payload) {
     let client = undefined
-    const {acc, role} = payload
+    const {autz, role} = payload
     const {rid, cid} = role
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'deleted',
@@ -206,7 +311,7 @@ class RoleService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 

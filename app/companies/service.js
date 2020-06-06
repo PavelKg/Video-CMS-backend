@@ -10,9 +10,9 @@ class CompanyService {
   }
 
   async setVideoInfoLocation(payload) {
-    const {acc, location, params} = payload
+    const {autz, location, params} = payload
     const {cid} = params
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
 
     let client = undefined
 
@@ -29,7 +29,7 @@ class CompanyService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -57,12 +57,12 @@ class CompanyService {
   }
 
   async getVideoInfoLocation(playload) {
-    const {acc, cid} = playload
+    const {autz, cid} = playload
 
     let client = undefined
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
       client = await this.db.connect()
@@ -87,9 +87,9 @@ class CompanyService {
   }
 
   async setCommentsBoxState(playload) {
-    const {acc, params} = playload
+    const {autz, params} = playload
     const {cid, state} = params
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
 
     let client = undefined
 
@@ -106,7 +106,7 @@ class CompanyService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -134,12 +134,12 @@ class CompanyService {
   }
 
   async getCommentsBoxState(playload) {
-    const {acc, cid} = playload
+    const {autz, cid} = playload
 
     let client = undefined
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
       client = await this.db.connect()
@@ -162,9 +162,9 @@ class CompanyService {
   }
 
   async updLogo(playload) {
-    const {acc, body, cid} = playload
+    const {autz, body, cid} = playload
     const {data} = body
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
 
     let client = undefined
 
@@ -181,7 +181,7 @@ class CompanyService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -209,12 +209,12 @@ class CompanyService {
   }
 
   async getLogo(playload) {
-    const {acc, cid} = playload
+    const {autz, cid} = playload
 
     let client = undefined
 
     try {
-      if (acc.company_id !== cid) {
+      if (autz.company_id !== cid) {
         throw Error(errors.WRONG_ACCESS)
       }
       client = await this.db.connect()

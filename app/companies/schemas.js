@@ -5,7 +5,7 @@ const videoInfoLocation = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       }
     },
     additionalProperties: false
@@ -19,7 +19,7 @@ const setCommentsBoxVisibleState = {
     required: ['cid', 'state'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       },
       state: {
         type: 'string',
@@ -37,7 +37,7 @@ const getCommentsBoxVisibleState = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       }
     },
     additionalProperties: false
@@ -61,7 +61,7 @@ const updCompanyLogo = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       }
     },
     additionalProperties: false
@@ -82,7 +82,7 @@ const getCompanyLogo = {
     required: ['cid'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       }
     },
     additionalProperties: false
