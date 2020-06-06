@@ -1,5 +1,7 @@
 'use strict'
 
+const errors = require('../../errors')
+const feature = 'users'
 const csvParse = require('csv-parse/lib/sync')
 const fileUpload = require('fastify-file-upload')
 
@@ -16,7 +18,8 @@ const {
 module.exports = async function (fastify, opts) {
   fastify.register(fileUpload)
   // All APIs are under authentication here!
-  fastify.addHook('preHandler', fastify.authPreHandler)
+  fastify.addHook('preValidation', fastify.authPreValidation)
+  fastify.addHook('preHandler', fastify.autzPreHandler)
   // fastify.addContentTypeParser(
   //   'multipart/form-data',
   //   //{parseAs: 'string'},
@@ -37,30 +40,33 @@ module.exports = async function (fastify, opts) {
 
 module.exports[Symbol.for('plugin-meta')] = {
   decorators: {
-    fastify: ['authPreHandler', 'userService']
+    fastify: ['authPreValidation', 'autzPreHandler', 'userService']
   }
 }
 
 async function getCompanyUsersHandler(req, reply) {
-  const {cid} = req.params
-  let acc = null
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-  return await this.userService.companyUsers({acc, cid, query: req.query})
+  const {query, params, autz} = req
+  const permits = autz.permits
+  const reqAccess = feature
+
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  const {cid} = params
+  return await this.userService.companyUsers({autz, cid, query})
 }
 
 async function getCompanyUserInfoHandler(req, reply) {
-  const {cid, uid} = req.params
-  let acc = null
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-  const userInfo = await this.userService.companyUserInfo({acc, cid, uid})
+  const {params, autz} = req
+  const permits = autz.permits
+  const reqAccess = feature
+
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+  const {cid, uid} = params
+  const userInfo = await this.userService.companyUserInfo({autz, cid, uid})
   if (userInfo) {
     reply.code(200).send(userInfo)
   } else {
@@ -69,7 +75,16 @@ async function getCompanyUserInfoHandler(req, reply) {
 }
 
 async function importUsersHandler(req, reply) {
-  const cid = req.params.cid
+  const {params, raw, autz} = req
+  const act = 'import'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  const {cid} = params
   const report = []
 
   const fieldRegCheck = [
@@ -82,14 +97,7 @@ async function importUsersHandler(req, reply) {
     {field: 'password', regex: /^[\S\w*]{8,}$/i}
   ]
 
-  let acc
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-
-  const {name, data, size, mimetype, encoding} = req.raw.files.userlist
+  const {name, data, size, mimetype, encoding} = raw.files.userlist
   const fileInfo = {name, size, mimetype, encoding}
 
   const csvData = data.toString('utf8')
@@ -142,7 +150,7 @@ async function importUsersHandler(req, reply) {
         activity_finish
       }
 
-      await this.userService.addUser({acc, user})
+      await this.userService.addUser({autz, user})
       resLog = 'success'
     } catch (err) {
       resLog = `${err.message}`
@@ -154,57 +162,63 @@ async function importUsersHandler(req, reply) {
       })
     }
   }
-  await this.userService.importUsers({acc, fileInfo})
+  await this.userService.importUsers({autz, fileInfo})
   reply.code(200).send(report)
 }
 
 async function addUserHandler(req, reply) {
-  const cid = +req.params.cid
-  let url = req.raw.url
-  let user = {...req.body, cid}
+  const {params, raw, body, autz} = req
+  const act = 'add'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
 
-  let acc
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  const {cid} = params
+  let url = raw.url
+  let user = {...body, cid}
 
   if (!url.match(/.*\/$/i)) {
     url += '/'
   }
-  const newUser = await this.userService.addUser({acc, user})
+  const newUser = await this.userService.addUser({autz, user})
   reply.code(201).header('Location', `${url}${newUser}`).send()
 }
 
 async function updUserHandler(req, reply) {
-  const {cid, uid} = req.params
-  let user = {...req.body, cid: +cid, uid}
+  const {params, body, autz} = req
+  const act = 'edit'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
 
-  let acc
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const updated = await this.userService.updUser({acc, user})
+  const {cid, uid} = params
+  let user = {...body, cid, uid}
+
+  const updated = await this.userService.updUser({autz, user})
   const _code = updated === 1 ? 200 : 404
   reply.code(_code).send()
 }
 
 async function delUserHandler(req, reply) {
-  const {cid, uid} = req.params
-  let user = {cid: +cid, uid}
+  const {params, autz} = req
+  const act = 'delete'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
 
-  let acc
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const deleted = await this.userService.delUser({acc, user})
+  const {cid, uid} = params
+  let user = {cid, uid}
+
+  const deleted = await this.userService.delUser({autz, user})
   const _code = deleted === 1 ? 204 : 404
   reply.code(_code).send()
 }

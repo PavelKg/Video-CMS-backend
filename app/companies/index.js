@@ -1,3 +1,8 @@
+'use strict'
+const errors = require('../errors')
+const feature = 'companies'
+const featureIn = 'company'
+
 const {
   getCommentsBoxVisibleState: getCommentsBoxVisibleStateSchema,
   setCommentsBoxVisibleState: setCommentsBoxVisibleStateSchema,
@@ -6,9 +11,11 @@ const {
   videoInfoLocation: videoInfoLocationSchema
 } = require('./schemas')
 
-module.exports = async function(fastify, opts) {
+module.exports = async function (fastify, opts) {
   // All APIs are under authentication here!
-  fastify.addHook('preHandler', fastify.authPreHandler)
+  fastify.addHook('preValidation', fastify.authPreValidation)
+  fastify.addHook('preHandler', fastify.autzPreHandler)
+
   fastify.put(
     '/commentbox/:state',
     {schema: setCommentsBoxVisibleStateSchema},
@@ -38,19 +45,25 @@ module.exports = async function(fastify, opts) {
   fastify.get('/logo', {schema: getCompanyLogoSchema}, getCompanyLogoHandler)
 }
 
+module.exports[Symbol.for('plugin-meta')] = {
+  decorators: {
+    fastify: ['authPreValidation', 'autzPreHandler', 'companyService']
+  }
+}
+
 async function setVideoInfoLocationHandler(req, reply) {
   const {location} = reply.context.config
-  const params = req.params
+  const {params, autz} = req
 
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'mng'
+  const permits = autz.permits
+  const reqAccess = `${featureIn}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
   const res = await this.companyService.setVideoInfoLocation({
-    acc,
+    autz,
     params,
     location
   })
@@ -60,17 +73,18 @@ async function setVideoInfoLocationHandler(req, reply) {
 }
 
 async function getVideoInfoLocationHandler(req, reply) {
-  const cid = req.params.cid
+  const {params, autz} = req
+  const {cid} = params
 
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'mng'
+  const permits = autz.permits
+  const reqAccess = `${featureIn}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
   const res = await this.companyService.getVideoInfoLocation({
-    acc,
+    autz,
     cid
   })
   const _code = typeof res === 'object' ? 200 : 404
@@ -78,17 +92,16 @@ async function getVideoInfoLocationHandler(req, reply) {
 }
 
 async function setCommentsBoxVisibleHandler(req, reply) {
-  const params = req.params
-
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const {params, autz} = req
+  const act = 'mng'
+  const permits = autz.permits
+  const reqAccess = `${featureIn}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
   const res = await this.companyService.setCommentsBoxState({
-    acc,
+    autz,
     params
   })
   const _code = res === 1 ? 204 : 404
@@ -96,17 +109,17 @@ async function setCommentsBoxVisibleHandler(req, reply) {
 }
 
 async function getCommentsBoxVisibleHandler(req, reply) {
-  const cid = req.params.cid
-
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const {params, autz} = req
+  const {cid} = params
+  const act = 'mng'
+  const permits = autz.permits
+  const reqAccess = `${featureIn}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
   const res = await this.companyService.getCommentsBoxState({
-    acc,
+    autz,
     cid
   })
   const _code = typeof res === 'object' ? 200 : 404
@@ -114,18 +127,17 @@ async function getCommentsBoxVisibleHandler(req, reply) {
 }
 
 async function updCompanyLogoHandler(req, reply) {
-  const body = req.body
-  const cid = req.params.cid
-
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const {params, body, autz} = req
+  const {cid} = params
+  const act = 'mng'
+  const permits = autz.permits
+  const reqAccess = `${featureIn}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
   const res = await this.companyService.updLogo({
-    acc,
+    autz,
     cid,
     body
   })
@@ -134,26 +146,14 @@ async function updCompanyLogoHandler(req, reply) {
 }
 
 async function getCompanyLogoHandler(req, reply) {
-  const cid = req.params.cid
-
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const {params, autz} = req
+  const {cid} = params
 
   const res = await this.companyService.getLogo({
-    acc,
+    autz,
     cid
   })
 
   const _code = typeof res === 'object' ? 200 : 404
   reply.code(_code).send(res)
-}
-
-module.exports[Symbol.for('plugin-meta')] = {
-  decorators: {
-    fastify: ['authPreHandler', 'companyService']
-  }
 }

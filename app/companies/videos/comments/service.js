@@ -10,9 +10,9 @@ class CommentService {
   }
 
   async videoComments(payload) {
-    const {acc, params, query} = payload
+    const {autz, params, query} = payload
     const {cid, uuid} = params
-    const {timezone, is_admin} = acc
+    const {timezone, is_admin} = autz
     const {
       limit = 'ALL',
       offset = 0,
@@ -52,9 +52,9 @@ class CommentService {
   }
 
   async commentInfo(payload) {
-    const {acc, params} = payload
+    const {autz, params} = payload
     const {cid, uuid, comid} = params
-    const {timezone} = acc
+    const {timezone} = autz
 
     const client = await this.db.connect()
     try {
@@ -84,9 +84,9 @@ class CommentService {
 
   async addComment(payload) {
     let client = undefined
-    const {acc, comment} = payload
+    const {autz, comment} = payload
     const {uuid, cid, comment_text} = comment
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'created',
@@ -100,7 +100,7 @@ class CommentService {
     }
 
     try {
-      if (acc.company_id !== cid) {
+      if (autz.company_id !== cid) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -136,10 +136,10 @@ class CommentService {
   }
   async updMessageVisible(payload) {
     let client = undefined
-    const {acc, comment} = payload
+    const {autz, comment} = payload
     const {value, cid, uuid, comid} = comment
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: value ? `display` : 'hide',
@@ -153,7 +153,7 @@ class CommentService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -184,10 +184,10 @@ class CommentService {
 
   async delComment(payload) {
     let client = undefined
-    const {acc, comment} = payload
+    const {autz, comment} = payload
     const {cid, uuid, comid} = comment
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'deleted',
@@ -201,7 +201,7 @@ class CommentService {
     }
 
     try {
-      if (acc.company_id !== cid) {
+      if (autz.company_id !== cid) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -226,7 +226,7 @@ class CommentService {
           AND comment_id=$3
           AND ($4 = true OR ($1=$5 AND comment_user_uid = $6))
           RETURNING *;`,
-        values: [cid, uuid, comid, acc.is_admin, acc.company_id, acc.uid]
+        values: [cid, uuid, comid, autz.is_admin, autz.company_id, autz.uid]
       }
       const {rows} = await client.query(query)
       histData.object_name = `v_${rows[0].comment_vid}`

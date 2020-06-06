@@ -1,5 +1,8 @@
 'use strict'
 
+const errors = require('../../errors')
+const feature = 'groups'
+
 const {
   group: groupSchema,
   getCompanyGroups: getCompanyGroupsSchema,
@@ -15,7 +18,8 @@ const {
 
 module.exports = async function (fastify, opts) {
   // All APIs are under authentication here!
-  fastify.addHook('preHandler', fastify.authPreHandler)
+  fastify.addHook('preValidation', fastify.authPreValidation)
+  fastify.addHook('preHandler', fastify.autzPreHandler)
 
   fastify.get('/', {schema: getCompanyGroupsSchema}, getCompanyGroupsHandler)
   fastify.get(
@@ -50,144 +54,138 @@ module.exports = async function (fastify, opts) {
 
 module.exports[Symbol.for('plugin-meta')] = {
   decorators: {
-    fastify: ['authPreHandler', 'groupService']
+    fastify: ['authPreValidation', 'autzPreHandler', 'groupService']
   }
 }
 
 async function getCompanyGroupsHandler(req, reply) {
-  const cid = req.params.cid
-  const query = req.query
-  let acc = null
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const {query, params, autz} = req
+  const {cid} = params
 
-  return await this.groupService.companyGroups({acc, cid, query})
+  const permits = autz.permits
+  const reqAccess = feature
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  return await this.groupService.companyGroups({autz, cid, query})
 }
 
 async function getCompanyGroupsParentsHandler(req, reply) {
-  const cid = req.params.cid
-  const query = req.query
-  let acc = null
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const {query, params, autz} = req
+  const {cid} = params
 
-  return await this.groupService.companyGroupsParents({acc, cid, query})
+  return await this.groupService.companyGroupsParents({autz, cid, query})
 }
 
 async function getCompanyGroupsByIdHandler(req, reply) {
-  const {cid, gid} = req.params
-  let acc = null
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const {params, autz} = req
+  const {cid, gid} = params
 
-  const groups = await this.groupService.companyGroupById({acc, cid, gid})
+  const permits = autz.permits
+  const reqAccess = feature
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  const groups = await this.groupService.companyGroupById({autz, cid, gid})
   const _code = groups.length === 1 ? 200 : 404
   reply.code(_code).send(groups[0])
 }
 
 async function addGroupHandler(req, reply) {
-  const cid = +req.params.cid
+  const {params, autz} = req
+  const {cid} = params
   let url = req.raw.url
   const group = {...req.body, cid}
 
-  let acc
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'add'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
   if (!url.match(/.*\/$/i)) {
     url += '/'
   }
-  const newGroup = await this.groupService.addGroup({acc, group})
+  const newGroup = await this.groupService.addGroup({autz, group})
   reply.code(201).header('Location', `${url}${newGroup}`).send()
 }
 
 async function updGroupHandler(req, reply) {
-  const {cid, gid} = req.params
-  let group = {...req.body, cid: +cid, gid}
+  const {params, autz} = req
+  const {cid, gid} = params
+  let group = {...req.body, cid, gid}
 
-  let acc
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'edit'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const updated = await this.groupService.updGroup({acc, group})
+  const updated = await this.groupService.updGroup({autz, group})
   const _code = updated === 1 ? 200 : 404
   reply.code(_code).send()
 }
 
 async function delGroupSeriesHandler(req, reply) {
-  const {cid, gid, sid} = req.params
+  const {params, autz} = req
+  const {cid, gid, sid} = params
   let group = {cid, gid, sid}
 
-  let acc
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'edit'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const updated = await this.groupService.delGroupSeries({acc, group})
+  const updated = await this.groupService.delGroupSeries({autz, group})
   const _code = updated === 1 ? 204 : 404
   reply.code(_code).send()
 }
 
 async function addGroupSeriesHandler(req, reply) {
-  const {cid, gid, sid} = req.params
+  const {params, autz} = req
+  const {cid, gid, sid} = params
   let group = {cid, gid, sid}
 
-  let acc
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'edit'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const updated = await this.groupService.addGroupSeries({acc, group})
+  const updated = await this.groupService.addGroupSeries({autz, group})
   const _code = updated === 1 ? 204 : 404
   reply.code(_code).send()
 }
 
 async function delGroupHandler(req, reply) {
-  const {cid, gid} = req.params
-  let group = {cid: +cid, gid}
+  const {params, autz} = req
+  const {cid, gid} = params
+  let group = {cid, gid}
 
-  let acc
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const act = 'delete'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const deleted = await this.groupService.delGroup({acc, group})
+  const deleted = await this.groupService.delGroup({autz, group})
   const _code = deleted === 1 ? 204 : 404
   reply.code(_code).send()
 }
 
 async function getGroupsBindingSeriesHandler(req, reply) {
-  const {cid, sid} = req.params
+  const {params, autz} = req
+  const {cid, sid} = params
 
-  let acc
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-
-  const groups = await this.groupService.groupsBindedWithSeries({acc, cid, sid})
+  const groups = await this.groupService.groupsBindedWithSeries({autz, cid, sid})
   const _code = groups.length > 0 ? 200 : 404
   reply.code(_code).send(groups)
 }

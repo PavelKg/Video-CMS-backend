@@ -1,5 +1,8 @@
 'use strict'
 
+const errors = require('../../errors')
+const feature = 'series'
+
 const {
   series: seriesSchema,
   getCompanySeries: getCompanySeriesSchema,
@@ -9,9 +12,10 @@ const {
   delSeries: delSeriesSchema
 } = require('./schemas')
 
-module.exports = async function(fastify, opts) {
+module.exports = async function (fastify, opts) {
   // All APIs are under authentication here!
-  fastify.addHook('preHandler', fastify.authPreHandler)
+  fastify.addHook('preValidation', fastify.authPreValidation)
+  fastify.addHook('preHandler', fastify.autzPreHandler)
 
   fastify.get('/', {schema: getCompanySeriesSchema}, getCompanySeriesHandler)
   fastify.get(
@@ -26,87 +30,91 @@ module.exports = async function(fastify, opts) {
 
 module.exports[Symbol.for('plugin-meta')] = {
   decorators: {
-    fastify: ['authPreHandler', 'seriesService']
+    fastify: ['authPreValidation', 'autzPreHandler', 'seriesService']
   }
 }
 
 async function getCompanySeriesHandler(req, reply) {
-  const cid = req.params.cid
-  const query = req.query
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const {query, params, autz} = req
+  const {cid} = params
 
-  return await this.seriesService.companySeries({acc, cid, query})
+  const permits = autz.permits
+  const reqAccess = feature
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  return await this.seriesService.companySeries({autz, cid, query})
 }
 
 async function getCompanySeriesByIdHandler(req, reply) {
-  const {cid, sid} = req.params
-  let acc = null
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const {params, autz} = req
+  const {cid, sid} = params
+  const permits = autz.permits
+  const reqAccess = feature
 
-  const seriess = await this.seriesService.companySeriesById({acc, cid, sid})
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  const seriess = await this.seriesService.companySeriesById({autz, cid, sid})
   const _code = seriess.length === 1 ? 200 : 404
   reply.code(_code).send(seriess[0])
 }
 
 async function addSeriesHandler(req, reply) {
-  const cid = +req.params.cid
-  let url = req.raw.url
-  const series = {...req.body, cid}
+  const {params, body, raw, autz} = req
+  const act = 'add'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  const {cid} = params
+  let url = raw.url
+  const series = {...body, cid}
 
   if (!url.match(/.*\/$/i)) {
     url += '/'
   }
-  const newSeries = await this.seriesService.addSeries({acc, series})
-  reply
-    .code(201)
-    .header('Location', `${url}${newSeries}`)
-    .send()
+  const newSeries = await this.seriesService.addSeries({autz, series})
+  reply.code(201).header('Location', `${url}${newSeries}`).send()
 }
 
 async function updSeriesHandler(req, reply) {
-  const {cid, sid} = req.params
-  let series = {...req.body, cid: cid, sid}
+  const {params, body, autz} = req
+  const act = 'edit'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const updated = await this.seriesService.updSeries({acc, series})
+  const {cid, sid} = params
+  let series = {...body, cid, sid}
+
+  const updated = await this.seriesService.updSeries({autz, series})
   const _code = updated === 1 ? 204 : 404
   reply.code(_code).send()
 }
 
 async function delSeriesHandler(req, reply) {
-  const {cid, sid} = req.params
-  let series = {cid: cid, sid}
+  const {params, autz} = req
+  const act = 'delete'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
 
-  let acc
-  req.jwtVerify(function(err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
 
-  const deleted = await this.seriesService.delSeries({acc, series})
+  const {cid, sid} = params
+  let series = {cid, sid}
+
+  const deleted = await this.seriesService.delSeries({autz, series})
   const _code = deleted === 1 ? 204 : 404
   reply.code(_code).send()
 }

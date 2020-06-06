@@ -1,5 +1,8 @@
 'use strict'
 
+const errors = require('../../errors')
+const feature = 'telegram'
+
 const {
   loginAuth: loginAuthSchema,
   deeplinkAuth: deeplinkAuthSchema
@@ -8,7 +11,9 @@ const {
 module.exports = async function (fastify, opts) {
   // All APIs are under authentication here!
 
-  fastify.addHook('preHandler', fastify.authPreHandler)
+  fastify.addHook('preValidation', fastify.authPreValidation)
+  fastify.addHook('preHandler', fastify.autzPreHandler)
+
   fastify.post(
     '/login-auth/:botname',
     {schema: loginAuthSchema},
@@ -23,37 +28,24 @@ module.exports = async function (fastify, opts) {
 
 module.exports[Symbol.for('plugin-meta')] = {
   decorators: {
-    fastify: ['authPreHandler', 'telegramService']
+    fastify: ['authPreValidation', 'autzPreHandler', 'telegramService']
   }
 }
 
 async function loginAuthHandler(req, reply) {
-  const {cid, botname} = req.params
-  const body = req.body
+  const {body, params, autz} = req
+  const {cid, botname} = params
 
-  let acc
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
-
-  await this.telegramService.loginAuth({acc, cid, body, botname})
+  await this.telegramService.loginAuth({autz, cid, body, botname})
   reply.code(201).send()
 }
 
 async function deeplinkAuthHandler(req, reply) {
-  const {cid, botname} = req.params
-
-  let acc
-  req.jwtVerify(function (err, decoded) {
-    if (!err) {
-      acc = decoded.user
-    }
-  })
+  const {params, autz} = req
+  const {cid, botname} = params
 
   const {botname: urlBotname, token} = await this.telegramService.deeplinkAuth({
-    acc,
+    autz,
     cid,
     botname
   })

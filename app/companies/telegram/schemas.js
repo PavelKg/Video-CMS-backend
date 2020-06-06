@@ -14,7 +14,7 @@ const loginAuth = {
     required: ['cid', 'botname'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       },
       botname: {type: 'string'}
     },
@@ -36,7 +36,7 @@ const deeplinkAuth = {
     required: ['cid', 'botname'],
     properties: {
       cid: {
-        type: 'number'
+        type: 'integer'
       },
       botname: {type: 'string'}
     },

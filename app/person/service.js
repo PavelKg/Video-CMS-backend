@@ -33,17 +33,21 @@ class PersonService {
     let histData = {
       category: this.history_category,
       action: 'logged-in',
-      object_name: 'system'
+      object_name: 'system',
+      result: false,
+      details: 'Failure',
+      target_data: {uid: username}
     }
     try {
-      const {rows} = await client.query(
-        `SELECT 
+      /* ------   Prev vesion - to delete | varsion 1.0.0
+        SELECT 
         user_id,
         user_uid AS uid, 
-        role_name AS role, 
-        company_id, 
+        role_name AS role,
+        company_id 
+        , 
         role_is_admin AS is_admin,
-        company_timezone AS timezone 
+        company_timezone AS timezone
       FROM users, roles, companies 
       WHERE users.user_company_id=companies.company_id 
 	      AND roles.role_company_id=companies.company_id 
@@ -52,31 +56,40 @@ class PersonService {
         AND (user_activity_finish is null or now()::date between user_activity_start and user_activity_finish)
 	      AND ((users.user_uid = $1 and users.created_at::date < '2020-02-17'::date) 
           OR (users.user_email = $1 and users.created_at::date >= '2020-02-17'::date)) 
-        AND users.user_password=crypt($2, user_password);`,
+        AND users.user_password=crypt($2, user_password);
+---------------------------------------------*/
+
+      const {rows} = await client.query(
+        `SELECT user_uid AS uid, user_id, 
+          user_company_id AS company_id
+        FROM users 
+        WHERE users.deleted_at IS NULL
+          AND (user_activity_finish is null or now()::date between user_activity_start and user_activity_finish)
+	        AND ((users.user_uid = $1 and users.created_at::date < '2020-02-17'::date) 
+            OR (users.user_email = $1 and users.created_at::date >= '2020-02-17'::date)) 
+          AND users.user_password=crypt($2, user_password);`,
         [username, password]
       )
 
       const user = rows[0]
 
-      const user_id = user ? user.user_id : null
-      const user_uid = user ? user.uid : null
-      const cid = user ? user.company_id : null
+      if (!user) {
+        histData.details = 'Wrong credentials'
+        throw new Error(errors.WRONG_CREDENTIAL)
+      }
 
+      const {user_id = null, uid = null, company_id = null} = user
       histData = {
         ...histData,
         user_id,
-        user_uid,
-        cid,
+        user_uid: uid,
+        cid: company_id,
         result: typeof user === 'object',
         details: typeof user === 'object' ? 'Success' : 'Failure',
         target_data: {uid: username}
       }
 
-      if (!user) {
-        throw new Error(errors.WRONG_CREDENTIAL)
-      }
-
-      return user
+      return {uid, company_id}
     } catch (error) {
       throw Error(error)
     } finally {
@@ -85,8 +98,8 @@ class PersonService {
     }
   }
 
-  async logout(acc) {
-    const {user_id, company_id, uid} = acc
+  async logout(autz) {
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'logged-out',
@@ -111,12 +124,12 @@ class PersonService {
     }
   }
 
-  async getProfile(acc) {
+  async getProfile(autz) {
     const client = await this.db.connect()
-    const {company_id: cid, uid} = acc
+    const {company_id: cid, uid} = autz
     try {
+      // !!! remarked should be delete | version 1.0.0
       const {rows} = await client.query(
-        //`select user_profile($1::jsonb, $2) as uProfile;`,
         `SELECT
           user_uid As uid, 
           role_name AS role, 
@@ -125,11 +138,13 @@ class PersonService {
           company_name, 
           user_email AS email,
           TO_CHAR(user_activity_start::DATE, 'yyyy-mm-dd') AS activity_start,
-          TO_CHAR(user_activity_finish::DATE, 'yyyy-mm-dd') AS activity_finish,
+          TO_CHAR(user_activity_finish::DATE, 'yyyy-mm-dd') AS activity_finish 
+          /*,
           CASE WHEN company_is_super THEN 'super'
                 WHEN role_is_admin THEN 'admin'
             ELSE 'user'
-          END AS irole 
+          END AS irole
+          */ 
         FROM users, roles, companies 
         WHERE users.user_company_id=companies.company_id 
           AND roles.role_company_id=companies.company_id 
@@ -139,7 +154,7 @@ class PersonService {
         [cid, uid]
       )
       const user_profile = rows[0]
-      if (!user_profile) throw new Error(errors.WRONG_USER_ID)
+      if (!user_profile) throw Error(errors.WRONG_USER_ID)
       return user_profile
     } catch (error) {
       throw Error(error)
@@ -148,9 +163,31 @@ class PersonService {
     }
   }
 
-  async getCompanyInfo(acc) {
+  async getProfileMenu(autz) {
     const client = await this.db.connect()
-    const {company_id: cid} = acc
+    const {company_id: cid, uid} = autz
+    try {
+      const {rows} = await client.query(
+        `SELECT role_menu AS menu
+        FROM roles, users
+        WHERE users.user_role_id=roles.role_id 
+          AND users.user_company_id=$1
+          AND roles.role_company_id=$1
+          AND users.user_uid=$2`,
+        [cid, uid]
+      )
+
+      return rows.length > 0 ? rows[0] : {}
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
+  }
+
+  async getCompanyInfo(autz) {
+    const client = await this.db.connect()
+    const {company_id: cid} = autz
 
     try {
       const {rows} = await client.query(
@@ -176,41 +213,43 @@ class PersonService {
     const client = await this.db.connect()
     let histData = {
       category: this.history_category,
-      action: 'email-password-recovery'
+      action: 'email-password-recovery',
+      result: false,
+      details: 'Failure',
+      target_data: {email}
     }
     try {
       const {rows} = await client.query(
-        /*`select loginEmail($1);`*/
-        `select user_id, user_uid AS uid, 
-        role_name AS role, 
-        company_id, role_is_admin AS is_admin,
-        user_fullname AS fullname
-      from users, roles, companies 
-      where users.user_company_id=companies.company_id 
-        AND roles.role_company_id=companies.company_id 
-        AND roles.role_id=users.user_role_id
-        AND (user_activity_finish is null or now()::date between user_activity_start and user_activity_finish)
-        AND users.user_email =$1;`,
+        `SELECT user_id, user_uid AS uid, 
+          role_name AS role, 
+          company_id, role_is_admin AS is_admin,
+          user_fullname AS fullname
+        FROM users, roles, companies 
+        WHERE users.user_company_id=companies.company_id 
+          AND roles.role_company_id=companies.company_id 
+          AND roles.role_id=users.user_role_id
+          AND (user_activity_finish is null or now()::date between user_activity_start and user_activity_finish)
+          AND users.user_email=$1;`,
         [email]
       )
       const user = rows[0]
 
-      const user_id = user ? user.user_id : null
-      const user_uid = user ? user.uid : null
-      const cid = user ? user.company_id : null
-
+      if (!user) {
+        histData.details = 'Failure: Wrong credentials'
+        throw new Error(errors.WRONG_CREDENTIAL)
+      }
+      const {user_id = null, uid = null, company_id = null} = user
       histData = {
         ...histData,
         user_id,
-        user_uid,
-        cid,
+        user_uid: uid,
+        cid: company_id,
         result: typeof user === 'object',
         details: typeof user === 'object' ? 'Success' : 'Failure',
-        object_name: user_uid,
-        target_data: {email, uid: user_uid}
+        object_name: uid,
+        target_data: {email, uid}
       }
 
-      if (!user) throw new Error(errors.WRONG_CREDENTIAL)
       return user
     } catch (error) {
       throw Error(error)
@@ -219,6 +258,7 @@ class PersonService {
       this.histLogger.saveHistoryInfo(histData)
     }
   }
+
   async sendEmail(payload) {
     const {email, fullname, token, valid_date, locale} = payload
     const url = `${RECOVERY_PASSWORD_URL}?token=${token}`
@@ -249,6 +289,7 @@ class PersonService {
       throw Error(error)
     }
   }
+
   async getPasswordResetToken(person, email) {
     const {uid, company_id} = person
     const client = await this.db.connect()
@@ -286,39 +327,48 @@ class PersonService {
     const client = await this.db.connect()
     let histData = {
       category: this.history_category,
-      action: 'update-password-recovery'
+      action: 'update-password-recovery',
+      result: false,
+      details: 'Failure',
+      target_data: {token}
     }
     try {
       const {rows: pr} = await client.query(
-        `SELECT pr_user_id, pr_id, pr_user_uid, pr_company_id 
+        `SELECT pr_user_id AS user_id , pr_id, pr_user_uid AS uid, pr_company_id AS company_id
          FROM password_recovery
          WHERE pr_token = $1 
           AND (created_at + interval '1 minutes' * pr_lifetime_min) > now();`,
         [token]
       )
 
-      const user_id = pr.length > 0 ? pr[0].pr_user_id : null
-      const user_uid = pr.length > 0 ? pr[0].pr_user_uid : null
-      const cid = pr.length > 0 ? pr[0].pr_company_id : null
+      if (pr.length === 0) {
+        histData.details = 'Failure: Token was not found'
+        return 0
+      }
+
+      const {
+        user_id = null,
+        uid = null,
+        company_id = null,
+        pr_id = null
+      } = pr[0]
 
       histData = {
         ...histData,
         user_id,
-        user_uid,
-        cid,
-        result: pr.length > 0,
-        details: pr.length ? 'Success' : 'Failure',
-        object_name: user_uid,
-        target_data: {token}
+        user_uid: uid,
+        cid: company_id,
+        result: true,
+        details: 'Success',
+        object_name: uid
       }
 
-      if (pr.length === 0) {
-        return 0
+      if (!user_id) {
+        histData.details = 'Failure: User ID does not exist'
+        histData.result = false
+        throw new Error(errors.RECOVERY_TOKEN_IS_NOT_VALID)
       }
 
-      if (!user_id) throw new Error(errors.RECOVERY_TOKEN_IS_NOT_VALID)
-
-      const pr_id = pr[0].pr_id
       await client.query(
         `UPDATE password_recovery 
           SET pr_used = true

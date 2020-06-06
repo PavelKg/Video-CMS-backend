@@ -10,9 +10,8 @@ class MessageService {
   }
 
   async userMessages(payload) {
-    const {acc, direction} = payload
-    //const cid = acc.company_id
-    const {uid, company_id: cid, timezone} = acc
+    const {autz, direction} = payload
+    const {uid, company_id: cid, timezone} = autz
     const {
       limit = 'ALL',
       offset = 0,
@@ -52,8 +51,8 @@ class MessageService {
   }
 
   async userMessagesReceivers(payload) {
-    const {acc} = payload
-    const cid = acc.company_id
+    const {autz} = payload
+    const cid = autz.company_id
 
     const client = await this.db.connect()
     const {rows} = await client.query(
@@ -71,9 +70,9 @@ class MessageService {
   }
 
   async addMessage(payload) {
-    const {acc, message} = payload
-    const sender_cid = acc.company_id
-    const sender_uid = acc.uid
+    const {autz, message} = payload
+    const sender_cid = autz.company_id
+    const sender_uid = autz.uid
     const {receiver_cid, receiver_uid, subject, text, important} = message
 
     let histData = {
@@ -124,11 +123,11 @@ class MessageService {
   }
 
   async delMessage(payload) {
-    const {acc, mid, direction} = payload
+    const {autz, mid, direction} = payload
     const dir_target = direction === 'inbox' ? 'receiver' : 'sender'
     const dir_oposit = direction === 'inbox' ? 'sender' : 'receiver'
 
-    const {uid, company_id: cid, user_id} = acc
+    const {uid, company_id: cid, user_id} = autz
     let histData = {
       category: this.history_category,
       action: 'deleted',
@@ -171,8 +170,8 @@ class MessageService {
   }
 
   async addStarredMessage(payload) {
-    const {acc, mid} = payload
-    const {uid, company_id, user_id} = acc
+    const {autz, mid} = payload
+    const {uid, company_id, user_id} = autz
 
     let histData = {
       category: this.history_category,
@@ -213,8 +212,8 @@ class MessageService {
     }
   }
   async delStarredMessage(payload) {
-    const {acc, mid} = payload
-    const {uid, company_id, user_id} = acc
+    const {autz, mid} = payload
+    const {uid, company_id, user_id} = autz
 
     let histData = {
       category: this.history_category,

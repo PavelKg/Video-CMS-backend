@@ -23,12 +23,12 @@ class VideoService {
    */
 
   async videosGcsUploadSignedUrl(payload) {
-    const {acc, query} = payload
+    const {autz, query} = payload
     const storage_type = 'gcs'
     const {name, size, type, uuid} = query
     const title = name.match(/^(.+).[\w]{3,4}$/iu)[1]
 
-    const {user_id, company_id: cid, uid} = acc
+    const {user_id, company_id: cid, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'registered',
@@ -141,15 +141,15 @@ class VideoService {
   // }
 
   async videosCatalog(payload) {
-    const {acc} = payload
-    const {company_id: cid, uid, timezone, is_admin} = acc
+    const {autz, query} = payload
+    const {company_id: cid, uid, timezone, is_admin} = autz
 
     const {
       limit = 'ALL',
       offset = 0,
       sort = '-videos.updated_at',
       filter = undefined
-    } = payload.query
+    } = query
 
     const onlyPublic = !Boolean(is_admin)
       ? ` AND video_public = true AND video_status='ready' AND videos.deleted_at IS NULL`
@@ -211,8 +211,8 @@ class VideoService {
 
   async getVideo(payload) {
     // get videos data for uuid
-    const {acc, cid, uuid} = payload
-    const {timezone, is_admin, uid} = acc
+    const {autz, cid, uuid} = payload
+    const {timezone, is_admin, uid} = autz
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
@@ -270,7 +270,7 @@ class VideoService {
   }
 
   async getVideoThumbnail(payload) {
-    const {acc, cid, uuid} = payload
+    const {autz, cid, uuid} = payload
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
@@ -289,7 +289,7 @@ class VideoService {
   }
 
   async videosBindedWithSeries(payload) {
-    const {acc, cid, sid} = payload
+    const {autz, cid, sid} = payload
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
@@ -313,7 +313,7 @@ class VideoService {
   }
 
   async videosBindedWithGroup(payload) {
-    const {acc, cid, gid} = payload
+    const {autz, cid, gid} = payload
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
@@ -338,9 +338,9 @@ class VideoService {
 
   async delVideo(payload) {
     let client = undefined
-    const {acc, cid, uuid} = payload
+    const {autz, cid, uuid} = payload
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'deleted',
@@ -354,7 +354,7 @@ class VideoService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -382,10 +382,10 @@ class VideoService {
 
   async delVideoSeries(payload) {
     let client = undefined
-    const {acc, video} = payload
+    const {autz, video} = payload
     const {cid, uuid, sid} = video
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'deleted series',
@@ -399,7 +399,7 @@ class VideoService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
       client = await this.db.connect()
@@ -440,10 +440,10 @@ class VideoService {
 
   async addVideoSeries(payload) {
     let client = undefined
-    const {acc, video} = payload
+    const {autz, video} = payload
     const {cid, uuid, sid} = video
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'added video series',
@@ -457,7 +457,7 @@ class VideoService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
       client = await this.db.connect()
@@ -499,10 +499,10 @@ class VideoService {
 
   async delVideoGroup(payload) {
     let client = undefined
-    const {acc, video} = payload
+    const {autz, video} = payload
     const {cid, uuid, gid} = video
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'deleted video group',
@@ -516,7 +516,7 @@ class VideoService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
       client = await this.db.connect()
@@ -557,10 +557,10 @@ class VideoService {
 
   async addVideoGroup(payload) {
     let client = undefined
-    const {acc, video} = payload
+    const {autz, video} = payload
     const {cid, uuid, gid} = video
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'added video group',
@@ -574,7 +574,7 @@ class VideoService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
       client = await this.db.connect()
@@ -616,10 +616,10 @@ class VideoService {
 
   async updVideo(payload) {
     let client = undefined
-    const {acc, data} = payload
+    const {autz, data} = payload
     const {cid, uuid, ...fields} = data
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'edited',
@@ -633,7 +633,7 @@ class VideoService {
     }
 
     try {
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -662,8 +662,9 @@ class VideoService {
       })
       const query = {
         text: `UPDATE videos SET (${Object.keys(fields)}) = (${select}) 
-         WHERE deleted_at IS NULL AND video_company_id=$${fields_length +
-           1} AND video_uuid=$${fields_length + 2} 
+         WHERE deleted_at IS NULL AND video_company_id=$${
+           fields_length + 1
+         } AND video_uuid=$${fields_length + 2} 
            RETURNING *`,
         values: [...Object.values(fields), cid, uuid]
       }
@@ -684,10 +685,10 @@ class VideoService {
 
   async updVideoStatus(payload) {
     let client = undefined
-    const {acc, data} = payload
+    const {autz, data} = payload
     const {cid, uuid, value} = data
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'state',
@@ -707,7 +708,7 @@ class VideoService {
         throw Error(errors.WRONG_STATUS_VALUE)
       }
 
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -737,10 +738,10 @@ class VideoService {
 
   async updVideoPublicStatus(payload) {
     let client = undefined
-    const {acc, data} = payload
+    const {autz, data} = payload
     const {cid, uuid, value} = data
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'status',
@@ -760,7 +761,7 @@ class VideoService {
         throw Error(errors.WRONG_PRIVATE_VALUE)
       }
 
-      if (acc.company_id !== cid || !acc.is_admin) {
+      if (autz.company_id !== cid || !autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -827,7 +828,7 @@ class VideoService {
 
   async addPlayerEvent(payload) {
     let client = undefined
-    const {acc, data} = payload
+    const {autz, data} = payload
     const {
       cid,
       uuid,
@@ -837,7 +838,7 @@ class VideoService {
       event_details
     } = data
 
-    const {user_id, company_id, uid} = acc
+    const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
       action: event_action,
