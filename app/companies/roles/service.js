@@ -266,7 +266,7 @@ class RoleService {
       client = await this.db.connect()
       const {rows} = await client.query(
         `UPDATE roles 
-        SET role_name=$3, role_is_admin=$4, role_permissions=$5 
+        SET role_name=$3, role_is_admin=$4, role_permissions=$5
         WHERE role_company_id=$2 and role_rid =$1 
           AND deleted_at IS NULL
           RETURNING role_id;`,
@@ -278,7 +278,7 @@ class RoleService {
       // generate new user's frontend menu
       if (rows.length === 1) {
         await client.query(
-          `UPDATE roles SET role_menu = (select generate_role_menu($1)) 
+          `UPDATE roles SET role_menu = (select generate_role_menu($1))
           WHERE role_id=$1`,
           [rows[0].role_id]
         )

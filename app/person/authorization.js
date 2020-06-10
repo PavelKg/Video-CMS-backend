@@ -33,20 +33,27 @@ class AuthorizationService {
   recCheckObject(fnList, permList) {
     const fnListLeft = fnList.slice(0)
     const nextFn = fnListLeft.shift()
+
     if (fnListLeft.length === 0) {
-      return permList.includes(nextFn)
-    }
-    if (!permList.hasOwnProperty(nextFn)) {
-      return false
+      return permList.some((perm) => perm.name === nextFn)
     }
 
-    return this.recCheckObject(fnListLeft, permList[nextFn])
+    const nextPermInd = permList.findIndex((perm) => perm.name === nextFn)
+
+    if (
+      nextPermInd === -1 ||
+      !permList[nextPermInd].children ||
+      permList[nextPermInd].children.length === 0
+    ) {
+      return false
+    } else {
+      return this.recCheckObject(fnListLeft, permList[nextPermInd].children)
+    }
   }
+
   checkAccess(reqAcc, permits) {
     const fnList = reqAcc.split('.')
-    return fnList.length > 1
-      ? this.recCheckObject(fnList, permits)
-      : permits.hasOwnProperty(fnList)
+    return this.recCheckObject(fnList, permits['items'])
   }
 }
 

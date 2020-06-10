@@ -58,7 +58,6 @@ async function getCompanyRoleByIdHandler(req, reply) {
 
   const {cid, rid} = params
   const role = await this.roleService.companyRoleById({autz, cid, rid})
-  console.log({role})
   const _code = role.length === 1 ? 200 : 404
   reply.code(_code).send(role[0])
 }
