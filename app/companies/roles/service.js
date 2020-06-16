@@ -241,9 +241,9 @@ class RoleService {
     const {autz, role} = payload
     const {rid, cid, name, is_admin = false, permits = null} = role
 
-    if (!is_admin) {
-      permits = null
-    }
+    // if (!is_admin) {
+    //   permits = null
+    // }
 
     const {user_id, company_id, uid} = autz
     let histData = {
