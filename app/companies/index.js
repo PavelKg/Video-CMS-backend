@@ -79,9 +79,9 @@ async function getVideoInfoLocationHandler(req, reply) {
   const act = 'mng'
   const permits = autz.permits
   const reqAccess = `${featureIn}.${act}`
-  if (!this.autzService.checkAccess(reqAccess, permits)) {
-    throw Error(errors.WRONG_ACCESS)
-  }
+  // if (!this.autzService.checkAccess(reqAccess, permits)) {
+  //   throw Error(errors.WRONG_ACCESS)
+  // }
 
   const res = await this.companyService.getVideoInfoLocation({
     autz,
