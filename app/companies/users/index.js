@@ -40,7 +40,12 @@ module.exports = async function (fastify, opts) {
 
 module.exports[Symbol.for('plugin-meta')] = {
   decorators: {
-    fastify: ['authPreValidation', 'autzPreHandler', 'userService']
+    fastify: [
+      'authPreValidation',
+      'autzPreHandler',
+      'userService',
+      'telegramService'
+    ]
   }
 }
 
@@ -189,6 +194,7 @@ async function addUserHandler(req, reply) {
 
 async function updUserHandler(req, reply) {
   const {params, body, autz} = req
+  const {sendTelegramAuthBy = []} = body
   const act = 'edit'
   const permits = autz.permits
   const reqAccess = `${feature}.${act}`
@@ -200,9 +206,35 @@ async function updUserHandler(req, reply) {
   const {cid, uid} = params
   let user = {...body, cid, uid}
 
-  const updated = await this.userService.updUser({autz, user})
-  const _code = updated === 1 ? 200 : 404
-  reply.code(_code).send()
+  const rows = await this.userService.updUser({autz, user})
+  if (rows.length === 1 && sendTelegramAuthBy.length > 0) {
+    try {
+      const teleAuthLink = await this.telegramService.deeplinkAuth({
+        autz: {
+          uid: rows[0].user_uid,
+          user_id: rows[0].user_id,
+          company_id: rows[0].user_company_id
+        },
+        cid: rows[0].user_company_id,
+        botname: 'vcmsbot'
+      })
+      const {botname, token} = teleAuthLink
+      const url = `https://t.me/${botname}?start=${token}`
+      this.userService.notify({
+        serv: sendTelegramAuthBy,
+        url,
+        user: {
+          uid: rows[0].user_uid,
+          cid: rows[0].user_company_id,
+          user_id: rows[0].user_id
+        }
+      })
+    } catch (err) {
+      console.log(err)
+    }
+    const _code = rows.length === 1 ? 200 : 404
+    reply.code(_code).send()
+  }
 }
 
 async function delUserHandler(req, reply) {

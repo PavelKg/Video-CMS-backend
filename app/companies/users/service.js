@@ -2,12 +2,15 @@
 //const crypto = require('crypto')
 const errors = require('../../errors')
 const db_api = require('../../db_api')
+const {MAIL_USER, TWILIO_NUM} = process.env
 
 class UserService {
-  constructor(db, histLogger) {
+  constructor(db, nodemailer, twilio, histLogger) {
     this.db = db
     this.history_category = 'Users'
     this.histLogger = histLogger
+    this.nodemailer = nodemailer
+    this.twilio = twilio
   }
 
   async companyUsers(payload) {
@@ -86,6 +89,7 @@ class UserService {
         (select CASE WHEN array_agg(group_name) IS NULL THEN '{}' ELSE array_agg(group_name) END 
           from groups where "groups".group_gid = ANY(users.user_groups))  as groups_name, 
         user_email email, 
+        COALESCE(user_phone_num, '') phone,         
         users.deleted_at AT TIME ZONE $3 AS deleted_at,
         (SELECT max(created_at)  
         FROM users_history_log
@@ -142,6 +146,7 @@ class UserService {
       fullname,
       rid,
       email = '',
+      phone = '',
       password,
       gids = [],
       activity_start = '',
@@ -163,6 +168,7 @@ class UserService {
         fullname,
         rid,
         email,
+        phone,
         gids,
         activity_start,
         activity_finish
@@ -188,6 +194,19 @@ class UserService {
         throw Error(errors.THIS_EMAIL_IS_NOT_ALLOWED)
       }
 
+      const {rows: cntExPhone} = await client.query(
+        `SELECT count(*) cnt 
+        FROM users 
+        WHERE user_phone_num=$1 AND user_phone_num IS NOT NULL 
+          AND user_phone_num <> '' AND user_uid<>$2 AND deleted_at IS NULL;`,
+        [phone, uid]
+      )
+
+      if (cntExPhone[0].cnt > 0) {
+        histData.details = `Error [Phone already exists]`
+        throw Error(errors.THIS_PHONE_IS_NOT_ALLOWED)
+      }
+
       const {rows: cntExUid} = await client.query(
         `SELECT count(*) cnt 
         FROM users 
@@ -210,11 +229,12 @@ class UserService {
                 user_groups, 
                 user_role_id, 
                 user_email, 
+                user_phone_num,
                 user_password,
                 user_company_id,
                 user_activity_start,
                 user_activity_finish) 
-              VALUES ($1, $3, $4, (select id from urole), $6, crypt($7, gen_salt('bf')), $2, 
+              VALUES ($1, $3, $4, (select id from urole), $6, $10, crypt($7, gen_salt('bf')), $2, 
               CASE WHEN $8<>'' THEN $8::date ELSE null END, 
               CASE WHEN $9<>'' THEN $9::date ELSE null END) 
               RETURNING user_uid
@@ -228,7 +248,8 @@ class UserService {
           email,
           password,
           activity_start,
-          activity_finish
+          activity_finish,
+          phone
         ]
       )
       histData.result = typeof rows[0] === 'object'
@@ -253,6 +274,7 @@ class UserService {
       fullname,
       rid,
       email = '',
+      phone = '',
       password = '',
       activity_start = '',
       activity_finish = ''
@@ -274,6 +296,7 @@ class UserService {
         fullname,
         rid,
         email,
+        phone,
         gids,
         activity_start,
         activity_finish
@@ -298,16 +321,31 @@ class UserService {
         throw Error(errors.THIS_EMAIL_IS_NOT_ALLOWED)
       }
 
-      const {rowCount} = await client.query(
+      const {rows: cntExPhone} = await client.query(
+        `SELECT count(*) cnt 
+        FROM users 
+        WHERE user_phone_num=$1 AND user_phone_num IS NOT NULL 
+          AND user_phone_num <> '' AND user_uid<>$2 AND deleted_at IS NULL;`,
+        [phone, uid]
+      )
+
+      if (cntExPhone[0].cnt > 0) {
+        histData.details = `Error [Phone already exists]`
+        throw Error(errors.THIS_PHONE_IS_NOT_ALLOWED)
+      }
+
+      const {rows} = await client.query(
         `UPDATE users 
         SET user_fullname=$3, 
           user_groups = $4,
           user_role_id = (select role_id from roles where role_rid=$5 and role_company_id=$2),
           user_email = $6,
+          user_phone_num=$10,
           user_password = CASE WHEN $7<>'' THEN crypt($7, gen_salt('bf')) ELSE user_password END,
           user_activity_start = CASE WHEN $8<>'' THEN $8::date ELSE null END,
           user_activity_finish = CASE WHEN $9<>'' THEN $9::date ELSE null END
-        WHERE user_company_id=$2 and user_uid =$1 AND deleted_at IS NULL;`,
+        WHERE user_company_id=$2 and user_uid =$1 AND deleted_at IS NULL
+        RETURNING *;`,
         [
           uid,
           cid,
@@ -317,12 +355,13 @@ class UserService {
           email,
           password,
           activity_start,
-          activity_finish
+          activity_finish,
+          phone
         ]
       )
-      histData.result = rowCount === 1
+      histData.result = rows.length === 1
       histData.details = `[ ${fullname} ] information updated`
-      return rowCount
+      return rows
     } catch (error) {
       throw Error(error)
     } finally {
@@ -365,6 +404,62 @@ class UserService {
       histData.result = rowCount === 1
       histData.details = 'Success'
       return rowCount
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
+    }
+  }
+  async notify({serv, url, user}) {
+    const {cid, uid, user_id} = user
+
+    let histData = {
+      category: this.history_category,
+      action: 'notify',
+      result: false,
+      user_id: user_id,
+      user_uid: uid,
+      cid: cid,
+      object_name: uid,
+      details: 'Failure',
+      target_data: {serv, url, user}
+    }
+
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `select user_email, user_phone_num 
+          FROM users
+          WHERE user_company_id=$2 and user_uid =$1::character varying 
+          AND deleted_at IS NULL;`,
+        [uid, cid]
+      )
+
+      const email = rows[0].user_email
+      const phone = rows[0].user_phone_num
+
+      if (serv.includes('email') && Boolean(email)) {
+        await this.nodemailer.sendMail({
+          from: MAIL_USER,
+          to: email,
+          subject: 'Telegram login URL',
+          text: url
+        })
+        histData.details = `Email was sent to ${email}`
+      }
+      if (serv.includes('sms') && Boolean(phone)) {
+        const result = await this.twilio.messages.create({
+          body: `This message is for connecting to a direct link.\n${url}`,
+          to: phone, // Text this number
+          from: TWILIO_NUM // From a valid Twilio number
+        })
+        histData.details = `SMS was sent to ${phone}, sid=${result.sid}`
+      }
+
+      //histData.result = true
     } catch (error) {
       throw Error(error)
     } finally {

@@ -1,5 +1,6 @@
 'use strict'
 /** description */
+const phone_pattern = '\\+[0-9()\-\.\s]+'
 const queryStringJsonSchema = {
   sort: {description: 'Fields sorting', type: 'string'},
   limit: {type: 'integer'},
@@ -17,6 +18,7 @@ const userObject = {
     groups_name: {type: 'array', items: {type: 'string'}},
     rid: {type: 'string'},
     email: {type: 'string'},
+    phone: {type: ['string'], pattern: phone_pattern},
     deleted_at: {type: 'string'},
     last_login: {type: 'string'},
     activity_start: {type: 'string'},
@@ -33,6 +35,7 @@ const user = {
     gids: {type: 'array', items: {type: 'integer'}},
     rid: {type: 'string'},
     email: {type: 'string'},
+    phone: {type: 'string', pattern: phone_pattern},
     password: {type: 'string'},
     activity_start: {type: 'string'},
     activity_finish: {type: 'string'}
@@ -81,7 +84,7 @@ const getCompanyUserInfo = {
         type: 'integer'
       },
       uid: {
-        type: 'string',
+        type: 'string'
       }
     },
     additionalProperties: false
@@ -148,6 +151,7 @@ const updUser = {
       gids: {type: 'array', items: {type: 'integer'}},
       rid: {type: 'string'},
       email: {type: 'string'},
+      phone: {type: 'string', pattern: phone_pattern},
       password: {type: 'string'}
     },
     required: [

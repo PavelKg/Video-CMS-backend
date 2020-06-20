@@ -336,6 +336,11 @@ class TelegramService {
           RETURNING tdl_user_id`,
         [uid, cid, token, lifeTimeDef]
       )
+      
+      if(rows.length===0){
+        histData.details = errors.WRONG_USER_UID
+        throw Error(errors.WRONG_USER_UID)
+      }
 
       histData.result = typeof rows[0] === 'object'
       histData.details = `Success []`

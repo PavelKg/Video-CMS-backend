@@ -2,6 +2,7 @@
 
 const path = require('path')
 const pgo = require('pg')
+const twilio = require('twilio')
 const fpg = require('fastify-postgres')
 
 const fp = require('fastify-plugin')
@@ -63,6 +64,14 @@ async function connectToDatabase(fastify) {
     pg: pgo
   })
   console.log('Finish DB Connecting.')
+}
+
+async function connectToTwilio(fastify) {
+  console.log('Twilio Connecting...')
+  const {TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN} = process.env
+  const client = new twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+  fastify.decorate(`twilio`, client)
+  console.log('Twilio Connected.')
 }
 
 async function connectToAMQP(fastify, opts, next) {
@@ -190,6 +199,7 @@ async function decorateFastifyInstance(fastify) {
   const bitmovin = fastify.bitmovin
   const amqpProduceChannel = fastify.amqpProduceChannel
   const amqpConsumeChannel = fastify.amqpConsumeChannel
+  const twilio = fastify.twilio
 
   fastify.decorateRequest('autz', '')
 
@@ -203,7 +213,7 @@ async function decorateFastifyInstance(fastify) {
   const roleService = new RoleService(db, histLoggerService)
   const groupService = new GroupService(db, histLoggerService)
   const seriesService = new SeriesService(db, histLoggerService)
-  const userService = new UserService(db, histLoggerService)
+  const userService = new UserService(db, nodemailer, twilio, histLoggerService)
   const messageService = new MessageService(db, histLoggerService)
   const videoService = new VideoService(db, storage, histLoggerService)
   const commentService = new CommentService(db, histLoggerService)
@@ -248,6 +258,7 @@ module.exports = async function (fastify, opts) {
   fastify
     .register(fp(authenticator))
     .register(fp(connectToDatabase))
+    .register(fp(connectToTwilio))
     .register(fp(fastifyNodemailer))
     .register(fp(connectToAMQP))
     .register(fp(fastifyGoogleCloudStorage))
