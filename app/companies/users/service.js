@@ -110,6 +110,32 @@ class UserService {
     }
   }
 
+  async companyUserTelegramStatus(payload) {
+    const {autz, cid, uid} = payload
+
+    if (autz.company_id !== cid || !autz.is_admin) {
+      throw Error(errors.WRONG_ACCESS)
+    }
+
+    const client = await this.db.connect()
+    try {
+      const {rowCount} = await client.query(
+        `SELECT cms_user_id from telegram_users, users
+        WHERE user_uid=$2::character varying 
+          AND user_company_id=$1 
+          AND cms_company_id=$1 
+          AND cms_user_id=user_id;`,
+        [cid, uid]
+      )
+
+      return rowCount === 1
+    } catch (error) {
+      throw Error(error)
+    } finally {
+      client.release()
+    }
+  }
+
   async importUsers(payload) {
     const {autz, fileInfo} = payload
     const cid = autz.company_id

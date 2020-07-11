@@ -1,6 +1,6 @@
 'use strict'
 /** description */
-const phone_pattern = '\\+[0-9()\-\.\s]+'
+const phone_pattern = '\\+[0-9()-.s]+'
 const queryStringJsonSchema = {
   sort: {description: 'Fields sorting', type: 'string'},
   limit: {type: 'integer'},
@@ -94,6 +94,31 @@ const getCompanyUserInfo = {
   }
 }
 
+const getCompanyUserTelegramStatus = {
+  tags: ['users'],
+  params: {
+    type: 'object',
+    required: ['cid', 'uid'],
+    properties: {
+      cid: {
+        type: 'integer'
+      },
+      uid: {
+        type: 'string'
+      }
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        result: {type: 'boolean'}
+      }
+    }
+  }
+}
+
 const importUsers = {
   tags: ['users'],
   summary: 'upload file',
@@ -183,6 +208,7 @@ const delUser = {
 module.exports = {
   getCompanyUsers,
   getCompanyUserInfo,
+  getCompanyUserTelegramStatus,
   importUsers,
   addUser,
   updUser,

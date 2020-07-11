@@ -9,6 +9,7 @@ const {
   user: userSchema,
   getCompanyUsers: getCompanyUsersSchema,
   getCompanyUserInfo: getCompanyUserInfoSchema,
+  getCompanyUserTelegramStatus: getCompanyUserTelegramStatusSchema,
   addUser: addUserSchema,
   importUsers: importUsersSchema,
   updUser: updUserSchema,
@@ -31,6 +32,11 @@ module.exports = async function (fastify, opts) {
     '/:uid',
     {schema: getCompanyUserInfoSchema},
     getCompanyUserInfoHandler
+  )
+  fastify.get(
+    '/:uid/telegram-status',
+    {schema: getCompanyUserTelegramStatusSchema},
+    getCompanyUserTelegramStatusInfoHandler
   )
   fastify.post('/', {schema: addUserSchema}, addUserHandler)
   fastify.post('/import', {schema: importUsersSchema}, importUsersHandler)
@@ -77,6 +83,25 @@ async function getCompanyUserInfoHandler(req, reply) {
   } else {
     reply.code(404).send()
   }
+}
+
+async function getCompanyUserTelegramStatusInfoHandler(req, reply) {
+  const {params, autz} = req
+  const permits = autz.permits
+  const reqAccess = feature
+
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  const {cid, uid} = params
+  const userTelegramStatus = await this.userService.companyUserTelegramStatus({
+    autz,
+    cid,
+    uid
+  })
+  const result = userTelegramStatus
+  reply.code(200).send({result})
 }
 
 async function importUsersHandler(req, reply) {
