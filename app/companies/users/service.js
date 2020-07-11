@@ -491,8 +491,7 @@ class UserService {
       histData.details = `Failure: User phone number is empty`
       if (Boolean(phone)) {
         const info = await this.twilio.messages.create({
-          //body: `This message is for connecting to a direct link.\n${url}`,
-          body: `This .\n${url}`,
+          body: `This message is for connecting to a direct link.\n${url}`,
           to: phone, // Text this number
           from: TWILIO_NUM // From a valid Twilio number
         })
