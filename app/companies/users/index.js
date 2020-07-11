@@ -220,21 +220,27 @@ async function updUserHandler(req, reply) {
       })
       const {botname, token} = teleAuthLink
       const url = `https://t.me/${botname}?start=${token}`
-      this.userService.notify({
-        serv: sendTelegramAuthBy,
-        url,
-        user: {
-          uid: rows[0].user_uid,
-          cid: rows[0].user_company_id,
-          user_id: rows[0].user_id
+
+      sendTelegramAuthBy.forEach((type) => {
+        if (['sms', 'email'].includes(type)) {
+          this.userService[`notify_${type}`]({
+            //serv: sendTelegramAuthBy,
+            url,
+            user: {
+              uid: rows[0].user_uid,
+              cid: rows[0].user_company_id,
+              user_id: rows[0].user_id
+            }
+          })
         }
       })
     } catch (err) {
       console.log(err)
     }
-    const _code = rows.length === 1 ? 200 : 404
-    reply.code(_code).send()
   }
+
+  let _code = rows.length === 1 ? 200 : 404
+  reply.code(_code).send()
 }
 
 async function delUserHandler(req, reply) {

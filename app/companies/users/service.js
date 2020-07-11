@@ -413,25 +413,25 @@ class UserService {
       this.histLogger.saveHistoryInfo(histData)
     }
   }
-  async notify({serv, url, user}) {
+  async notify_email({/*serv,*/ url, user}) {
     const {cid, uid, user_id} = user
 
     let histData = {
       category: this.history_category,
-      action: 'notify',
+      action: 'notify_email',
       result: false,
       user_id: user_id,
       user_uid: uid,
       cid: cid,
       object_name: uid,
       details: 'Failure',
-      target_data: {serv, url, user}
+      target_data: {/*serv,*/ url, user}
     }
 
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
-        `select user_email, user_phone_num 
+        `select user_email
           FROM users
           WHERE user_company_id=$2 and user_uid =$1::character varying 
           AND deleted_at IS NULL;`,
@@ -439,29 +439,73 @@ class UserService {
       )
 
       const email = rows[0].user_email
-      const phone = rows[0].user_phone_num
 
-      if (serv.includes('email') && Boolean(email)) {
-        await this.nodemailer.sendMail({
+      histData.details = `Failure: User email is empty`
+      if (Boolean(email)) {
+        const info = await this.nodemailer.sendMail({
           from: MAIL_USER,
           to: email,
           subject: 'Telegram login URL',
           text: url
         })
-        histData.details = `Email was sent to ${email}`
+        histData.result = true
+        histData.details = `Email was sent to ${info.accepted.join()}`
       }
-      if (serv.includes('sms') && Boolean(phone)) {
-        const result = await this.twilio.messages.create({
-          body: `This message is for connecting to a direct link.\n${url}`,
+    } catch (error) {
+      histData.details = `Failure: ${error}`
+      //throw Error(error)
+    } finally {
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
+    }
+  }
+  async notify_sms({/*serv,*/ url, user}) {
+    const {cid, uid, user_id} = user
+
+    let histData = {
+      category: this.history_category,
+      action: 'notify_sms',
+      result: false,
+      user_id: user_id,
+      user_uid: uid,
+      cid: cid,
+      object_name: uid,
+      details: 'Failure',
+      target_data: {/*serv,*/ url, user}
+    }
+
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `select user_phone_num 
+          FROM users
+          WHERE user_company_id=$2 and user_uid =$1::character varying 
+          AND deleted_at IS NULL;`,
+        [uid, cid]
+      )
+
+      const phone = rows[0].user_phone_num
+
+      histData.details = `Failure: User phone number is empty`
+      if (Boolean(phone)) {
+        const info = await this.twilio.messages.create({
+          //body: `This message is for connecting to a direct link.\n${url}`,
+          body: `This .\n${url}`,
           to: phone, // Text this number
           from: TWILIO_NUM // From a valid Twilio number
         })
-        histData.details = `SMS was sent to ${phone}, sid=${result.sid}`
+        if (info.errorMessage) {
+          histData.details = `Failure: ${info.errorMessage}`
+        } else {
+          histData.result = true
+          histData.details = `SMS was sent to ${phone}, sid=${info.sid}`
+        }
       }
-
-      //histData.result = true
     } catch (error) {
-      throw Error(error)
+      histData.details = `Failure: ${error}`
+      //throw Error(error)
     } finally {
       if (client) {
         client.release()
