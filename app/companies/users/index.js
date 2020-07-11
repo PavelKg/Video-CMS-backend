@@ -100,8 +100,12 @@ async function getCompanyUserTelegramStatusInfoHandler(req, reply) {
     cid,
     uid
   })
-  const result = userTelegramStatus
-  reply.code(200).send({result})
+
+  if (userTelegramStatus.length > 0) {
+    reply.code(200).send({result: Boolean(userTelegramStatus[0].cms_user_id)})
+  } else {
+    reply.code(404).send()
+  }
 }
 
 async function importUsersHandler(req, reply) {

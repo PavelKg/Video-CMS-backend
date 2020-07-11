@@ -119,16 +119,15 @@ class UserService {
 
     const client = await this.db.connect()
     try {
-      const {rowCount} = await client.query(
-        `SELECT cms_user_id from telegram_users, users
-        WHERE user_uid=$2::character varying 
-          AND user_company_id=$1 
-          AND cms_company_id=$1 
-          AND cms_user_id=user_id;`,
+      const {rows} = await client.query(
+        `SELECT cms_user_id, user_id FROM users 
+          LEFT JOIN telegram_users ON user_id=cms_user_id and cms_company_id=$1
+          WHERE user_uid=$2::character varying 
+            AND user_company_id=$1;`,
         [cid, uid]
       )
 
-      return rowCount === 1
+      return rows
     } catch (error) {
       throw Error(error)
     } finally {
