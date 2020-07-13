@@ -262,7 +262,7 @@ class UserService {
               VALUES ($1, $3, $4, (select id from urole), $6, $10, crypt($7, gen_salt('bf')), $2, 
               CASE WHEN $8<>'' THEN $8::date ELSE null END, 
               CASE WHEN $9<>'' THEN $9::date ELSE null END) 
-              RETURNING user_uid
+              RETURNING *;
         ;`,
         [
           uid,
@@ -279,7 +279,7 @@ class UserService {
       )
       histData.result = typeof rows[0] === 'object'
       histData.details = `Success [${fullname}]`
-      return rows[0].user_uid
+      return rows
     } catch (error) {
       throw Error(error)
     } finally {

@@ -38,7 +38,8 @@ const user = {
     phone: {type: 'string', pattern: phone_pattern},
     password: {type: 'string'},
     activity_start: {type: 'string'},
-    activity_finish: {type: 'string'}
+    activity_finish: {type: 'string'},
+    sendTelegramAuthBy: {type: 'array', items: {type: 'string'}},
   },
   required: [
     'uid',
@@ -177,7 +178,8 @@ const updUser = {
       rid: {type: 'string'},
       email: {type: 'string'},
       phone: {type: 'string', pattern: phone_pattern},
-      password: {type: 'string'}
+      password: {type: 'string'},
+      sendTelegramAuthBy: {type: 'array', items: {type: 'string'}},
     },
     required: [
       'fullname',

@@ -203,6 +203,7 @@ async function importUsersHandler(req, reply) {
 async function addUserHandler(req, reply) {
   const {params, raw, body, autz} = req
   const act = 'add'
+  const {sendTelegramAuthBy = []} = body
   const permits = autz.permits
   const reqAccess = `${feature}.${act}`
 
@@ -217,8 +218,40 @@ async function addUserHandler(req, reply) {
   if (!url.match(/.*\/$/i)) {
     url += '/'
   }
-  const newUser = await this.userService.addUser({autz, user})
-  reply.code(201).header('Location', `${url}${newUser}`).send()
+  const rows = await this.userService.addUser({autz, user})
+  if (rows.length === 1 && sendTelegramAuthBy.length > 0) {
+    try {
+      const teleAuthLink = await this.telegramService.deeplinkAuth({
+        autz: {
+          uid: rows[0].user_uid,
+          user_id: rows[0].user_id,
+          company_id: rows[0].user_company_id
+        },
+        cid: rows[0].user_company_id,
+        botname: 'vcmsbot'
+      })
+      const {botname, token} = teleAuthLink
+      const url = `https://t.me/${botname}?start=${token}`
+
+      sendTelegramAuthBy.forEach((type) => {
+        if (['sms', 'email'].includes(type)) {
+          this.userService[`notify_${type}`]({
+            //serv: sendTelegramAuthBy,
+            url,
+            user: {
+              uid: rows[0].user_uid,
+              cid: rows[0].user_company_id,
+              user_id: rows[0].user_id
+            }
+          })
+        }
+      })
+    } catch (err) {
+      console.log(err)
+    }
+  }
+
+  reply.code(201).header('Location', `${url}${rows[0].user_uid}`).send()
 }
 
 async function updUserHandler(req, reply) {
