@@ -7,17 +7,21 @@ const queryStringJsonSchema = {
   filter: {type: 'string'}
 }
 
-const gcsQueryStringJsonSchema = {
-  name: {type: 'string'},
-  size: {type: 'integer'},
-  type: {type: 'string'},
-  uuid: {type: 'string'}
-}
-
 const uuidObj = {
   type: 'string',
   pattern:
     '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
+}
+
+const gcsQueryStringJsonSchema = {
+  type: 'object',
+  required: ['name', 'size', 'type', 'uuid'],
+  properties: {
+    name: {type: 'string'},
+    size: {type: 'integer'},
+    type: {type: 'string'},
+    uuid: uuidObj
+  }
 }
 
 const videoCatalogObject = {
@@ -60,8 +64,10 @@ const gcsUploadSignedUrl = {
         type: 'integer'
       }
     },
+
     additionalProperties: false
   },
+
   querystring: gcsQueryStringJsonSchema,
   response: {
     200: {

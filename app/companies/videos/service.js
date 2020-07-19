@@ -44,6 +44,9 @@ class VideoService {
     let storage_bucket_input = ''
     let storage_bucket_output = ''
     let client = undefined
+    const query_type = type.match(/video\//gi) ? 'video' : 'file'
+    const isVideoContent = query_type === 'video'
+    const file_store = 'files/'
     try {
       if (!this.gcs) {
         throw Error(errors.WRONG_CONNECT_TO_GCS)
@@ -62,12 +65,13 @@ class VideoService {
       storage_bucket_input = rows[0].storage_bucket_input
       storage_bucket_output = rows[0].storage_bucket_output
       const storage_content_limit = rows[0].storage_content_limit
+
       const {rows: insRows} = await client.query(
-        `INSERT INTO videos (video_filename, video_type, video_filesize,
-        video_uuid, video_status, video_bucket_input, 
-        video_bucket_output,video_company_id, video_public, video_title)
+        `INSERT INTO ${query_type}s (${query_type}_filename, ${query_type}_type, ${query_type}_filesize,
+          ${query_type}_uuid, ${query_type}_status, ${query_type}_bucket_input, 
+          ${query_type}_bucket_output,${query_type}_company_id, ${query_type}_public, ${query_type}_title)
        values ($1, $2, $3, $4, 'create', $5, $6, $7, false, $8)
-       RETURNING video_id;`,
+       RETURNING ${query_type}_id;`,
         [
           name,
           type,
@@ -79,7 +83,9 @@ class VideoService {
           title ? title : ''
         ]
       )
-      histData.object_name = `v_${insRows[0].video_id}`
+      histData.object_name = `${query_type.charAt(0)}_${
+        insRows[0][`${query_type}_id`]
+      }`
       histData.result = insRows.length === 1
       histData.details = `Success [${title}]`
       //return insRows.length
@@ -98,11 +104,13 @@ class VideoService {
       contentType: type
     }
 
-    const bucket = this.gcs.bucket(storage_bucket_input)
+    const bucket = this.gcs.bucket(
+      query_type === 'video' ? storage_bucket_input : storage_bucket_output
+    )
     const check_ext = name.match(/\.(\w)*$/i)
     const file_ext = Array.isArray(check_ext) ? check_ext[0] : ''
-
-    const gcs_file = bucket.file(`${uuid}${file_ext}`)
+    const folder_path = isVideoContent ? '' : file_store
+    const gcs_file = bucket.file(`${folder_path}${uuid}${file_ext}`)
     const url = (await gcs_file.getSignedUrl(options))[0]
     return {name, url, uuid}
   }
