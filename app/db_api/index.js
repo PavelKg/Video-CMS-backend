@@ -35,6 +35,20 @@ const sortableColumns = {
     'video_description',
     'video_series'
   ],
+  files: [
+    'file_thumbnail',
+    'files.created_at',
+    'files.deleted_at',
+    'files.updated_at',
+    'file_uuid',
+    'file_filename',
+    'file_status',
+    'file_title',
+    'file_public',
+    'file_tag',
+    'file_description',
+    'file_series'
+  ],
   comments: ['comments.created_at'],
   history: [
     'users_history_log.created_at',
@@ -68,10 +82,10 @@ const db_oper = {
 
 function sorting(_sort, _table) {
   const sort_arr = _sort.split(',')
-  const sort_str = sort_arr.map(function(item) {
+  const sort_str = sort_arr.map(function (item) {
     const field = item.startsWith('-') ? `${item.substr(1)}` : `${item}`
     const order = item.startsWith('-') ? `DESC` : `ASC`
-    if (!sortableColumns[_table].includes(field)) {
+    if (!sortableColumns[_table] || !sortableColumns[_table].includes(field)) {
       throw new Error(`Invalid "sort" column - ${field}`)
     }
     return `${field} ${order}`
@@ -82,7 +96,7 @@ function sorting(_sort, _table) {
 function filtration(_filter, _table) {
   const filter_arr = _filter.split(/(?<!\\),/)
   //console.log('filter_arr=', _filter.match(/^\\((.*)\\)[ \\t]+\\((.*)\\)$/gi))
-  const filter_str = filter_arr.map(function(item) {
+  const filter_str = filter_arr.map(function (item) {
     const re = /(.*)\[(\w+)\]:(.*)/i
     const parse_item = item.match(re)
     const sl = new RegExp(/\\/, 'g')

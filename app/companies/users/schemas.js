@@ -1,6 +1,6 @@
 'use strict'
 /** description */
-const phone_pattern = '\\+[0-9()-.s]+'
+const phone_pattern = '^$|\\+[0-9()-.s]+'
 const queryStringJsonSchema = {
   sort: {description: 'Fields sorting', type: 'string'},
   limit: {type: 'integer'},
@@ -35,11 +35,11 @@ const user = {
     gids: {type: 'array', items: {type: 'integer'}},
     rid: {type: 'string'},
     email: {type: 'string'},
-    phone: {type: 'string', pattern: phone_pattern},
+    phone: {type: ['string'], pattern: phone_pattern},
     password: {type: 'string'},
     activity_start: {type: 'string'},
     activity_finish: {type: 'string'},
-    sendTelegramAuthBy: {type: 'array', items: {type: 'string'}},
+    sendTelegramAuthBy: {type: 'array', items: {type: 'string'}}
   },
   required: [
     'uid',
@@ -177,9 +177,9 @@ const updUser = {
       gids: {type: 'array', items: {type: 'integer'}},
       rid: {type: 'string'},
       email: {type: 'string'},
-      phone: {type: 'string', pattern: phone_pattern},
+      phone: {type: ['string'], pattern: phone_pattern},
       password: {type: 'string'},
-      sendTelegramAuthBy: {type: 'array', items: {type: 'string'}},
+      sendTelegramAuthBy: {type: 'array', items: {type: 'string'}}
     },
     required: [
       'fullname',
