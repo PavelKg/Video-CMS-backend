@@ -276,21 +276,23 @@ async function updFileStatusHandler(req, reply) {
   const updated = await this.fileService.updFileStatus({autz, data})
 
   const file_ext = updated[0].file_filename.match(/\.(\w+)$/i)
+  const path_to_manifest = `files/${uuid}.${file_ext[1]}`
+  const path_to_thumbnail = null
   if (data.value === 'uploaded') {
-    this.bitmovinService.fileEncode(cid, uuid, file_ext[1]).then(
-      (res) => {
-        const {path_to_manifest, path_to_thumbnail} = res
-        this.fileService.updFileOutputFile({
-          cid,
-          uuid,
-          path_to_manifest,
-          path_to_thumbnail
-        })
-      },
-      (error) => {
-        console.log('fileEncode error: ', error)
-      }
-    )
+    // this.bitmovinService.fileEncode(cid, uuid, file_ext[1]).then(
+    //   (res) => {
+    //     const {path_to_manifest, path_to_thumbnail} = res
+    this.fileService.updFileOutputFile({
+      cid,
+      uuid,
+      path_to_manifest,
+      path_to_thumbnail
+    })
+    // },
+    //   (error) => {
+    //     console.log('fileEncode error: ', error)
+    //   }
+    // )
   }
 
   const _code = updated.length === 1 ? 200 : 404

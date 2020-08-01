@@ -796,15 +796,15 @@ class FileService {
     const client = await this.db.connect()
 
     try {
-      const getGcsOutput = {
-        text: `SELECT storage_bucket_output
-        FROM storages, companies
-        WHERE company_storage_id = storage_id and company_id=$1 `,
-        values: [cid]
-      }
-      const qResult = await client.query(getGcsOutput)
-      const {storage_bucket_output} = qResult.rows[0]
-      const bucket = this.gcs.bucket(storage_bucket_output)
+      // const getGcsOutput = {
+      //   text: `SELECT storage_bucket_output
+      //   FROM storages, companies
+      //   WHERE company_storage_id = storage_id and company_id=$1 `,
+      //   values: [cid]
+      // }
+      //const qResult = await client.query(getGcsOutput)
+      //const {storage_bucket_output} = qResult.rows[0]
+      //const bucket = this.gcs.bucket(storage_bucket_output)
       //const thumbnail = await bucket.file(`/${path_to_thumbnail}`).download()
       //const base64data = Buffer.from(thumbnail[0]).toString('base64')
 
