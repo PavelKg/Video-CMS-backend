@@ -125,8 +125,8 @@ class TelegramService {
           text: `Login URL: https://t.me/${urlBotname}?start=${token}`
         })
       } else {
-        console.log(`Failure: Email was not found`)
-        histData.details = `Failure: Email did not find`
+        //console.log(`Failure: Email was not found`)
+        histData.details = `Failure: user email is empty`
       }
     } catch (error) {
       console.log(error)

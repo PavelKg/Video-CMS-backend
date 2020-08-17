@@ -41,6 +41,9 @@ const MessageService = require('./messages/service')
 const Video = require('./companies/videos')
 const VideoService = require('./companies/videos/service')
 
+const File = require('./companies/files')
+const FileService = require('./companies/files/service')
+
 const Comment = require('./companies/videos/comments')
 const CommentService = require('./companies/videos/comments/service')
 
@@ -216,6 +219,7 @@ async function decorateFastifyInstance(fastify) {
   const userService = new UserService(db, nodemailer, twilio, histLoggerService)
   const messageService = new MessageService(db, histLoggerService)
   const videoService = new VideoService(db, storage, histLoggerService)
+  const fileService = new FileService(db, storage, histLoggerService)
   const commentService = new CommentService(db, histLoggerService)
   const telegramService = new TelegramService(
     db,
@@ -233,6 +237,7 @@ async function decorateFastifyInstance(fastify) {
   fastify.decorate('userService', userService)
   fastify.decorate('messageService', messageService)
   fastify.decorate('videoService', videoService)
+  fastify.decorate('fileService', fileService)
   fastify.decorate('commentService', commentService)
   fastify.decorate('telegramService', telegramService)
   fastify.decorate('bitmovinService', bitmovinService)
@@ -280,6 +285,7 @@ module.exports = async function (fastify, opts) {
     .register(User, {prefix: '/api/companies/:cid/users'})
     .register(Message, {prefix: '/api/messages'})
     .register(Video, {prefix: '/api/companies/:cid/videos'})
+    .register(File, {prefix: '/api/companies/:cid/files'})    
     .register(Comment, {prefix: '/api/companies/:cid/videos/:uuid/comments'})
     .register(Telegram, {prefix: '/api/companies/:cid/telegram'})
     .register(HistoryLogger, {prefix: '/api/history'})

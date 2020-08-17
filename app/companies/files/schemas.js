@@ -24,21 +24,22 @@ const gcsQueryStringJsonSchema = {
   }
 }
 
-const videoCatalogObject = {
+const fileCatalogObject = {
   type: 'object',
   properties: {
-    video_id: {type: 'string'},
-    video_uuid: {type: 'string'},
-    video_filename: {type: 'string'},
-    video_status: {type: 'string'},
-    video_thumbnail: {type: 'string'},
-    video_title: {type: 'string'},
-    video_tag: {type: 'string'},
-    video_description: {type: 'string'},
-    video_public: {type: 'boolean'},
-    video_output_file: {type: 'string'},
-    video_groups: {type: 'array', items: {type: 'integer'}},
-    video_series: {type: 'array', items: {type: 'integer'}},
+    file_id: {type: 'string'},
+    file_uuid: {type: 'string'},
+    file_filename: {type: 'string'},
+    file_status: {type: 'string'},
+    file_thumbnail: {type: 'string'},
+    file_title: {type: 'string'},
+    file_type:{type:'string'},
+    file_tag: {type: 'string'},
+    file_description: {type: 'string'},
+    file_public: {type: 'boolean'},
+    file_output_file: {type: 'string'},
+    file_groups: {type: 'array', items: {type: 'integer'}},
+    file_series: {type: 'array', items: {type: 'integer'}},
     commentbox_visible: {type: 'boolean'},
     created_at: {type: 'string'},
     updated_at: {type: 'string'},
@@ -46,16 +47,16 @@ const videoCatalogObject = {
   }
 }
 
-const videoCatalogThumbnailObject = {
+const fileCatalogThumbnailObject = {
   type: 'object',
   properties: {
-    video_uuid: {type: 'string'},
-    video_thumbnail: {type: 'string'}
+    file_uuid: {type: 'string'},
+    file_thumbnail: {type: 'string'}
   }
 }
 
 const gcsUploadSignedUrl = {
-  tags: ['videos'],
+  tags: ['files'],
   params: {
     type: 'object',
     required: ['cid'],
@@ -87,8 +88,8 @@ const gcsUploadSignedUrl = {
   }
 }
 
-const getVideosCatalog = {
-  tags: ['videos'],
+const getFilesCatalog = {
+  tags: ['files'],
   params: {
     type: 'object',
     required: ['cid'],
@@ -103,13 +104,13 @@ const getVideosCatalog = {
   response: {
     200: {
       type: 'array',
-      items: videoCatalogObject
+      items: fileCatalogObject
     }
   }
 }
 
-const getVideo = {
-  tags: ['videos'],
+const getFile = {
+  tags: ['files'],
   params: {
     type: 'object',
     required: ['cid', 'uuid'],
@@ -122,12 +123,12 @@ const getVideo = {
     additionalProperties: false
   },
   response: {
-    200: videoCatalogObject
+    200: fileCatalogObject
   }
 }
 
-const getVideoThumbnail = {
-  tags: ['videos'],
+const getFileThumbnail = {
+  tags: ['files'],
   params: {
     type: 'object',
     required: ['cid', 'uuid'],
@@ -140,12 +141,12 @@ const getVideoThumbnail = {
     additionalProperties: false
   },
   response: {
-    200: videoCatalogThumbnailObject
+    200: fileCatalogThumbnailObject
   }
 }
 
-const delVideo = {
-  tags: ['videos'],
+const delFile = {
+  tags: ['files'],
   params: {
     type: 'object',
     required: ['cid', 'uuid'],
@@ -159,8 +160,8 @@ const delVideo = {
   }
 }
 
-const delVideoSeries = {
-  tags: ['videos'],
+const delFileSeries = {
+  tags: ['files'],
   params: {
     type: 'object',
     required: ['cid', 'uuid', 'sid'],
@@ -177,8 +178,8 @@ const delVideoSeries = {
   }
 }
 
-const delVideoGroup = {
-  tags: ['videos'],
+const delFileGroup = {
+  tags: ['files'],
   params: {
     type: 'object',
     required: ['cid', 'uuid', 'gid'],
@@ -195,8 +196,8 @@ const delVideoGroup = {
   }
 }
 
-const updVideo = {
-  tags: ['videos'],
+const updFile = {
+  tags: ['files'],
   params: {
     type: 'object',
     required: ['cid', 'uuid'],
@@ -209,42 +210,21 @@ const updVideo = {
   body: {
     type: 'object',
     properties: {
-      video_thumbnail: {type: 'string'},
-      video_title: {type: 'string'},
-      video_tag: {type: 'string'},
-      video_groups: {type: 'array', items: {type: 'integer'}},
-      video_series: {type: 'array', items: {type: 'integer'}},
-      video_description: {type: 'string'},
-      video_public: {type: 'boolean'}
+      file_thumbnail: {type: 'string'},
+      file_title: {type: 'string'},
+      file_tag: {type: 'string'},
+      file_groups: {type: 'array', items: {type: 'integer'}},
+      file_series: {type: 'array', items: {type: 'integer'}},
+      file_description: {type: 'string'},
+      file_public: {type: 'boolean'}
     },
     //removeAdditonal: true, // added in an attempt to make this work
     additionalProperties: false // added in an attempt to make this work
   }
 }
 
-const updVideoStatus = {
-  tags: ['videos'],
-  params: {
-    type: 'object',
-    required: ['cid', 'uuid'],
-    properties: {
-      cid: {type: 'number'},
-      uuid: uuidObj
-    },
-    additionalProperties: false
-  },
-  body: {
-    type: 'object',
-    properties: {
-      value: {type: 'string'}
-    },
-    //removeAdditonal: true, // added in an attempt to make this work
-    additionalProperties: false // added in an attempt to make this work
-  }
-}
-
-const updVideoPublicStatus = {
-  tags: ['videos'],
+const updFileStatus = {
+  tags: ['files'],
   params: {
     type: 'object',
     required: ['cid', 'uuid'],
@@ -264,8 +244,29 @@ const updVideoPublicStatus = {
   }
 }
 
-const addVideoPlayerEvent = {
-  tags: ['videos'],
+const updFilePublicStatus = {
+  tags: ['files'],
+  params: {
+    type: 'object',
+    required: ['cid', 'uuid'],
+    properties: {
+      cid: {type: 'number'},
+      uuid: uuidObj
+    },
+    additionalProperties: false
+  },
+  body: {
+    type: 'object',
+    properties: {
+      value: {type: 'string'}
+    },
+    //removeAdditonal: true, // added in an attempt to make this work
+    additionalProperties: false // added in an attempt to make this work
+  }
+}
+
+const addFilePlayerEvent = {
+  tags: ['files'],
   params: {
     type: 'object',
     required: ['cid', 'uuid'],
@@ -278,12 +279,12 @@ const addVideoPlayerEvent = {
     additionalProperties: false
   },
   response: {
-    200: videoCatalogThumbnailObject
+    200: fileCatalogThumbnailObject
   }
 }
 
-const getVideoBindingSeries = {
-  tags: ['videos'],
+const getFileBindingSeries = {
+  tags: ['files'],
   params: {
     type: 'object',
     required: ['cid', 'sid'],
@@ -298,8 +299,8 @@ const getVideoBindingSeries = {
     additionalProperties: false
   }
 }
-const getVideoBindingGroup = {
-  tags: ['videos'],
+const getFileBindingGroup = {
+  tags: ['files'],
   params: {
     type: 'object',
     required: ['cid', 'gid'],
@@ -315,7 +316,7 @@ const getVideoBindingGroup = {
   }
 }
 // const gcsUploadSignedPolicy = {
-//   tags: ['videos'],
+//   tags: ['files'],
 //   params: {
 //     type: 'object',
 //     properties: {
@@ -341,17 +342,17 @@ const getVideoBindingGroup = {
 
 module.exports = {
   gcsUploadSignedUrl,
-  getVideosCatalog,
-  getVideo,
-  getVideoThumbnail,
-  delVideo,
-  updVideo,
-  updVideoStatus,
-  updVideoPublicStatus,
-  addVideoPlayerEvent,
-  delVideoSeries,
-  delVideoGroup,
-  getVideoBindingSeries,
-  getVideoBindingGroup
+  getFilesCatalog,
+  getFile,
+  getFileThumbnail,
+  delFile,
+  updFile,
+  updFileStatus,
+  updFilePublicStatus,
+  addFilePlayerEvent,
+  delFileSeries,
+  delFileGroup,
+  getFileBindingSeries,
+  getFileBindingGroup
   //gcsUploadSignedPolicy
 }

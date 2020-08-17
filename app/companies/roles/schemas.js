@@ -74,6 +74,34 @@ const getCompanyRoleById = {
   }
 }
 
+const getFeatures = {
+  tags: ['roles'],
+  params: {
+    type: 'object',
+    required: ['cid'],
+    properties: {
+      cid: {
+        type: 'integer'
+      }
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: {type: 'string'},
+          order: {},
+          caption: {type: 'string'},
+          children: {}
+        }
+      }
+    }
+  }
+}
+
 const addRole = {
   tags: ['roles'],
   params: {
@@ -132,6 +160,7 @@ const delRole = {
 module.exports = {
   getCompanyRoles,
   getCompanyRoleById,
+  getFeatures,
   addRole,
   updRole,
   delRole

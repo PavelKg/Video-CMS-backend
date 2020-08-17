@@ -4,11 +4,11 @@ const db_api = require('../../db_api')
 
 const service_domain = 'p-stream.jp'
 
-class VideoService {
+class FileService {
   constructor(db, gcs, histLogger) {
     this.db = db
     this.gcs = gcs
-    this.history_category = 'Videos'
+    this.history_category = 'Files'
     this.histLogger = histLogger
   }
 
@@ -22,7 +22,7 @@ class VideoService {
    * @return {Promise.}
    */
 
-  async videosGcsUploadSignedUrl(payload) {
+  async filesGcsUploadSignedUrl(payload) {
     const {autz, query} = payload
     const storage_type = 'gcs'
     const {name, size, type, uuid} = query
@@ -59,16 +59,16 @@ class VideoService {
         [cid, storage_type]
       )
 
-      storage_bucket_input = rows[0].storage_bucket_input
-      storage_bucket_output = rows[0].storage_bucket_output
+      storage_bucket_input = `${rows[0].storage_bucket_output}/files`
+      storage_bucket_output = storage_bucket_input
       const storage_content_limit = rows[0].storage_content_limit
-      
+
       const {rows: insRows} = await client.query(
-        `INSERT INTO videos (video_filename, video_type, video_filesize,
-        video_uuid, video_status, video_bucket_input, 
-        video_bucket_output,video_company_id, video_public, video_title)
+        `INSERT INTO files (file_filename, file_type, file_filesize,
+        file_uuid, file_status, file_bucket_input, 
+        file_bucket_output,file_company_id, file_public, file_title)
        values ($1, $2, $3, $4, 'create', $5, $6, $7, false, $8)
-       RETURNING video_id;`,
+       RETURNING file_id;`,
         [
           name,
           type,
@@ -80,7 +80,7 @@ class VideoService {
           title ? title : ''
         ]
       )
-      histData.object_name = `v_${insRows[0].video_id}`
+      histData.object_name = `F${insRows[0].file_id}`
       histData.result = insRows.length === 1
       histData.details = `Success [${title}]`
       //return insRows.length
@@ -118,7 +118,7 @@ class VideoService {
    * @return {Promise.}
    */
 
-  // async videosGcsUploadSignedPolicy(payload) {
+  // async filesGcsUploadSignedPolicy(payload) {
   //   if (!this.gcs) {
   //     throw Error(errors.WRONG_CONNECT_TO_GCS)
   //   }
@@ -141,23 +141,23 @@ class VideoService {
   //   return {url: url}
   // }
 
-  async videosCatalog(payload) {
+  async filesCatalog(payload) {
     const {autz, query} = payload
     const {company_id: cid, uid, timezone, is_admin} = autz
 
     const {
       limit = 'ALL',
       offset = 0,
-      sort = '-videos.updated_at',
+      sort = '-files.updated_at',
       filter = undefined
     } = query
 
     const onlyPublic = !Boolean(is_admin)
-      ? ` AND video_public = true AND video_status='ready' AND videos.deleted_at IS NULL`
+      ? ` AND file_public = true AND file_status='ready' AND files.deleted_at IS NULL`
       : ''
 
-    const qSort = db_api.sorting(sort, 'videos')
-    let qFilter = Boolean(filter) ? db_api.filtration(filter, 'videos') : ''
+    const qSort = db_api.sorting(sort, 'files')
+    let qFilter = Boolean(filter) ? db_api.filtration(filter, 'files') : ''
     qFilter = db_api.setFilterTz(qFilter, timezone)
 
     const client = await this.db.connect()
@@ -185,18 +185,19 @@ class VideoService {
         )
 
         SELECT 
-          'v_'||video_id AS video_id,
-          video_uuid,
-          video_status,
-          video_public,
-          video_title,
+          'F'||file_id AS file_id,
+          file_uuid,
+          file_status,
+          file_public,
+          file_title,
           created_at AT TIME ZONE $3 AS created_at, 
           updated_at AT TIME ZONE $3 AS updated_at,           
-          deleted_at AT TIME ZONE $3 AS deleted_at
-        FROM videos
-        WHERE  video_company_id = $1 
-        AND ((video_groups && (select groups from user_group) OR 
-              video_series && (select useries from user_series)) 
+          deleted_at AT TIME ZONE $3 AS deleted_at,
+          file_type
+        FROM files
+        WHERE  file_company_id = $1 
+        AND ((file_groups && (select groups from user_group) OR 
+              file_series && (select useries from user_series)) 
             OR $5=true)
         ${onlyPublic}
         ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
@@ -210,8 +211,8 @@ class VideoService {
     }
   }
 
-  async getVideo(payload) {
-    // get videos data for uuid
+  async getFile(payload) {
+    // get files data for uuid
     const {autz, cid, uuid} = payload
     const {timezone, is_admin, uid} = autz
     const client = await this.db.connect()
@@ -238,27 +239,28 @@ class VideoService {
                   ) as dt(c)
         )
 
-        SELECT 'v_'||video_id AS video_id,
-          video_uuid,
-          video_filename,
-          video_status,
-          video_title,
-          video_public,
-          video_tag,
-          CASE WHEN video_groups IS NULL THEN '{}' ELSE video_groups END as video_groups,
-          CASE WHEN video_series IS NULL THEN '{}' ELSE video_series END as video_series,
-          video_description,
-          'https://'||company_corporate_code||'.${service_domain}'||'/'||video_output_file AS video_output_file,
+        SELECT 'F'||file_id AS file_id,
+          file_uuid,
+          file_filename,
+          file_status,
+          file_title,
+          file_public,
+          file_tag,
+          CASE WHEN file_groups IS NULL THEN '{}' ELSE file_groups END as file_groups,
+          CASE WHEN file_series IS NULL THEN '{}' ELSE file_series END as file_series,
+          file_description,
+          'https://'||company_corporate_code||'.${service_domain}'||'/'||file_output_file AS file_output_file,
           CASE WHEN company_commentbox_visible IS NULL THEN true ELSE company_commentbox_visible END as commentbox_visible,
-          videos.created_at AT TIME ZONE $3 AS created_at, 
-          videos.updated_at AT TIME ZONE $3 AS updated_at,           
-          videos.deleted_at AT TIME ZONE $3 AS deleted_at 
-        FROM videos, companies
-        WHERE  video_company_id = company_id and video_uuid = $2 and company_id = $1 
-          AND  videos.deleted_at IS NULL
-          AND (video_public=true or (video_public=false and $4=true))
-          AND ((video_groups && (select groups from user_group) OR 
-          video_series && (select useries from user_series)) OR $4=true)
+          files.created_at AT TIME ZONE $3 AS created_at, 
+          files.updated_at AT TIME ZONE $3 AS updated_at,           
+          files.deleted_at AT TIME ZONE $3 AS deleted_at, 
+          file_type
+        FROM files, companies
+        WHERE  file_company_id = company_id and file_uuid = $2 and company_id = $1 
+          AND  files.deleted_at IS NULL
+          AND (file_public=true or (file_public=false and $4=true))
+          AND ((file_groups && (select groups from user_group) OR 
+          file_series && (select useries from user_series)) OR $4=true)
           `,
         [cid, uuid, timezone, is_admin, uid]
       )
@@ -270,15 +272,15 @@ class VideoService {
     }
   }
 
-  async getVideoThumbnail(payload) {
+  async getFileThumbnail(payload) {
     const {autz, cid, uuid} = payload
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
-        `SELECT video_uuid ,
-          video_thumbnail
-        FROM videos
-        WHERE  video_company_id = $1 and video_uuid = $2 `,
+        `SELECT file_uuid ,
+          file_thumbnail
+        FROM files
+        WHERE  file_company_id = $1 and file_uuid = $2 `,
         [cid, uuid]
       )
       return rows[0]
@@ -289,20 +291,20 @@ class VideoService {
     }
   }
 
-  async videosBindedWithSeries(payload) {
+  async filesBindedWithSeries(payload) {
     const {autz, cid, sid} = payload
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
         `SELECT 
-        video_uuid as uuid,
-        'v_'||video_id AS video_id, 
-        video_company_id as cid,         
-        video_title as name, 
-        CASE WHEN video_series && ARRAY[$2::integer] THEN true ELSE false END as binded,
+        file_uuid as uuid,
+        'F'||file_id AS file_id, 
+        file_company_id as cid,         
+        file_title as name, 
+        CASE WHEN file_series && ARRAY[$2::integer] THEN true ELSE false END as binded,
         deleted_at 
-      FROM "videos"
-      WHERE video_company_id=$1;`,
+      FROM "files"
+      WHERE file_company_id=$1;`,
         [cid, sid]
       )
       return rows
@@ -313,20 +315,20 @@ class VideoService {
     }
   }
 
-  async videosBindedWithGroup(payload) {
+  async filesBindedWithGroup(payload) {
     const {autz, cid, gid} = payload
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
         `SELECT 
-        video_uuid as uuid, 
-        'v_'||video_id AS video_id,
-        video_company_id as cid,         
-        video_title as name, 
-        CASE WHEN video_groups && ARRAY[$2::integer] THEN true ELSE false END as binded,
+        file_uuid as uuid, 
+        'F'||file_id AS file_id,
+        file_company_id as cid,         
+        file_title as name, 
+        CASE WHEN file_groups && ARRAY[$2::integer] THEN true ELSE false END as binded,
         deleted_at 
-      FROM "videos"
-      WHERE video_company_id=$1;`,
+      FROM "files"
+      WHERE file_company_id=$1;`,
         [cid, gid]
       )
       return rows
@@ -337,7 +339,7 @@ class VideoService {
     }
   }
 
-  async delVideo(payload) {
+  async delFile(payload) {
     let client = undefined
     const {autz, cid, uuid} = payload
 
@@ -361,14 +363,14 @@ class VideoService {
 
       client = await this.db.connect()
       const {rows} = await client.query(
-        ` UPDATE videos 
+        ` UPDATE files 
           SET deleted_at = now()
-          WHERE video_company_id=$1 and video_uuid=$2
+          WHERE file_company_id=$1 and file_uuid=$2
           AND deleted_at IS NULL 
           RETURNING *`,
         [cid, uuid]
       )
-      histData.object_name = `v_${rows[0].video_id}`
+      histData.object_name = `F${rows[0].file_id}`
       histData.result = rows.length === 1
       histData.details = 'Success'
       return rows.length
@@ -381,10 +383,10 @@ class VideoService {
     }
   }
 
-  async delVideoSeries(payload) {
+  async delFileSeries(payload) {
     let client = undefined
-    const {autz, video} = payload
-    const {cid, uuid, sid} = video
+    const {autz, file} = payload
+    const {cid, uuid, sid} = file
 
     const {user_id, company_id, uid} = autz
     let histData = {
@@ -396,7 +398,7 @@ class VideoService {
       cid: company_id,
       object_name: '',
       details: 'Failure',
-      target_data: {...video}
+      target_data: {...file}
     }
 
     try {
@@ -406,10 +408,10 @@ class VideoService {
       client = await this.db.connect()
 
       const {rows: vids} = await client.query(
-        `SELECT count(video_id) cnt 
-          FROM videos 
-          WHERE video_company_id=$2 AND video_uuid=$1 
-          AND video_series && ARRAY[$3::integer];`,
+        `SELECT count(file_id) cnt 
+          FROM files 
+          WHERE file_company_id=$2 AND file_uuid=$1 
+          AND file_series && ARRAY[$3::integer];`,
         [uuid, cid, sid]
       )
 
@@ -418,14 +420,14 @@ class VideoService {
       }
 
       const {rows} = await client.query(
-        `UPDATE videos 
-          SET video_series = array_remove(video_series, $3) 
-          WHERE video_company_id=$1 and video_uuid=$2
+        `UPDATE files 
+          SET file_series = array_remove(file_series, $3) 
+          WHERE file_company_id=$1 and file_uuid=$2
           RETURNING *`,
         [cid, uuid, sid]
       )
 
-      histData.object_name = `v_${rows[0].video_id}`
+      histData.object_name = `F${rows[0].file_id}`
       histData.result = rows.length === 1
       histData.details = 'Success'
       return rows.length
@@ -439,22 +441,22 @@ class VideoService {
     }
   }
 
-  async addVideoSeries(payload) {
+  async addFileSeries(payload) {
     let client = undefined
-    const {autz, video} = payload
-    const {cid, uuid, sid} = video
+    const {autz, file} = payload
+    const {cid, uuid, sid} = file
 
     const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
-      action: 'added video series',
+      action: 'added file series',
       result: false,
       user_id,
       user_uid: uid,
       cid: company_id,
       object_name: '',
       details: 'Failure',
-      target_data: {...video}
+      target_data: {...file}
     }
 
     try {
@@ -464,10 +466,10 @@ class VideoService {
       client = await this.db.connect()
 
       const {rows: vids} = await client.query(
-        `SELECT count(video_id) cnt 
-          FROM videos 
-          WHERE video_company_id=$2 AND video_uuid=$1 
-          AND video_series && ARRAY[$3::integer];`,
+        `SELECT count(file_id) cnt 
+          FROM files 
+          WHERE file_company_id=$2 AND file_uuid=$1 
+          AND file_series && ARRAY[$3::integer];`,
         [uuid, cid, sid]
       )
 
@@ -476,15 +478,15 @@ class VideoService {
       }
 
       const {rows} = await client.query(
-        `UPDATE videos 
-          SET video_series = array_append(video_series, $3) 
-          WHERE video_company_id=$1 AND video_uuid=$2 AND deleted_at IS NULL
+        `UPDATE files 
+          SET file_series = array_append(file_series, $3) 
+          WHERE file_company_id=$1 AND file_uuid=$2 AND deleted_at IS NULL
           RETURNING *`,
         [cid, uuid, sid]
       )
 
       histData.object_name =
-        rows.length === 1 ? `v_${rows[0].video_id}` : 'v_nofing'
+        rows.length === 1 ? `F${rows[0].file_id}` : 'F_nofing'
       histData.result = rows.length === 1
       histData.details = 'Success'
       return rows.length
@@ -498,22 +500,22 @@ class VideoService {
     }
   }
 
-  async delVideoGroup(payload) {
+  async delFileGroup(payload) {
     let client = undefined
-    const {autz, video} = payload
-    const {cid, uuid, gid} = video
+    const {autz, file} = payload
+    const {cid, uuid, gid} = file
 
     const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
-      action: 'deleted video group',
+      action: 'deleted file group',
       result: false,
       user_id,
       user_uid: uid,
       cid: company_id,
       object_name: '',
       details: 'Failure',
-      target_data: {...video}
+      target_data: {...file}
     }
 
     try {
@@ -523,10 +525,10 @@ class VideoService {
       client = await this.db.connect()
 
       const {rows: vids} = await client.query(
-        `SELECT count(video_id) cnt 
-          FROM videos 
-          WHERE video_company_id=$2 AND video_uuid=$1 
-          AND video_groups && ARRAY[$3::integer];`,
+        `SELECT count(file_id) cnt 
+          FROM files 
+          WHERE file_company_id=$2 AND file_uuid=$1 
+          AND file_groups && ARRAY[$3::integer];`,
         [uuid, cid, gid]
       )
 
@@ -535,14 +537,14 @@ class VideoService {
       }
 
       const {rows} = await client.query(
-        `UPDATE videos 
-          SET video_groups = array_remove(video_groups, $3) 
-          WHERE video_company_id=$1 and video_uuid=$2
+        `UPDATE files 
+          SET file_groups = array_remove(file_groups, $3) 
+          WHERE file_company_id=$1 and file_uuid=$2
           RETURNING *`,
         [cid, uuid, gid]
       )
 
-      histData.object_name = `v_${rows[0].video_id}`
+      histData.object_name = `F${rows[0].file_id}`
       histData.result = rows.length === 1
       histData.details = 'Success'
       return rows.length
@@ -556,22 +558,22 @@ class VideoService {
     }
   }
 
-  async addVideoGroup(payload) {
+  async addFileGroup(payload) {
     let client = undefined
-    const {autz, video} = payload
-    const {cid, uuid, gid} = video
+    const {autz, file} = payload
+    const {cid, uuid, gid} = file
 
     const {user_id, company_id, uid} = autz
     let histData = {
       category: this.history_category,
-      action: 'added video group',
+      action: 'added file group',
       result: false,
       user_id,
       user_uid: uid,
       cid: company_id,
       object_name: '',
       details: 'Failure',
-      target_data: {...video}
+      target_data: {...file}
     }
 
     try {
@@ -581,10 +583,10 @@ class VideoService {
       client = await this.db.connect()
 
       const {rows: vids} = await client.query(
-        `SELECT count(video_id) cnt 
-          FROM videos 
-          WHERE video_company_id=$2 AND video_uuid=$1 
-          AND video_groups && ARRAY[$3::integer];`,
+        `SELECT count(file_id) cnt 
+          FROM files 
+          WHERE file_company_id=$2 AND file_uuid=$1 
+          AND file_groups && ARRAY[$3::integer];`,
         [uuid, cid, gid]
       )
 
@@ -593,15 +595,15 @@ class VideoService {
       }
 
       const {rows} = await client.query(
-        `UPDATE videos 
-          SET video_groups = array_append(video_groups, $3) 
-          WHERE video_company_id=$1 AND video_uuid=$2 AND deleted_at IS NULL
+        `UPDATE files 
+          SET file_groups = array_append(file_groups, $3) 
+          WHERE file_company_id=$1 AND file_uuid=$2 AND deleted_at IS NULL
           RETURNING *`,
         [cid, uuid, gid]
       )
 
       histData.object_name =
-        rows.length === 1 ? `v_${rows[0].video_id}` : 'v_nofing'
+        rows.length === 1 ? `F${rows[0].file_id}` : 'F_nofing'
       histData.result = rows.length === 1
       histData.details = 'Success'
       return rows.length
@@ -615,7 +617,7 @@ class VideoService {
     }
   }
 
-  async updVideo(payload) {
+  async updFile(payload) {
     let client = undefined
     const {autz, data} = payload
     const {cid, uuid, ...fields} = data
@@ -643,16 +645,16 @@ class VideoService {
       let select = 'SELECT'
       Object.keys(fields).forEach((element, idx) => {
         switch (element) {
-          // case 'video_thumbnail':
+          // case 'file_thumbnail':
           //   select += ' decode($' + (idx + 1) + ", 'hex')"
           //   break
-          case 'video_public':
+          case 'file_public':
             select += ` $${idx + 1}::boolean`
             break
-          case 'video_groups':
+          case 'file_groups':
             select += ` $${idx + 1}::integer[]`
             break
-          case 'video_series':
+          case 'file_series':
             select += ` $${idx + 1}::integer[]`
             break
           default:
@@ -662,17 +664,17 @@ class VideoService {
         select += idx + 1 < fields_length ? ', ' : ''
       })
       const query = {
-        text: `UPDATE videos SET (${Object.keys(fields)}) = (${select}) 
-         WHERE deleted_at IS NULL AND video_company_id=$${
+        text: `UPDATE files SET (${Object.keys(fields)}) = (${select}) 
+         WHERE deleted_at IS NULL AND file_company_id=$${
            fields_length + 1
-         } AND video_uuid=$${fields_length + 2} 
+         } AND file_uuid=$${fields_length + 2} 
            RETURNING *`,
         values: [...Object.values(fields), cid, uuid]
       }
       const {rows} = await client.query(query)
-      histData.object_name = `v_${rows[0].video_id}`
+      histData.object_name = `F${rows[0].file_id}`
       histData.result = rows.length === 1
-      histData.details = `Updated information of [${rows[0].video_title}].`
+      histData.details = `Updated information of [${rows[0].file_title}].`
       return rows.length
     } catch (error) {
       throw Error(error)
@@ -684,7 +686,7 @@ class VideoService {
     }
   }
 
-  async updVideoStatus(payload) {
+  async updFileStatus(payload) {
     let client = undefined
     const {autz, data} = payload
     const {cid, uuid, value} = data
@@ -715,15 +717,15 @@ class VideoService {
 
       client = await this.db.connect()
       const query = {
-        text: `UPDATE videos SET video_status = $3
-         WHERE video_company_id=$1 AND video_uuid=$2 
+        text: `UPDATE files SET file_status = $3
+         WHERE file_company_id=$1 AND file_uuid=$2 
           AND deleted_at IS NULL
          RETURNING *`,
         values: [cid, uuid, value.toLowerCase()]
       }
 
       const {rows} = await client.query(query)
-      histData.object_name = `v_${rows[0].video_id}`
+      histData.object_name = `F${rows[0].file_id}`
       histData.result = rows.length === 1
       histData.details = `Success [${value.toLowerCase()}]`
       return rows
@@ -737,7 +739,7 @@ class VideoService {
     }
   }
 
-  async updVideoPublicStatus(payload) {
+  async updFilePublicStatus(payload) {
     let client = undefined
     const {autz, data} = payload
     const {cid, uuid, value} = data
@@ -768,14 +770,14 @@ class VideoService {
 
       client = await this.db.connect()
       const query = {
-        text: `UPDATE videos SET video_public = $3
-         WHERE video_company_id=$1 
-          AND video_uuid=$2 AND deleted_at IS NULL 
-          RETURNING video_id`,
+        text: `UPDATE files SET file_public = $3
+         WHERE file_company_id=$1 
+          AND file_uuid=$2 AND deleted_at IS NULL 
+          RETURNING file_id`,
         values: [cid, uuid, value.toLowerCase() === 'public']
       }
       const {rows} = await client.query(query)
-      histData.object_name = `v_${rows[0].video_id}`
+      histData.object_name = `F${rows[0].file_id}`
       histData.result = rows.length === 1
       histData.details = value
       return rows.length
@@ -789,33 +791,32 @@ class VideoService {
     }
   }
 
-  async updVideoOutputFile(payload) {
+  async updFileOutputFile(payload) {
     const {cid, uuid, path_to_manifest, path_to_thumbnail} = payload
     const client = await this.db.connect()
 
     try {
-      const getGcsOutput = {
-        text: `SELECT storage_bucket_output
-        FROM storages, companies
-        WHERE company_storage_id = storage_id and company_id=$1 `,
-        values: [cid]
-      }
-      const qResult = await client.query(getGcsOutput)
-      const {storage_bucket_output} = qResult.rows[0]
-      const bucket = this.gcs.bucket(storage_bucket_output)
-      const thumbnail = await bucket.file(`/${path_to_thumbnail}`).download()
-      const base64data = Buffer.from(thumbnail[0]).toString('base64')
+      // const getGcsOutput = {
+      //   text: `SELECT storage_bucket_output
+      //   FROM storages, companies
+      //   WHERE company_storage_id = storage_id and company_id=$1 `,
+      //   values: [cid]
+      // }
+      //const qResult = await client.query(getGcsOutput)
+      //const {storage_bucket_output} = qResult.rows[0]
+      //const bucket = this.gcs.bucket(storage_bucket_output)
+      //const thumbnail = await bucket.file(`/${path_to_thumbnail}`).download()
+      //const base64data = Buffer.from(thumbnail[0]).toString('base64')
 
       const query = {
-        text: `UPDATE videos 
-          SET video_status = 'ready', video_output_file = $3, 
-          video_thumbnail = $4
-          WHERE video_company_id=$1 AND video_uuid=$2`,
+        text: `UPDATE files 
+          SET file_status = 'ready', file_output_file = $3
+          WHERE file_company_id=$1 AND file_uuid=$2`,
         values: [
           cid,
           uuid,
-          path_to_manifest,
-          `data:image/png;base64,${base64data}`
+          path_to_manifest
+          //`data:image/png;base64,${base64data}`
         ]
       }
       const {rowCount} = await client.query(query)
@@ -854,13 +855,13 @@ class VideoService {
     try {
       client = await this.db.connect()
       const query = {
-        text: `SELECT video_id from videos 
-         WHERE video_company_id=$1 
-          AND video_uuid=$2;`,
+        text: `SELECT file_id from files 
+         WHERE file_company_id=$1 
+          AND file_uuid=$2;`,
         values: [cid, uuid]
       }
       const {rows} = await client.query(query)
-      histData.object_name = `v_${rows[0].video_id}`
+      histData.object_name = `F${rows[0].file_id}`
       histData.result = rows.length === 1
       histData.details = event_details
       histData.result = event_result === 's' ? true : false
@@ -876,4 +877,4 @@ class VideoService {
   }
 }
 
-module.exports = VideoService
+module.exports = FileService

@@ -1,6 +1,6 @@
 'use strict'
 /** description */
-const phone_pattern = '\\+[0-9()\-\.\s]+'
+const phone_pattern = '^$|\\+[0-9()-.s]+'
 const queryStringJsonSchema = {
   sort: {description: 'Fields sorting', type: 'string'},
   limit: {type: 'integer'},
@@ -35,10 +35,11 @@ const user = {
     gids: {type: 'array', items: {type: 'integer'}},
     rid: {type: 'string'},
     email: {type: 'string'},
-    phone: {type: 'string', pattern: phone_pattern},
+    phone: {type: ['string'], pattern: phone_pattern},
     password: {type: 'string'},
     activity_start: {type: 'string'},
-    activity_finish: {type: 'string'}
+    activity_finish: {type: 'string'},
+    sendTelegramAuthBy: {type: 'array', items: {type: 'string'}}
   },
   required: [
     'uid',
@@ -91,6 +92,31 @@ const getCompanyUserInfo = {
   },
   response: {
     200: userObject
+  }
+}
+
+const getCompanyUserTelegramStatus = {
+  tags: ['users'],
+  params: {
+    type: 'object',
+    required: ['cid', 'uid'],
+    properties: {
+      cid: {
+        type: 'integer'
+      },
+      uid: {
+        type: 'string'
+      }
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        result: {type: 'boolean'}
+      }
+    }
   }
 }
 
@@ -151,8 +177,9 @@ const updUser = {
       gids: {type: 'array', items: {type: 'integer'}},
       rid: {type: 'string'},
       email: {type: 'string'},
-      phone: {type: 'string', pattern: phone_pattern},
-      password: {type: 'string'}
+      phone: {type: ['string'], pattern: phone_pattern},
+      password: {type: 'string'},
+      sendTelegramAuthBy: {type: 'array', items: {type: 'string'}}
     },
     required: [
       'fullname',
@@ -183,6 +210,7 @@ const delUser = {
 module.exports = {
   getCompanyUsers,
   getCompanyUserInfo,
+  getCompanyUserTelegramStatus,
   importUsers,
   addUser,
   updUser,
