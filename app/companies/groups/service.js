@@ -11,7 +11,8 @@ class GroupService {
 
   async companyGroups(payload) {
     const {autz, cid} = payload
-    const {timezone} = autz
+    const {timezone, uid} = autz
+
     const {
       limit = 'ALL',
       offset = 0,
@@ -26,7 +27,11 @@ class GroupService {
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
-        `SELECT 
+        `WITH usrgroups AS (
+          select get_user_groups($4, $1) AS ids
+        )
+
+        SELECT 
         group_gid as gid, 
         group_company_id as cid,         
         group_name as name,
@@ -35,8 +40,9 @@ class GroupService {
       FROM "groups", companies
       WHERE group_company_id=$1 AND companies.company_id=groups.group_company_id
         AND ((groups.deleted_at is NOT NULL AND companies.company_show_deleted=true) OR groups.deleted_at IS NULL) 
+        AND group_gid IN (SELECT unnest(ids) FROM usrgroups)
         ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
-        [cid, offset, timezone]
+        [cid, offset, timezone, uid]
       )
       return rows
     } catch (error) {
@@ -88,7 +94,7 @@ class GroupService {
 
   async companyGroupById(payload) {
     const {autz, cid, gid} = payload
-    const {timezone} = autz
+    const {timezone, uid} = autz
     if (autz.company_id !== cid || !autz.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
@@ -96,16 +102,21 @@ class GroupService {
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
-        `SELECT 
-        group_gid as gid, 
-        group_company_id as cid,         
-        group_name as name, 
-        group_parent as parent,
-        CASE WHEN group_series IS NULL THEN '{}' ELSE group_series END as group_series,
-        deleted_at AT TIME ZONE $3 AS deleted_at
-      FROM "groups"
-      WHERE group_company_id=$1 and group_gid=$2;`,
-        [cid, gid, timezone]
+        `WITH 
+        usrgroups AS (
+          select get_user_groups($4, $1) AS ids
+        )
+        
+        SELECT group_gid as gid, 
+          group_company_id as cid,         
+          group_name as name, 
+          group_parent as parent,
+          CASE WHEN group_series IS NULL THEN '{}' ELSE group_series END as group_series,
+          deleted_at AT TIME ZONE $3 AS deleted_at
+        FROM "groups"
+        WHERE group_company_id=$1 and group_gid=$2 
+          AND group_gid IN (SELECT unnest(ids) FROM usrgroups);`,
+        [cid, gid, timezone, uid]
       )
       return rows
     } catch (error) {
