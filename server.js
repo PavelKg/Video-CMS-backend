@@ -11,6 +11,7 @@ const fastify = require('fastify')({
 })
 
 // Register swagger.
+// Some commment
 const swagger = require('./config/swagger')
 fastify.register(require('fastify-swagger'), swagger.options)
 
