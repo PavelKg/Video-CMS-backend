@@ -35,7 +35,7 @@ class TelegramService {
     const amqpProduceChannel = this.amqpProduceChannel
 
     if (amqpProduceChannel) {
-      amqpProduceChannel.assertQueue(vcms_to_telegram, {durable: false})
+      amqpProduceChannel.assertQueue(vcms_to_telegram, {durable: true})
     }
     if (amqpConsumeChannel) {
       amqpConsumeChannel.assertQueue(telegram_to_vcms, {durable: true})
