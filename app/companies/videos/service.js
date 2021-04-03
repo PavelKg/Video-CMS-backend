@@ -62,7 +62,7 @@ class VideoService {
       storage_bucket_input = rows[0].storage_bucket_input
       storage_bucket_output = rows[0].storage_bucket_output
       const storage_content_limit = rows[0].storage_content_limit
-      
+
       const {rows: insRows} = await client.query(
         `INSERT INTO videos (video_filename, video_type, video_filesize,
         video_uuid, video_status, video_bucket_input, 
@@ -803,7 +803,7 @@ class VideoService {
       const qResult = await client.query(getGcsOutput)
       const {storage_bucket_output} = qResult.rows[0]
       const bucket = this.gcs.bucket(storage_bucket_output)
-      const thumbnail = await bucket.file(`/${path_to_thumbnail}`).download()
+      const thumbnail = await bucket.file(`${path_to_thumbnail}`).download()
       const base64data = Buffer.from(thumbnail[0]).toString('base64')
 
       const query = {

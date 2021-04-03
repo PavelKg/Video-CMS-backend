@@ -38,6 +38,7 @@ class PersonService {
       details: 'Failure',
       target_data: {uid: username}
     }
+
     try {
       /* ------   Prev vesion - to delete | varsion 1.0.0
         SELECT 

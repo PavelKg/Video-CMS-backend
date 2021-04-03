@@ -5,7 +5,7 @@
   "main": "server.js",
   "dependencies": {
     "@google-cloud/storage": "^5.2.0",
-    "amqplib": "^0.5.5",
+    "amqplib": "^0.7.1",
     "bitmovin-javascript": "^2.25.0",
     "csv-parse": "^4.8.8",
     "dotenv": "^7.0.0",
@@ -18,13 +18,14 @@
     "fastify-postgres": "^2.0.0",
     "fastify-swagger": "^2.4.0",
     "fastify-swagger-ui": "^1.0.1",
-    "pg": "^7.12.1",
-    "twilio": "^3.46.0"
+    "pg": "^8.5.1",
+    "twilio": "^3.59.0"
   },
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "local": "cross-env NODE_ENV=development PORT=8769 nodemon server.js "
   },
   "repository": {
     "type": "git",

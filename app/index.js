@@ -29,6 +29,12 @@ const RoleService = require('./companies/roles/service')
 const Group = require('./companies/groups')
 const GroupService = require('./companies/groups/service')
 
+const Course = require('./companies/courses')
+const CoursesService = require('./companies/courses/service')
+
+const CourseSections = require('./companies/courses/sections')
+const CourseSectionsService = require('./companies/courses/sections/service')
+
 const Series = require('./companies/series')
 const SeriesService = require('./companies/series/service')
 
@@ -49,6 +55,9 @@ const CommentService = require('./companies/videos/comments/service')
 
 const Telegram = require('./companies/telegram')
 const TelegramService = require('./companies/telegram/service')
+
+const Player = require('./player')
+const PlayerService = require('./player/service')
 
 const BitmovinService = require('./bm')
 
@@ -81,7 +90,6 @@ async function connectToAMQP(fastify, opts, next) {
   console.log('AMQP Connecting...')
   const {AMQP_HOST, AMQP_USER, AMQP_PASS, AMQP_PORT} = process.env
   const amqpClients = ['Produce', 'Consume']
-
   amqpClients.forEach((client) => {
     amqpClient.connect(
       `amqp://${AMQP_USER}:${AMQP_PASS}@${AMQP_HOST}:${AMQP_PORT}/`,
@@ -215,6 +223,8 @@ async function decorateFastifyInstance(fastify) {
   const companyService = new CompanyService(db, histLoggerService)
   const roleService = new RoleService(db, histLoggerService)
   const groupService = new GroupService(db, histLoggerService)
+  const courseService = new CoursesService(db, histLoggerService)
+  const courseSectionService = new CourseSectionsService(db, histLoggerService)
   const seriesService = new SeriesService(db, histLoggerService)
   const userService = new UserService(db, nodemailer, twilio, histLoggerService)
   const messageService = new MessageService(db, histLoggerService)
@@ -227,19 +237,23 @@ async function decorateFastifyInstance(fastify) {
     {amqpProduceChannel, amqpConsumeChannel},
     histLoggerService
   )
+  const playerService = new PlayerService(db, histLoggerService)
   const bitmovinService = new BitmovinService(bitmovin, histLoggerService)
 
   fastify.decorate('personService', personService)
   fastify.decorate('companyService', companyService)
   fastify.decorate('roleService', roleService)
   fastify.decorate('groupService', groupService)
+  fastify.decorate('courseService', courseService)
   fastify.decorate('seriesService', seriesService)
+  fastify.decorate('courseSectionService', courseSectionService)
   fastify.decorate('userService', userService)
   fastify.decorate('messageService', messageService)
   fastify.decorate('videoService', videoService)
   fastify.decorate('fileService', fileService)
   fastify.decorate('commentService', commentService)
   fastify.decorate('telegramService', telegramService)
+  fastify.decorate('playerService', playerService)
   fastify.decorate('bitmovinService', bitmovinService)
   fastify.decorate('autzService', autzService)
 
@@ -281,12 +295,17 @@ module.exports = async function (fastify, opts) {
     .register(Company, {prefix: '/api/companies/:cid/mng'})
     .register(Role, {prefix: '/api/companies/:cid/roles'})
     .register(Group, {prefix: '/api/companies/:cid/groups'})
+    .register(Course, {prefix: '/api/companies/:cid/courses'})
+    .register(CourseSections, {
+      prefix: '/api/companies/:cid/course-sections'
+    })
     .register(Series, {prefix: '/api/companies/:cid/series'})
     .register(User, {prefix: '/api/companies/:cid/users'})
     .register(Message, {prefix: '/api/messages'})
     .register(Video, {prefix: '/api/companies/:cid/videos'})
-    .register(File, {prefix: '/api/companies/:cid/files'})    
+    .register(File, {prefix: '/api/companies/:cid/files'})
     .register(Comment, {prefix: '/api/companies/:cid/videos/:uuid/comments'})
     .register(Telegram, {prefix: '/api/companies/:cid/telegram'})
+    .register(Player, {prefix: '/player'})
     .register(HistoryLogger, {prefix: '/api/history'})
 }

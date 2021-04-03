@@ -7,11 +7,14 @@ node_modules
 /tests/e2e/videos/
 /tests/e2e/screenshots/
 
+/ssl_keys
+
 # local env files
 .env
 .env.local
 .env.*.local
 *.sql
+*.sh
 
 # Log files
 npm-debug.log*

@@ -5,8 +5,8 @@ const db_api = require('../../db_api')
 const {createHash, createHmac, randomBytes} = require('crypto')
 const {SYSTEM_NAME, MAIL_USER, TELE_BOTS} = process.env
 
-const telegram_to_vcms = 'telegram-to-vcms'
-const vcms_to_telegram = 'vcms-to-telegram'
+const telegram_to_vcms = 'bot-to-back'
+const vcms_to_telegram = 'back-to-bot'
 
 //const mail_templ = require('./mail_templates')
 //const db_api = require('../db_api')
@@ -35,7 +35,7 @@ class TelegramService {
     const amqpProduceChannel = this.amqpProduceChannel
 
     if (amqpProduceChannel) {
-      amqpProduceChannel.assertQueue(vcms_to_telegram, {durable: true})
+      amqpProduceChannel.assertQueue(vcms_to_telegram, {durable: false})
     }
     if (amqpConsumeChannel) {
       amqpConsumeChannel.assertQueue(telegram_to_vcms, {durable: true})
@@ -55,16 +55,20 @@ class TelegramService {
 
   async amqpConsumer(msg) {
     const amqpConsumeChannel = this.amqpConsumeChannel
-    let func
     try {
       const parsedMsg = JSON.parse(msg.content.toString())
+
       const {type, chatId, content} = parsedMsg
+      console.log(type, typeof parsedMsg, msg.content.toString())
       switch (type) {
         case 'deeplink':
           await this.loginDeeplink({chatId, content})
           break
         case 'messenger_registr':
           await this.messengerRegistr({chatId, content})
+        case 'get':
+          await this.getSomeContent({chatId, content})
+          break
         default:
           break
       }
@@ -73,6 +77,30 @@ class TelegramService {
     } catch (err) {
     } finally {
     }
+  }
+
+  async getSomeContent(payload) {
+    const {chatId, content} = payload
+    console.log(payload)
+    const out_content = [
+      'c9ddb257-995e-430e-aa76-3cc75268c437',
+      '64ccb8dd-ca80-4cb7-b526-bcf4dbf3596f',
+      '7c1fd98b-3fb3-4ffd-ac28-3049557f4177',
+      '7c1fd98b-3fb3-4ffd-ac28-3049557f4321',
+      '7c1fd98b-3fb3-4ffd-ac28-3049557f4178',
+      '7c1fd98b-3fb3-4ffd-ac28-3049557f4647',
+      'e0d2e9f7-496e-4487-a195-5204e5e22bb1',
+      '301751a6-f7e4-411d-bfac-777ef6125625'
+    ].map((item) => {
+      return `https://botkg.ga/player/${item}?a='tele'&val=${chatId}`
+    })
+    const message = {
+      chatId,
+      type: 'response',
+      contentType: 'pg-list',
+      content: out_content
+    }
+    this.amqpProduce(message)
   }
 
   async messengerRegistr(payload) {
@@ -336,8 +364,8 @@ class TelegramService {
           RETURNING tdl_user_id`,
         [uid, cid, token, lifeTimeDef]
       )
-      
-      if(rows.length===0){
+
+      if (rows.length === 0) {
         histData.details = errors.WRONG_USER_UID
         throw Error(errors.WRONG_USER_UID)
       }
