@@ -3,14 +3,16 @@
 // Read the .env file.
 require('dotenv').config()
 const fs = require('fs')
-
-const https = {
-  key: fs.readFileSync('ssl_keys/privkey.pem'),
-  cert: fs.readFileSync('ssl_keys/fullchain.pem')
-}
+const add_opt = {}
 
 const {SERVER_TYPE = 'http'} = process.env
-const add_opt = SERVER_TYPE === 'https' ? {https} : {}
+if (SERVER_TYPE === 'https') {
+  const https = {
+    key: fs.readFileSync('ssl_keys/privkey.pem'),
+    cert: fs.readFileSync('ssl_keys/fullchain.pem')
+  }
+  add_opt.https = https
+}
 
 // Require the framework
 const fastify = require('fastify')({
