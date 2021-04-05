@@ -5,8 +5,12 @@ const db_api = require('../../db_api')
 const {createHash, createHmac, randomBytes} = require('crypto')
 const {SYSTEM_NAME, MAIL_USER, TELE_BOTS} = process.env
 
-const telegram_to_vcms = 'bot-to-back'
-const vcms_to_telegram = 'back-to-bot'
+const {
+  AMQP_QUEUE_TO_BOT: vcms_to_telegram = 'back-to-bot',
+  AMQP_QUEUE_TO_BACK: telegram_to_vcms = 'bot-to-back'
+} = process.env
+//const telegram_to_vcms = AMQP_QUEUE_TO_BACK
+//const vcms_to_telegram = AMQP_QUEUE_TO_BOT
 
 //const mail_templ = require('./mail_templates')
 //const db_api = require('../db_api')
@@ -21,13 +25,14 @@ function checkSignature({hash, ...data}, secret) {
 }
 
 class TelegramService {
-  constructor(db, nodemailer, amqpChannels, histLogger) {
+  constructor(db, nodemailer, amqpChannels, histLogger, fastify) {
     this.db = db
     this.nodemailer = nodemailer
     this.amqpProduceChannel = amqpChannels.amqpProduceChannel
     this.amqpConsumeChannel = amqpChannels.amqpConsumeChannel
     this.history_category = 'Telegram'
     this.histLogger = histLogger
+    this.fastify = fastify
     this.init()
   }
   async init() {
@@ -53,13 +58,47 @@ class TelegramService {
     )
   }
 
+  async vcmsUserByChatId({botname, chatId}) {
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `SELECT user_id, user_uid AS uid, user_company_id AS cid, company_telegram_bot AS botname 
+        FROM users, companies, telegram_users
+         WHERE telegram_user_id=$1
+           AND users.deleted_at IS NULL 
+           AND user_company_id = company_id
+           AND cms_user_id=user_id`,
+        [chatId]
+      )
+
+      if (rows.length > 0) {
+        const autz = {
+          user_id: rows[0].user_id,
+          uid: rows[0].uid,
+          company_id: rows[0].cid
+        }
+        const cid = rows[0].cid
+        const botname = rows[0].botname
+
+        return {autz, cid, botname}
+      } else {
+        throw 'User not found'
+      }
+    } catch (error) {
+      console.log(error)
+    } finally {
+      if (client) {
+        client.release()
+      }
+    }
+  }
+
   async amqpConsumer(msg) {
-    const amqpConsumeChannel = this.amqpConsumeChannel
     try {
       const parsedMsg = JSON.parse(msg.content.toString())
 
       const {type, chatId, content} = parsedMsg
-      console.log(type, typeof parsedMsg, msg.content.toString())
+
       switch (type) {
         case 'deeplink':
           await this.loginDeeplink({chatId, content})
@@ -73,26 +112,26 @@ class TelegramService {
           break
       }
       //await func({chatId, content})
-      amqpConsumeChannel.ack(msg)
+
+      this.amqpConsumeChannel.ack(msg)
     } catch (err) {
     } finally {
     }
   }
 
   async getSomeContent(payload) {
-    const {chatId, content} = payload
-    console.log(payload)
-    const out_content = [
-      'c9ddb257-995e-430e-aa76-3cc75268c437',
-      '64ccb8dd-ca80-4cb7-b526-bcf4dbf3596f',
-      '7c1fd98b-3fb3-4ffd-ac28-3049557f4177',
-      '7c1fd98b-3fb3-4ffd-ac28-3049557f4321',
-      '7c1fd98b-3fb3-4ffd-ac28-3049557f4178',
-      '7c1fd98b-3fb3-4ffd-ac28-3049557f4647',
-      'e0d2e9f7-496e-4487-a195-5204e5e22bb1',
-      '301751a6-f7e4-411d-bfac-777ef6125625'
-    ].map((item) => {
-      return `https://botkg.ga/player/${item}?a='tele'&val=${chatId}`
+    const {botname, chatId, content} = payload
+
+    const {botname: bot_name, autz, cid} = await this.vcmsUserByChatId({
+      botname,
+      chatId
+    })
+
+    const query = {}
+    const catalog = await this.fastify.videoService.videosCatalog({autz, query})
+
+    const out_content = catalog.map((item) => {
+      return `https://botkg.ga/player/${item.video_uuid}?a='tele'&val=${chatId}`
     })
     const message = {
       chatId,
@@ -100,6 +139,7 @@ class TelegramService {
       contentType: 'pg-list',
       content: out_content
     }
+
     this.amqpProduce(message)
   }
 
@@ -153,11 +193,10 @@ class TelegramService {
           text: `Login URL: https://t.me/${urlBotname}?start=${token}`
         })
       } else {
-        //console.log(`Failure: Email was not found`)
         histData.details = `Failure: user email is empty`
       }
     } catch (error) {
-      console.log(error)
+
       histData.details = error
     } finally {
       if (client) {
@@ -227,7 +266,7 @@ class TelegramService {
         })
       }
     } catch (error) {
-      console.log(error)
+
       throw Error(error)
     } finally {
       if (client) {

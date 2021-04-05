@@ -1,3 +1,5 @@
-class PlayerService{}
+class PlayerService {
+  constructor() {}
+}
 
 module.exports = PlayerService

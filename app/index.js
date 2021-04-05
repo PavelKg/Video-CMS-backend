@@ -11,8 +11,8 @@ const cors = require('fastify-cors')
 
 const nodemailer = require('fastify-nodemailer')
 const bitmovinApi = require('bitmovin-javascript').default
-//const amqp = require('fastify-amqp')
-const amqpClient = require('amqplib/callback_api')
+
+const amqpClient = require('amqplib')
 
 const {Storage} = require('@google-cloud/storage')
 
@@ -87,31 +87,26 @@ async function connectToTwilio(fastify) {
 }
 
 async function connectToAMQP(fastify, opts, next) {
-  console.log('AMQP Connecting...')
-  const {AMQP_HOST, AMQP_USER, AMQP_PASS, AMQP_PORT} = process.env
+    const {AMQP_HOST, AMQP_USER, AMQP_PASS, AMQP_PORT} = process.env
   const amqpClients = ['Produce', 'Consume']
-  amqpClients.forEach((client) => {
-    amqpClient.connect(
-      `amqp://${AMQP_USER}:${AMQP_PASS}@${AMQP_HOST}:${AMQP_PORT}/`,
-      function (err, connection) {
-        if (err) {
-          next(err)
-          return
-        }
-        fastify.addHook('onClose', () => connection.close())
-        fastify.decorate(`amqp${client}Conn`, connection)
+  amqpClients.forEach(async (client) => {
+    const connName = `amqp${client}Conn`
+    console.log(`AMQP ${connName} Connecting...`)
 
-        connection.createChannel(function (err1, channel) {
-          if (err1) {
-            next(err1)
-            return
-          }
+    try {
+      const connection = await amqpClient.connect(
+        `amqp://${AMQP_USER}:${AMQP_PASS}@${AMQP_HOST}:${AMQP_PORT}/`
+      )
+      const channel = await connection.createChannel()
 
-          fastify.decorate(`amqp${client}Channel`, channel)
-          next()
-        })
-      }
-    )
+      fastify.addHook('onClose', () => connection.close())
+      fastify.decorate(connName, connection)
+      fastify.decorate(`amqp${client}Channel`, channel)
+      console.log(`AMQP ${connName} Ready.`)
+      next()
+    } catch (err) {
+      next(err)
+    }
   })
 
   // await fastify.register(amqp, {
@@ -235,7 +230,8 @@ async function decorateFastifyInstance(fastify) {
     db,
     nodemailer,
     {amqpProduceChannel, amqpConsumeChannel},
-    histLoggerService
+    histLoggerService,
+    fastify
   )
   const playerService = new PlayerService(db, histLoggerService)
   const bitmovinService = new BitmovinService(bitmovin, histLoggerService)
