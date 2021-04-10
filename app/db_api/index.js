@@ -72,6 +72,12 @@ const sortableColumns = {
     'course_id',
     'course_name'
   ]
+  ,courses_section: [
+    'section.created_at',
+    'section.deleted_at',
+    'section_id',
+    'section_title'
+  ]
 }
 
 const db_oper = {

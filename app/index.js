@@ -29,11 +29,11 @@ const RoleService = require('./companies/roles/service')
 const Group = require('./companies/groups')
 const GroupService = require('./companies/groups/service')
 
-const Course = require('./companies/courses')
+const Courses = require('./companies/courses')
 const CoursesService = require('./companies/courses/service')
 
-const CourseSections = require('./companies/courses/sections')
-const CourseSectionsService = require('./companies/courses/sections/service')
+const CoursesSections = require('./companies/courses/sections')
+const CoursesSectionsService = require('./companies/courses/sections/service')
 
 const Series = require('./companies/series')
 const SeriesService = require('./companies/series/service')
@@ -218,8 +218,8 @@ async function decorateFastifyInstance(fastify) {
   const companyService = new CompanyService(db, histLoggerService)
   const roleService = new RoleService(db, histLoggerService)
   const groupService = new GroupService(db, histLoggerService)
-  const courseService = new CoursesService(db, histLoggerService)
-  const courseSectionService = new CourseSectionsService(db, histLoggerService)
+  const coursesService = new CoursesService(db, histLoggerService)
+  const coursesSectionService = new CoursesSectionsService(db, histLoggerService)
   const seriesService = new SeriesService(db, histLoggerService)
   const userService = new UserService(db, nodemailer, twilio, histLoggerService)
   const messageService = new MessageService(db, histLoggerService)
@@ -240,9 +240,9 @@ async function decorateFastifyInstance(fastify) {
   fastify.decorate('companyService', companyService)
   fastify.decorate('roleService', roleService)
   fastify.decorate('groupService', groupService)
-  fastify.decorate('courseService', courseService)
+  fastify.decorate('courseService', coursesService)
   fastify.decorate('seriesService', seriesService)
-  fastify.decorate('courseSectionService', courseSectionService)
+  fastify.decorate('coursesSectionService', coursesSectionService)
   fastify.decorate('userService', userService)
   fastify.decorate('messageService', messageService)
   fastify.decorate('videoService', videoService)
@@ -291,9 +291,9 @@ module.exports = async function (fastify, opts) {
     .register(Company, {prefix: '/api/companies/:cid/mng'})
     .register(Role, {prefix: '/api/companies/:cid/roles'})
     .register(Group, {prefix: '/api/companies/:cid/groups'})
-    .register(Course, {prefix: '/api/companies/:cid/courses'})
-    .register(CourseSections, {
-      prefix: '/api/companies/:cid/course-sections'
+    .register(Courses, {prefix: '/api/companies/:cid/courses'})
+    .register(CoursesSections, {
+      prefix: '/api/companies/:cid/courses-sections'
     })
     .register(Series, {prefix: '/api/companies/:cid/series'})
     .register(User, {prefix: '/api/companies/:cid/users'})

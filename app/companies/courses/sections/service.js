@@ -2,43 +2,45 @@
 const errors = require('../../../errors')
 const db_api = require('../../../db_api')
 
-class CourseSectionsService {
+class CoursesSectionsService {
   constructor(db, histLogger) {
     this.db = db
     this.history_category = 'Courses'
     this.histLogger = histLogger
   }
 
-  async companyCourses(payload) {
+  async coursesSections(payload) {
     const {autz, cid} = payload
     const {timezone, uid} = autz
 
     const {
       limit = 'ALL',
       offset = 0,
-      sort = 'course_id',
+      sort = 'section_id',
       filter = ''
     } = payload.query
 
-    const qSort = db_api.sorting(sort, 'courses')
-    let qFilter = filter !== '' ? db_api.filtration(filter, 'course') : ''
+    const qSort = db_api.sorting(sort, 'courses_section')
+    let qFilter =
+      filter !== '' ? db_api.filtration(filter, 'courses_section') : ''
     qFilter = db_api.setFilterTz(qFilter, timezone)
 
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
         `SELECT 
-        course_id as crid, 
-        course_company_id as cid,         
-        course_name as name,
-        course_tags as tags, 
-        course_teachers as teachers, 
-        courses.created_at AT TIME ZONE $3 AS created_at,
-        courses.updated_at AT TIME ZONE $3 AS updated_at,
-        courses.deleted_at AT TIME ZONE $3 AS deleted_at
-        FROM courses, companies
-        WHERE course_company_id=$1 AND companies.company_id=courses.course_company_id
-          AND ((courses.deleted_at is NOT NULL AND companies.company_show_deleted=true) OR courses.deleted_at IS NULL) 
+          section_id as secid, 
+          section_company_id as cid,         
+          section_title as title,
+          section_tags as tags, 
+          section_description as description, 
+          section_tags as tags, 
+          courses_sections.created_at AT TIME ZONE $3 AS created_at,
+          courses_sections.updated_at AT TIME ZONE $3 AS updated_at,
+          courses_sections.deleted_at AT TIME ZONE $3 AS deleted_at
+        FROM courses_sections, companies
+        WHERE section_company_id=$1 AND companies.company_id=courses_sections.section_company_id
+          AND ((courses_sections.deleted_at is NOT NULL AND companies.company_show_deleted=true) OR courses_sections.deleted_at IS NULL) 
         ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
         [cid, offset, timezone]
       )
@@ -50,9 +52,10 @@ class CourseSectionsService {
     }
   }
 
-  async companyCourseById(payload) {
-    const {autz, cid, crid} = payload
+  async coursesSectionById(payload) {
+    const {autz, cid, secid} = payload
     const {timezone, uid} = autz
+
     if (autz.company_id !== cid || !autz.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
@@ -61,17 +64,18 @@ class CourseSectionsService {
     try {
       const {rows} = await client.query(
         `SELECT         
-        course_id as crid, 
-        course_company_id as cid,         
-        course_name as name,
-        course_tags as tags, 
-        course_teachers as teachers,
-        courses.created_at AT TIME ZONE $3 AS created_at,
-        courses.updated_at AT TIME ZONE $3 AS updated_at,
-        courses.deleted_at AT TIME ZONE $3 AS deleted_at
-        FROM courses
-        WHERE course_company_id=$1 and course_id=$2;`,
-        [cid, crid, timezone]
+        section_id as secid, 
+          section_company_id as cid,         
+          section_title as title,
+          section_tags as tags, 
+          section_description as description, 
+          section_tags as tags, 
+          courses_sections.created_at AT TIME ZONE $3 AS created_at,
+          courses_sections.updated_at AT TIME ZONE $3 AS updated_at,
+          courses_sections.deleted_at AT TIME ZONE $3 AS deleted_at
+        FROM courses_sections
+        WHERE section_company_id=$1 and section_id=$2;`,
+        [cid, secid, timezone]
       )
       return rows
     } catch (error) {
@@ -81,10 +85,10 @@ class CourseSectionsService {
     }
   }
 
-  async addCourse(payload) {
+  async addSection(payload) {
     let client = undefined
-    const {autz, course} = payload
-    const {cid, name, tags = [], teachers = []} = course
+    const {autz, section} = payload
+    const {cid, title, tags = [], description} = section
 
     const {user_id, company_id, uid} = autz
     let histData = {
@@ -94,9 +98,9 @@ class CourseSectionsService {
       user_id,
       user_uid: uid,
       cid: company_id,
-      object_name: name,
+      object_name: title,
       details: 'Failure',
-      target_data: {...course}
+      target_data: {...section}
     }
 
     try {
@@ -108,27 +112,30 @@ class CourseSectionsService {
 
       const {rows: cntExName} = await client.query(
         `SELECT count(*) cnt 
-        FROM courses 
-        WHERE course_name=$1 and course_company_id=$2;`,
-        [name, cid]
+        FROM courses_sections 
+        WHERE section_title=$1 and section_company_id=$2;`,
+        [title, cid]
       )
       if (cntExName[0].cnt > 0) {
-        histData.details = `Error [Course name already exists]`
+        histData.details = `Error [Course section title already exists]`
         throw Error(errors.THIS_COURSE_NAME_IS_NOT_ALLOWED)
       }
 
       const {rows} = await client.query(
-        `INSERT INTO courses (course_company_id, course_name, course_tags, course_teachers) 
+        `INSERT INTO courses_sections (section_company_id, section_title, section_tags, section_description) 
         VALUES ($1, $2, $3, $4) 
         RETURNING *;`,
-        [cid, name, tags, teachers]
+        [cid, title, tags, description]
       )
       histData.result = typeof rows[0] === 'object'
-      histData.object_name = `cr_${rows[0].course_id}`
-      histData.target_data = {...histData.target_data, crid: rows[0].course_id}
+      histData.object_name = `cr-sec_${rows[0].section_id}`
+      histData.target_data = {
+        ...histData.target_data,
+        secid: rows[0].section_id
+      }
       histData.details = 'Success'
 
-      return rows[0].course_id
+      return rows[0].section_id
     } catch (error) {
       throw Error(error.message)
     } finally {
@@ -139,10 +146,10 @@ class CourseSectionsService {
     }
   }
 
-  async updCourse(payload) {
+  async updSection(payload) {
     let client = undefined
-    const {autz, course} = payload
-    const {crid, cid, name, tags = [], teachers = []} = course
+    const {autz, section} = payload
+    const {secid, cid, title, tags = [], description} = section
 
     const {user_id, company_id, uid} = autz
     let histData = {
@@ -152,9 +159,9 @@ class CourseSectionsService {
       user_id,
       user_uid: uid,
       cid: company_id,
-      object_name: name,
+      object_name: title,
       details: 'Failure [name]',
-      target_data: {...course}
+      target_data: {...section}
     }
 
     try {
@@ -166,10 +173,10 @@ class CourseSectionsService {
 
       const {rows: cntExName} = await client.query(
         `SELECT count(*) cnt 
-        FROM courses 
-        WHERE course_name=$1 and course_company_id=$2 
-          and course_id<>$3 and deleted_at is null;`,
-        [name, cid, crid]
+        FROM courses_sections 
+        WHERE section_title=$1 and section_company_id=$2 
+          and section_id<>$3 and deleted_at is null;`,
+        [title, cid, secid]
       )
 
       if (cntExName[0].cnt > 0) {
@@ -178,17 +185,17 @@ class CourseSectionsService {
       }
 
       const {rows} = await client.query(
-        `UPDATE courses 
-          SET course_name=$3, course_tags=$4, course_teachers=$5 
-          WHERE course_company_id=$2 and course_id =$1
+        `UPDATE courses_sections 
+          SET section_title=$3, section_tags=$4, section_description=$5 
+          WHERE section_company_id=$2 and section_id =$1
           AND deleted_at IS NULL
           RETURNING *;`,
-        [crid, cid, name, tags, teachers]
+        [secid, cid, title, tags, description]
       )
 
-      histData.object_name = `cr_${rows[0].course_id}`
+      histData.object_name = `cr-sec_${rows[0].section_id}`
       histData.result = rows.length === 1
-      histData.details = `[${name}] information updated`
+      histData.details = `[${title}] information updated`
       return rows.length
     } catch (error) {
       throw Error(error.message)
@@ -228,10 +235,10 @@ class CourseSectionsService {
       //* Change for sections*/
 
       // const {rows: usrs} = await client.query(
-      //   `SELECT count(users.user_id) cnt 
-      //     FROM groups, users 
-      //     WHERE group_company_id=$2 AND group_gid=$1 
-      //       AND group_gid = ANY(user_groups) 
+      //   `SELECT count(users.user_id) cnt
+      //     FROM groups, users
+      //     WHERE group_company_id=$2 AND group_gid=$1
+      //       AND group_gid = ANY(user_groups)
       //       AND users.deleted_at is null;`,
       //   [gid, cid]
       // )
@@ -240,8 +247,8 @@ class CourseSectionsService {
       // }
 
       // const {rows: grpr} = await client.query(
-      //   `SELECT count(course_id) cnt 
-      //     FROM courses 
+      //   `SELECT count(course_id) cnt
+      //     FROM courses
       //     WHERE group_parent = $1;`,
       //   [gid]
       // )
@@ -275,4 +282,4 @@ class CourseSectionsService {
   }
 }
 
-module.exports = CourseSectionsService
+module.exports = CoursesSectionsService

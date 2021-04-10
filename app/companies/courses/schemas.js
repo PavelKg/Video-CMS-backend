@@ -1,6 +1,6 @@
 'use strict'
 
-const courses = require('.')
+//const courses = require('.')
 
 const queryStringJsonSchema = {
   sort: {description: 'Fields sorting', type: 'string'},

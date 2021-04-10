@@ -62,12 +62,17 @@ class TelegramService {
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
-        `SELECT user_id, user_uid AS uid, user_company_id AS cid, company_telegram_bot AS botname 
-        FROM users, companies, telegram_users
+        `SELECT user_id, 
+          user_uid AS uid, 
+          user_company_id AS cid, 
+          company_telegram_bot AS botname, 
+          role_is_admin as is_admin 
+        FROM users, companies, telegram_users, roles
          WHERE telegram_user_id=$1
            AND users.deleted_at IS NULL 
            AND user_company_id = company_id
-           AND cms_user_id=user_id`,
+           AND cms_user_id=user_id
+           AND user_role_id=role_id`,
         [chatId]
       )
 
@@ -76,6 +81,7 @@ class TelegramService {
           user_id: rows[0].user_id,
           uid: rows[0].uid,
           company_id: rows[0].cid
+          //is_admin: rows[0].is_admin
         }
         const cid = rows[0].cid
         const botname = rows[0].botname
@@ -196,7 +202,6 @@ class TelegramService {
         histData.details = `Failure: user email is empty`
       }
     } catch (error) {
-
       histData.details = error
     } finally {
       if (client) {
@@ -266,7 +271,6 @@ class TelegramService {
         })
       }
     } catch (error) {
-
       throw Error(error)
     } finally {
       if (client) {

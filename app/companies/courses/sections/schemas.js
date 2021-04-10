@@ -1,6 +1,13 @@
 'use strict'
 
-const courses = require('.')
+const shemasTags = ['courses-section']
+
+
+const uuidObj = {
+  type: 'string',
+  pattern:
+    '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
+}
 
 const queryStringJsonSchema = {
   sort: {description: 'Fields sorting', type: 'string'},
@@ -9,34 +16,35 @@ const queryStringJsonSchema = {
   filter: {type: 'string'}
 }
 
-const courseObject = {
+const coursesSectionObject = {
   type: 'object',
   properties: {
-    crid: {type: 'integer'},
+    secid: {type: 'integer'},
     cid: {type: 'integer'},
-    name: {type: 'string'},
-    published: {type: 'boolean'},
+    title: {type: 'string'},
+    tags: {type: 'array', items: {type: 'string'}},
+    description: {type: 'string'},
+    modules: {type: 'array', items: {type: 'string'}},
     created_at: {type: ['string', 'null']},
     updated_at: {type: 'string'},
     deleted_at: {type: 'string'},
-    tags: {type: 'array', items: {type: 'string'}},
-    teachers: {type: 'array', items: {type: 'string'}}
+    uuid:  uuidObj
   }
 }
 
-const course = {
+const coursesSectionsShort = {
   type: 'object',
   properties: {
-    name: {type: 'string', minLength: 3, maxLength: 20},
+    title: {type: 'string'},
     tags: {type: 'array', items: {type: 'string'}},
-    teachers: {type: 'array', items: {type: 'integer'}}
+    description: {type: 'string'},
   },
-  required: ['name'],
+  required: ['title'],
   additionalProperties: false
 }
 
-const getCompanyCourses = {
-  tags: ['courses'],
+const getCoursesSections = {
+  tags: shemasTags,
   params: {
     type: 'object',
     required: ['cid'],
@@ -51,21 +59,21 @@ const getCompanyCourses = {
   response: {
     200: {
       type: 'array',
-      items: courseObject
+      items: coursesSectionObject
     }
   }
 }
 
-const getCompanyCourseById = {
-  tags: ['courses'],
+const getCoursesSectionById = {
+  tags: shemasTags,
   params: {
     type: 'object',
-    required: ['cid', 'crid'],
+    required: ['cid', 'secid'],
     properties: {
       cid: {
         type: 'integer'
       },
-      crid: {
+      secid: {
         type: 'integer'
       }
     },
@@ -73,12 +81,12 @@ const getCompanyCourseById = {
   },
   querystring: queryStringJsonSchema,
   response: {
-    200: courseObject
+    200: coursesSectionObject
   }
 }
 
-const addCourse = {
-  tags: ['courses'],
+const addCoursesSection = {
+  tags: shemasTags,
   params: {
     type: 'object',
     required: ['cid'],
@@ -89,27 +97,27 @@ const addCourse = {
     },
     additionalProperties: false
   },
-  body: course
+  body: coursesSectionsShort
 }
 
-const updCourse = {
-  tags: ['courses'],
+const updCoursesSection = {
+  tags: shemasTags,
   params: {
     type: 'object',
-    required: ['cid', 'crid'],
+    required: ['cid', 'secid'],
     properties: {
       cid: {
         type: 'integer'
       },
-      crid: {type: 'integer'}
+      secid: {type: 'integer'}
     },
     additionalProperties: false
   },
-  body: course
+  body: coursesSectionsShort
 }
 
-const delCourse = {
-  tags: ['courses'],
+const delCoursesSection = {
+  tags: shemasTags,
   params: {
     type: 'object',
     required: ['cid', 'crid'],
@@ -117,16 +125,16 @@ const delCourse = {
       cid: {
         type: 'integer'
       },
-      crid: {type: 'integer'}
+      secid: {type: 'integer'}
     },
     additionalProperties: false
   }
 }
 
 module.exports = {
-  getCompanyCourses,
-  getCompanyCourseById,
-  addCourse,
-  updCourse,
-  delCourse
+  getCoursesSections,
+  getCoursesSectionById,
+  addCoursesSection,
+  updCoursesSection,
+  delCoursesSection
 }
