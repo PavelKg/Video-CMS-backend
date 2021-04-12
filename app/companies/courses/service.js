@@ -21,9 +21,10 @@ class CourseService {
     } = payload.query
 
     const qSort = db_api.sorting(sort, 'courses')
-    let qFilter = filter !== '' ? db_api.filtration(filter, 'course') : ''
-    qFilter = db_api.setFilterTz(qFilter, timezone)
 
+    let qFilter = filter !== '' ? db_api.filtration(filter, 'courses') : ''
+    qFilter = db_api.setFilterTz(qFilter, timezone)
+    
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
