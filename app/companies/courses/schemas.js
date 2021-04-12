@@ -15,7 +15,8 @@ const courseObject = {
     crid: {type: 'integer'},
     cid: {type: 'integer'},
     name: {type: 'string'},
-    published: {type: 'boolean'},
+    is_published: {type: 'boolean'},
+    details: {type: 'string'},
     created_at: {type: ['string', 'null']},
     updated_at: {type: 'string'},
     deleted_at: {type: 'string'},
@@ -29,7 +30,9 @@ const course = {
   properties: {
     name: {type: 'string', minLength: 3, maxLength: 20},
     tags: {type: 'array', items: {type: 'string'}},
-    teachers: {type: 'array', items: {type: 'integer'}}
+    teachers: {type: 'array', items: {type: 'integer'}},
+    details: {type: 'string'},
+    is_published: {type: 'boolean'}
   },
   required: ['name'],
   additionalProperties: false

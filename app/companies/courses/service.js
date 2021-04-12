@@ -24,7 +24,7 @@ class CourseService {
 
     let qFilter = filter !== '' ? db_api.filtration(filter, 'courses') : ''
     qFilter = db_api.setFilterTz(qFilter, timezone)
-    
+
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
@@ -33,7 +33,9 @@ class CourseService {
         course_company_id as cid,         
         course_name as name,
         course_tags as tags, 
-        course_teachers as teachers, 
+        course_teachers as teachers,
+        course_details as details,
+        course_is_published as is_published,
         courses.created_at AT TIME ZONE $3 AS created_at,
         courses.updated_at AT TIME ZONE $3 AS updated_at,
         courses.deleted_at AT TIME ZONE $3 AS deleted_at
@@ -67,6 +69,8 @@ class CourseService {
         course_name as name,
         course_tags as tags, 
         course_teachers as teachers,
+        course_is_published as is_published,
+        course_details as published,        
         courses.created_at AT TIME ZONE $3 AS created_at,
         courses.updated_at AT TIME ZONE $3 AS updated_at,
         courses.deleted_at AT TIME ZONE $3 AS deleted_at
@@ -229,10 +233,10 @@ class CourseService {
       //* Change for sections*/
 
       // const {rows: usrs} = await client.query(
-      //   `SELECT count(users.user_id) cnt 
-      //     FROM groups, users 
-      //     WHERE group_company_id=$2 AND group_gid=$1 
-      //       AND group_gid = ANY(user_groups) 
+      //   `SELECT count(users.user_id) cnt
+      //     FROM groups, users
+      //     WHERE group_company_id=$2 AND group_gid=$1
+      //       AND group_gid = ANY(user_groups)
       //       AND users.deleted_at is null;`,
       //   [gid, cid]
       // )
@@ -241,8 +245,8 @@ class CourseService {
       // }
 
       // const {rows: grpr} = await client.query(
-      //   `SELECT count(course_id) cnt 
-      //     FROM courses 
+      //   `SELECT count(course_id) cnt
+      //     FROM courses
       //     WHERE group_parent = $1;`,
       //   [gid]
       // )
