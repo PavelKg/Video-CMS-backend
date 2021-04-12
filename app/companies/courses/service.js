@@ -147,7 +147,15 @@ class CourseService {
   async updCourse(payload) {
     let client = undefined
     const {autz, course} = payload
-    const {crid, cid, name, tags = [], teachers = []} = course
+    const {
+      crid,
+      cid,
+      name,
+      tags = '',
+      teachers = [],
+      details = '',
+      is_published = false
+    } = course
 
     const {user_id, company_id, uid} = autz
     let histData = {
@@ -184,11 +192,12 @@ class CourseService {
 
       const {rows} = await client.query(
         `UPDATE courses 
-          SET course_name=$3, course_tags=$4, course_teachers=$5 
+          SET course_name=$3, course_tags=$4, course_teachers=$5, 
+            course_details=$6, course_is_published=$6 
           WHERE course_company_id=$2 and course_id =$1
           AND deleted_at IS NULL
           RETURNING *;`,
-        [crid, cid, name, tags, teachers]
+        [crid, cid, name, tags, teachers, details, is_published]
       )
 
       histData.object_name = `cr_${rows[0].course_id}`
