@@ -207,10 +207,10 @@ class CoursesSectionsService {
     }
   }
 
-  async delCourse(payload) {
+  async delSection(payload) {
     let client = undefined
-    const {autz, course} = payload
-    const {crid, cid} = course
+    const {autz, section} = payload
+    const {secid, cid} = section
 
     const {user_id, company_id, uid} = autz
     let histData = {
@@ -222,7 +222,7 @@ class CoursesSectionsService {
       cid: company_id,
       object_name: '',
       details: 'Failure',
-      target_data: {...course}
+      target_data: {...section}
     }
 
     try {
@@ -259,15 +259,15 @@ class CoursesSectionsService {
       // }
 
       const {rows} = await client.query(
-        `UPDATE courses 
+        `UPDATE courses_sections 
         SET deleted_at = now()
-        WHERE course_company_id=$2 and course_id =$1 
+        WHERE section_company_id=$2 and section_id =$1 
         and deleted_at is null
         RETURNING *;`,
-        [crid, cid]
+        [secid, cid]
       )
 
-      histData.object_name = `cr_${crid}`
+      histData.object_name = `cr-sec_${secid}`
       histData.result = rows.length === 1
       histData.details = 'Success'
       return rows.length

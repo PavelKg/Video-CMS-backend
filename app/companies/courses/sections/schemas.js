@@ -120,7 +120,7 @@ const delCoursesSection = {
   tags: shemasTags,
   params: {
     type: 'object',
-    required: ['cid', 'crid'],
+    required: ['cid', 'secid'],
     properties: {
       cid: {
         type: 'integer'
