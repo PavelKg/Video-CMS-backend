@@ -20,7 +20,7 @@ const courseObject = {
     created_at: {type: ['string', 'null']},
     updated_at: {type: 'string'},
     deleted_at: {type: 'string'},
-    tags: {type: 'array', items: {type: 'string'}},
+    tags: {type: 'string'},
     teachers: {type: 'array', items: {type: 'string'}}
   }
 }
@@ -29,7 +29,7 @@ const course = {
   type: 'object',
   properties: {
     name: {type: 'string', minLength: 3, maxLength: 20},
-    tags: {type: 'array', items: {type: 'string'}},
+    tags: {type: 'string'},
     teachers: {type: 'array', items: {type: 'integer'}},
     details: {type: 'string'},
     is_published: {type: 'boolean'}

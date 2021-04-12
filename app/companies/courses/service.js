@@ -70,7 +70,7 @@ class CourseService {
         course_tags as tags, 
         course_teachers as teachers,
         course_is_published as is_published,
-        course_details as published,        
+        course_details as details,        
         courses.created_at AT TIME ZONE $3 AS created_at,
         courses.updated_at AT TIME ZONE $3 AS updated_at,
         courses.deleted_at AT TIME ZONE $3 AS deleted_at
