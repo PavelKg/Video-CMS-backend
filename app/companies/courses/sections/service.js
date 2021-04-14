@@ -2,15 +2,15 @@
 const errors = require('../../../errors')
 const db_api = require('../../../db_api')
 
-class CoursesSectionsService {
+class CourseSectionsService {
   constructor(db, histLogger) {
     this.db = db
     this.history_category = 'Courses'
     this.histLogger = histLogger
   }
 
-  async coursesSections(payload) {
-    const {autz, cid} = payload
+  async getSections(payload) {
+    const {autz, cid, crid} = payload
     const {timezone, uid} = autz
 
     const {
@@ -29,12 +29,12 @@ class CoursesSectionsService {
     try {
       const {rows} = await client.query(
         `SELECT 
-          section_id as secid, 
           section_company_id as cid,         
           section_title as title,
           section_tags as tags, 
           section_description as description, 
           section_tags as tags, 
+          section_uuid as uuid,
           courses_sections.created_at AT TIME ZONE $3 AS created_at,
           courses_sections.updated_at AT TIME ZONE $3 AS updated_at,
           courses_sections.deleted_at AT TIME ZONE $3 AS deleted_at
@@ -52,8 +52,8 @@ class CoursesSectionsService {
     }
   }
 
-  async coursesSectionById(payload) {
-    const {autz, cid, secid} = payload
+  async getSectionsModel(payload) {
+    const {autz, cid} = payload
     const {timezone, uid} = autz
 
     if (autz.company_id !== cid || !autz.is_admin) {
@@ -63,19 +63,44 @@ class CoursesSectionsService {
     const client = await this.db.connect()
     try {
       const {rows} = await client.query(
+        `SELECT section_type_value as fields
+        FROM course_section_type
+        WHERE section_type_name='default';`,
+        []
+      )
+      return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
+  }
+
+  async getSectionById(payload) {
+    const {autz, cid, uuid} = payload
+    const {timezone, uid} = autz
+
+    if (autz.company_id !== cid || !autz.is_admin) {
+      throw Error(errors.WRONG_ACCESS)
+    }
+
+    const client = await this.db.connect()
+    try {
+      console.log(uuid)
+      const {rows} = await client.query(
         `SELECT         
-        section_id as secid, 
           section_company_id as cid,         
           section_title as title,
           section_tags as tags, 
           section_description as description, 
           section_tags as tags, 
+          section_uuid as uuid,
           courses_sections.created_at AT TIME ZONE $3 AS created_at,
           courses_sections.updated_at AT TIME ZONE $3 AS updated_at,
           courses_sections.deleted_at AT TIME ZONE $3 AS deleted_at
         FROM courses_sections
-        WHERE section_company_id=$1 and section_id=$2;`,
-        [cid, secid, timezone]
+        WHERE section_company_id=$1 and section_uuid=$2;`,
+        [cid, uuid, timezone]
       )
       return rows
     } catch (error) {
@@ -88,7 +113,7 @@ class CoursesSectionsService {
   async addSection(payload) {
     let client = undefined
     const {autz, section} = payload
-    const {cid, title, tags = [], description} = section
+    const {cid, title, tags = [], description, uuid} = section
 
     const {user_id, company_id, uid} = autz
     let histData = {
@@ -113,25 +138,25 @@ class CoursesSectionsService {
       const {rows: cntExName} = await client.query(
         `SELECT count(*) cnt 
         FROM courses_sections 
-        WHERE section_title=$1 and section_company_id=$2;`,
-        [title, cid]
+        WHERE section_uuid=$1 and section_company_id=$2;`,
+        [uuid, cid]
       )
       if (cntExName[0].cnt > 0) {
         histData.details = `Error [Course section title already exists]`
-        throw Error(errors.THIS_COURSE_NAME_IS_NOT_ALLOWED)
+        throw Error(errors.THIS_COURSE_SECTION_UUID_IS_NOT_ALLOWED)
       }
 
       const {rows} = await client.query(
-        `INSERT INTO courses_sections (section_company_id, section_title, section_tags, section_description) 
-        VALUES ($1, $2, $3, $4) 
+        `INSERT INTO courses_sections (section_company_id, section_title, section_tags, section_description, section_uuid) 
+        VALUES ($1, $2, $3, $4, $5) 
         RETURNING *;`,
-        [cid, title, tags, description]
+        [cid, title, tags, description, uuid]
       )
       histData.result = typeof rows[0] === 'object'
-      histData.object_name = `cr-sec_${rows[0].section_id}`
+      histData.object_name = `cr-sec_${rows[0].section_uuid}`
       histData.target_data = {
         ...histData.target_data,
-        secid: rows[0].section_id
+        uuid: rows[0].section_uuid
       }
       histData.details = 'Success'
 
@@ -149,7 +174,7 @@ class CoursesSectionsService {
   async updSection(payload) {
     let client = undefined
     const {autz, section} = payload
-    const {secid, cid, title, tags = [], description} = section
+    const {uuid, cid, title, tags = [], description} = section
 
     const {user_id, company_id, uid} = autz
     let histData = {
@@ -171,31 +196,33 @@ class CoursesSectionsService {
 
       client = await this.db.connect()
 
-      const {rows: cntExName} = await client.query(
-        `SELECT count(*) cnt 
-        FROM courses_sections 
-        WHERE section_title=$1 and section_company_id=$2 
-          and section_id<>$3 and deleted_at is null;`,
-        [title, cid, secid]
-      )
+      // const {rows: cntExName} = await client.query(
+      //   `SELECT count(*) cnt
+      //   FROM courses_sections
+      //   WHERE section_uuid=$1 and section_company_id=$2
+      //     and section_id<>$3 and deleted_at is null;`,
+      //   [title, cid, secid]
+      // )
 
-      if (cntExName[0].cnt > 0) {
-        histData.details = `Error [Course name already exists]`
-        throw Error(errors.THIS_COURSE_NAME_IS_NOT_ALLOWED)
-      }
+      // if (cntExName[0].cnt > 0) {
+      //   histData.details = `Error [Course name already exists]`
+      //   throw Error(errors.THIS_COURSE_NAME_IS_NOT_ALLOWED)
+      // }
 
       const {rows} = await client.query(
         `UPDATE courses_sections 
           SET section_title=$3, section_tags=$4, section_description=$5 
-          WHERE section_company_id=$2 and section_id =$1
+          WHERE section_company_id=$2 and section_uuid =$1
           AND deleted_at IS NULL
           RETURNING *;`,
-        [secid, cid, title, tags, description]
+        [uuid, cid, title, tags, description]
       )
 
-      histData.object_name = `cr-sec_${rows[0].section_id}`
+      if (rows.length > 0) {
+        histData.object_name = `cr-sec_${rows[0].section_uuid}`
+        histData.details = `[${title}] information updated`
+      }
       histData.result = rows.length === 1
-      histData.details = `[${title}] information updated`
       return rows.length
     } catch (error) {
       throw Error(error.message)
@@ -210,7 +237,7 @@ class CoursesSectionsService {
   async delSection(payload) {
     let client = undefined
     const {autz, section} = payload
-    const {secid, cid} = section
+    const {uuid, cid} = section
 
     const {user_id, company_id, uid} = autz
     let histData = {
@@ -234,17 +261,19 @@ class CoursesSectionsService {
 
       //* Change for sections*/
 
-      // const {rows: usrs} = await client.query(
-      //   `SELECT count(users.user_id) cnt
-      //     FROM groups, users
-      //     WHERE group_company_id=$2 AND group_gid=$1
-      //       AND group_gid = ANY(user_groups)
-      //       AND users.deleted_at is null;`,
-      //   [gid, cid]
-      // )
-      // if (Array.isArray(usrs) && usrs[0].cnt > 0) {
-      //   throw Error(errors.CANNOT_DELETE_A_GROUP_WITH_EXISTING_USERS)
-      // }
+      const {rows: courses} = await client.query(
+        `SELECT count(courses.course_id) cnt
+          FROM courses
+          WHERE course_company_id=$2 
+            AND course_sections @> ARRAY[$1]::text[]
+            AND courses.deleted_at is null;`,
+        [uuid, cid]
+      )
+
+      console.log(courses)
+      if (Array.isArray(courses) && courses[0].cnt > 0) {
+        throw Error(errors.CANNOT_DELETE_THE_USED_COURSE_SECTION)
+      }
 
       // const {rows: grpr} = await client.query(
       //   `SELECT count(course_id) cnt
@@ -261,13 +290,13 @@ class CoursesSectionsService {
       const {rows} = await client.query(
         `UPDATE courses_sections 
         SET deleted_at = now()
-        WHERE section_company_id=$2 and section_id =$1 
+        WHERE section_company_id=$2 and section_uuid=$1 
         and deleted_at is null
         RETURNING *;`,
-        [secid, cid]
+        [uuid, cid]
       )
 
-      histData.object_name = `cr-sec_${secid}`
+      histData.object_name = `cr-sec_${uuid}`
       histData.result = rows.length === 1
       histData.details = 'Success'
       return rows.length
@@ -282,4 +311,4 @@ class CoursesSectionsService {
   }
 }
 
-module.exports = CoursesSectionsService
+module.exports = CourseSectionsService

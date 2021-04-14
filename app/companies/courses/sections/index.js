@@ -4,12 +4,13 @@ const errors = require('../../../errors')
 const feature = 'courses-section'
 
 const {
-  getCoursesSectios: getCoursesSectionsSchema,
-  getCoursesSectionById: getCoursesSectionByIdSchema,
+  getCourseSections: getCourseSectionsSchema,
+  getCourseSectionById: getCourseSectionByIdSchema,
   //getGroupsBindingSeries: getGroupsBindingSeriesSchema,
-  addCoursesSection: addCoursesSectionSchema,
-  updCoursesSection: updCoursesSectionSchema,
-  delCoursesSection: delCoursesSectionSchema
+  getCourseSectionsModel: getCourseSectionsModelSchema,
+  addCourseSection: addCourseSectionSchema,
+  updCourseSection: updCourseSectionSchema,
+  delCourseSection: delCourseSectionSchema
 } = require('./schemas')
 
 module.exports = async function (fastify, opts) {
@@ -17,37 +18,56 @@ module.exports = async function (fastify, opts) {
   fastify.addHook('preValidation', fastify.authPreValidation)
   fastify.addHook('preHandler', fastify.autzPreHandler)
 
+  fastify.get('/', {schema: getCourseSectionsSchema}, getCourseSectionsHandler)
   fastify.get(
-    '/',
-    {schema: getCoursesSectionsSchema},
-    getCoursesSectionsHandler
+    '/model',
+    {schema: getCourseSectionsModelSchema},
+    getCourseSectionsModelHandler
   )
+
   fastify.get(
-    '/:secid',
-    {schema: getCoursesSectionByIdSchema},
-    getCoursesSectionByIdHandler
+    '/:uuid',
+    {schema: getCourseSectionByIdSchema},
+    getCourseSectionByIdHandler
   )
-  fastify.post('/', {schema: addCoursesSectionSchema}, addCoursesSectionHandler)
+  fastify.post('/', {schema: addCourseSectionSchema}, addCourseSectionHandler)
   fastify.put(
-    '/:secid',
-    {schema: updCoursesSectionSchema},
-    updCoursesSectionHandler
+    '/:uuid',
+    {schema: updCourseSectionSchema},
+    updCourseSectionHandler
   )
   fastify.delete(
-    '/:secid',
-    {schema: delCoursesSectionSchema},
-    delCoursesSectionHandler
+    '/:uuid',
+    {schema: delCourseSectionSchema},
+    delCourseSectionHandler
   )
 }
 
 module.exports[Symbol.for('plugin-meta')] = {
   decorators: {
-    fastify: ['authPreValidation', 'autzPreHandler', 'coursesSectionService']
+    fastify: ['authPreValidation', 'autzPreHandler', 'courseSectionsService']
   }
 }
 
-async function getCoursesSectionsHandler(req, reply) {
+async function getCourseSectionsHandler(req, reply) {
   const {query, params, autz} = req
+  const {cid, crid} = params
+
+  const permits = autz.permits
+  const reqAccess = feature
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  return await this.courseSectionsService.getSections({
+    autz,
+    cid,
+    query,
+    crid
+  })
+}
+async function getCourseSectionsModelHandler(req, reply) {
+  const {params, autz} = req
   const {cid} = params
 
   const permits = autz.permits
@@ -56,12 +76,12 @@ async function getCoursesSectionsHandler(req, reply) {
     throw Error(errors.WRONG_ACCESS)
   }
 
-  return await this.coursesSectionService.coursesSections({autz, cid, query})
+  return await this.courseSectionsService.getSectionsModel({autz, cid})
 }
 
-async function getCoursesSectionByIdHandler(req, reply) {
+async function getCourseSectionByIdHandler(req, reply) {
   const {params, autz} = req
-  const {cid, secid} = params
+  const {cid, uuid} = params
 
   const permits = autz.permits
   const reqAccess = feature
@@ -70,16 +90,16 @@ async function getCoursesSectionByIdHandler(req, reply) {
     throw Error(errors.WRONG_ACCESS)
   }
 
-  const section = await this.coursesSectionService.coursesSectionById({
+  const section = await this.courseSectionsService.getSectionById({
     autz,
     cid,
-    secid
+    uuid
   })
   const code = section.length === 1 ? 200 : 404
   reply.code(code).send(section[0])
 }
 
-async function addCoursesSectionHandler(req, reply) {
+async function addCourseSectionHandler(req, reply) {
   const {params, autz} = req
   const {cid} = params
   let url = req.raw.url
@@ -95,17 +115,17 @@ async function addCoursesSectionHandler(req, reply) {
   if (!url.match(/.*\/$/i)) {
     url += '/'
   }
-  const newSection = await this.coursesSectionService.addSection({
+  const newSection = await this.courseSectionsService.addSection({
     autz,
     section
   })
   reply.code(201).header('Location', `${url}${newSection}`).send()
 }
 
-async function updCoursesSectionHandler(req, reply) {
+async function updCourseSectionHandler(req, reply) {
   const {params, autz} = req
-  const {cid, secid} = params
-  const section = {...req.body, cid, secid}
+  const {cid, uuid} = params
+  const section = {...req.body, cid, uuid}
 
   const act = 'edit'
   const permits = autz.permits
@@ -114,15 +134,15 @@ async function updCoursesSectionHandler(req, reply) {
     throw Error(errors.WRONG_ACCESS)
   }
 
-  const updated = await this.coursesSectionService.updSection({autz, section})
+  const updated = await this.courseSectionsService.updSection({autz, section})
   const code = updated === 1 ? 200 : 404
   reply.code(code).send()
 }
 
-async function delCoursesSectionHandler(req, reply) {
+async function delCourseSectionHandler(req, reply) {
   const {params, autz} = req
-  const {cid, secid} = params
-  const section = {cid, secid}
+  const {cid, uuid} = params
+  const section = {cid, uuid}
 
   const act = 'delete'
   const permits = autz.permits
@@ -131,7 +151,7 @@ async function delCoursesSectionHandler(req, reply) {
     throw Error(errors.WRONG_ACCESS)
   }
 
-  const deleted = await this.coursesSectionService.delSection({autz, section})
+  const deleted = await this.courseSectionsService.delSection({autz, section})
   const code = deleted === 1 ? 204 : 404
   reply.code(code).send()
 }
