@@ -2,6 +2,12 @@
 
 //const courses = require('.')
 
+const uuidObj = {
+  type: 'string',
+  pattern:
+    '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
+}
+
 const queryStringJsonSchema = {
   sort: {description: 'Fields sorting', type: 'string'},
   limit: {type: 'integer'},
@@ -36,6 +42,42 @@ const course = {
   },
   required: ['name'],
   additionalProperties: false
+}
+
+const courseSection = {
+  type: 'object',
+  properties: {
+    title: {type: 'string'},
+    description: {type: 'string'},
+    uuid: uuidObj,
+    modules_length: {type: 'integer'}
+  },
+  required: ['title'],
+  additionalProperties: false
+}
+
+const getCourseSections = {
+  tags: ['courses'],
+  params: {
+    type: 'object',
+    required: ['cid', 'crid'],
+    properties: {
+      cid: {
+        type: 'integer'
+      },
+      crid: {
+        type: 'integer'
+      }
+    },
+    additionalProperties: false
+  },
+  //querystring: queryStringJsonSchema,
+  response: {
+    200: {
+      type: 'array',
+      items: courseSection
+    }
+  }
 }
 
 const getCompanyCourses = {
@@ -129,6 +171,7 @@ const delCourse = {
 module.exports = {
   getCompanyCourses,
   getCompanyCourseById,
+  getCourseSections,
   addCourse,
   updCourse,
   delCourse

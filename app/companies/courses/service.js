@@ -287,6 +287,40 @@ class CourseService {
       this.histLogger.saveHistoryInfo(histData)
     }
   }
+
+  async getCourseSections(payload) {
+    const {autz, cid, crid} = payload
+    const {timezone, uid} = autz
+
+    if (autz.company_id !== cid || !autz.is_admin) {
+      throw Error(errors.WRONG_ACCESS)
+    }
+
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `SELECT         
+          section_company_id as cid,         
+          section_title as title,
+          section_description as description, 
+          section_uuid as uuid,
+          coalesce(jsonb_array_length(section_modules),0) as modules_length,
+          courses_sections.created_at AT TIME ZONE $3 AS created_at,
+          courses_sections.updated_at AT TIME ZONE $3 AS updated_at,
+          courses_sections.deleted_at AT TIME ZONE $3 AS deleted_at
+        FROM courses_sections, courses
+        WHERE section_company_id=$1 and course_id=$2
+          and section_uuid::text =ANY (course_sections)`,
+        [cid, crid, timezone]
+      )
+
+      return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
+  }
 }
 
 module.exports = CourseService

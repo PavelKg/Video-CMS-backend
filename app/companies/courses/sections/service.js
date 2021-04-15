@@ -86,7 +86,6 @@ class CourseSectionsService {
 
     const client = await this.db.connect()
     try {
-      console.log(uuid)
       const {rows} = await client.query(
         `SELECT         
           section_company_id as cid,         
