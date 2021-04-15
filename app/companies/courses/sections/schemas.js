@@ -20,7 +20,7 @@ const courseSectionObject = {
   properties: {
     cid: {type: 'integer'},
     title: {type: 'string'},
-    tags: {type: 'array', items: {type: 'string'}},
+    tags: {type: 'string'},
     description: {type: 'string'},
     uuid: uuidObj,
     modules: {type: 'array', items: {type: 'string'}}
