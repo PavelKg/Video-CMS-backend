@@ -159,7 +159,7 @@ class CourseSectionsService {
       }
       histData.details = 'Success'
 
-      return rows[0].section_id
+      return rows[0].section_uuid
     } catch (error) {
       throw Error(error.message)
     } finally {
