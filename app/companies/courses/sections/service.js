@@ -112,7 +112,7 @@ class CourseSectionsService {
   async addSection(payload) {
     let client = undefined
     const {autz, section} = payload
-    const {cid, title, tags = [], description, uuid} = section
+    const {cid, title, tags, description, uuid} = section
 
     const {user_id, company_id, uid} = autz
     let histData = {
@@ -173,7 +173,7 @@ class CourseSectionsService {
   async updSection(payload) {
     let client = undefined
     const {autz, section} = payload
-    const {uuid, cid, title, tags = [], description} = section
+    const {uuid, cid, title, tags, description} = section
 
     const {user_id, company_id, uid} = autz
     let histData = {

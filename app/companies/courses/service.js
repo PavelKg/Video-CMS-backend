@@ -321,6 +321,74 @@ class CourseService {
       client.release()
     }
   }
+
+  async updCourseSections(payload) {
+    const {autz, cid, crid, secid, act} = payload
+    const {timezone, uid} = autz
+
+    if (autz.company_id !== cid || !autz.is_admin) {
+      throw Error(errors.WRONG_ACCESS)
+    }
+
+    let query = ''
+    switch (act) {
+      case 'up':
+        query = `
+          with elem as (
+            select array_position(course_sections, $3) as pos from courses where course_id = $2
+          )
+          update courses 
+          set course_sections[elem.pos-1:elem.pos] =  
+            ARRAY[course_sections[elem.pos], course_sections[elem.pos-1]]
+            from elem
+          where course_company_id=$1 AND deleted_at IS NULL AND
+          course_id = $2 and elem.pos>1
+          RETURNING * ;`
+        break
+      case 'down':
+        query = `
+          with elem as (
+            select array_position(course_sections, $3) as pos from courses where course_id = $2
+          )
+          update courses 
+          set course_sections[elem.pos:elem.pos+1] =  
+            ARRAY[course_sections[elem.pos+1], course_sections[elem.pos]]
+            from elem
+          where course_company_id=$1 AND deleted_at IS NULL AND
+          course_id = $2 and elem.pos<array_length(course_sections,1)
+          RETURNING * ;`
+
+        break
+      case 'add':
+        query = `
+            update courses
+            set course_sections = array_append(course_sections, $3)   
+            where course_company_id=$1 AND deleted_at IS NULL AND
+            course_id = $2
+            RETURNING *`
+        break
+      case 'del':
+        query = `
+            update courses
+            set course_sections = array_remove(course_sections, $3)   
+            where course_company_id=$1 AND deleted_at IS NULL AND
+            course_id = $2
+            RETURNING *`
+        break
+      default:
+        break
+    }
+
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(query, [cid, crid, secid])
+      return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
+  }
 }
 
 module.exports = CourseService

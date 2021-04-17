@@ -7,6 +7,7 @@ const {
   getCompanyCourses: getCompanyCoursesSchema,
   getCompanyCourseById: getCompanyCourseByIdSchema,
   getCourseSections: getCourseSectionsSchema,
+  updCourseSections: updCourseSectionsSchema,
   addCourse: addCourseSchema,
   updCourse: updCourseSchema,
   delCourse: delCourseSchema
@@ -29,7 +30,13 @@ module.exports = async function (fastify, opts) {
     getCourseSectionsHandler
   )
 
-    fastify.post('/', {schema: addCourseSchema}, addCourseHandler)
+  fastify.put(
+    '/:crid/sections',
+    {schema: updCourseSectionsSchema},
+    updCourseSectionsHandler
+  )
+
+  fastify.post('/', {schema: addCourseSchema}, addCourseHandler)
   fastify.put('/:crid', {schema: updCourseSchema}, updCourseHandler)
   fastify.delete('/:crid', {schema: delCourseSchema}, delCourseHandler)
 }
@@ -68,7 +75,7 @@ async function getCompanyCourseByIdHandler(req, reply) {
   reply.code(code).send(course[0])
 }
 
-async function getCourseSectionsHandler(req, reply){
+async function getCourseSectionsHandler(req, reply) {
   const {params, autz} = req
   const {cid, crid} = params
 
@@ -81,6 +88,26 @@ async function getCourseSectionsHandler(req, reply){
   const sections = await this.courseService.getCourseSections({autz, cid, crid})
   const code = sections.length > 0 ? 200 : 404
   reply.code(code).send(sections)
+}
+
+async function updCourseSectionsHandler(req, reply) {
+  const {params, autz} = req
+  const {cid, crid} = params
+  const section = {...req.body, cid, crid}
+
+  const permits = autz.permits
+  const reqAccess = feature
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  const sections = await this.courseService.updCourseSections({
+    autz,
+    ...section
+  })
+
+  const code = sections.length > 0 ? 200 : 404
+  reply.code(code).send()
 }
 
 async function addCourseHandler(req, reply) {

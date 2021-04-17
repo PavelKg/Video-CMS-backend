@@ -80,6 +80,38 @@ const getCourseSections = {
   }
 }
 
+const updCourseSections = {
+  tags: ['courses'],
+  params: {
+    type: 'object',
+    required: ['cid', 'crid'],
+    properties: {
+      cid: {
+        type: 'integer'
+      },
+      crid: {
+        type: 'integer'
+      }
+    },
+
+    additionalProperties: false
+  },
+  body: {
+    type: 'object',
+    required: ['act', 'secid'],
+    properties: {
+      secid: uuidObj,
+      act: {type: 'string', enum: ['up', 'down', 'del', 'add']}
+    }
+  },
+  response: {
+    200: {
+      type: 'array',
+      items: courseSection
+    }
+  }
+}
+
 const getCompanyCourses = {
   tags: ['courses'],
   params: {
@@ -172,6 +204,7 @@ module.exports = {
   getCompanyCourses,
   getCompanyCourseById,
   getCourseSections,
+  updCourseSections,
   addCourse,
   updCourse,
   delCourse
