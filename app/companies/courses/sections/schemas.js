@@ -32,6 +32,7 @@ const courseSectionsShort = {
   properties: {
     title: {type: 'string'},
     description: {type: 'string'},
+    tags: {type: 'string'},
     uuid: uuidObj
   },
   required: ['title'],
