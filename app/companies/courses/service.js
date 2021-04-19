@@ -308,9 +308,11 @@ class CourseService {
           courses_sections.created_at AT TIME ZONE $3 AS created_at,
           courses_sections.updated_at AT TIME ZONE $3 AS updated_at,
           courses_sections.deleted_at AT TIME ZONE $3 AS deleted_at
-        FROM courses_sections, courses
+        FROM courses, courses_sections
+        JOIN UNNEST(course_sections::uuid[]) 
+		    WITH ORDINALITY t(section_uuid, ord) USING (section_uuid)
         WHERE section_company_id=$1 and course_id=$2
-          and section_uuid::text =ANY (course_sections)`,
+        ORDER  BY t.ord;`,
         [cid, crid, timezone]
       )
 
