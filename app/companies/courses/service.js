@@ -304,7 +304,7 @@ class CourseService {
           section_title as title,
           section_description as description, 
           section_uuid as uuid,
-          coalesce(array_length(section_modules),0) as modules_length,
+          coalesce(array_length(section_modules,1),0) as modules_length,
           courses_sections.created_at AT TIME ZONE $3 AS created_at,
           courses_sections.updated_at AT TIME ZONE $3 AS updated_at,
           courses_sections.deleted_at AT TIME ZONE $3 AS deleted_at
