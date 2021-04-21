@@ -323,7 +323,7 @@ class CourseSectionsService {
         `SELECT         
           module_id as modid,
           module_instructor_note as instructor_note,
-          coalesce(array_length(module_lessons,1),0) as lessons_length,
+          coalesce(jsonb_array_length(module_lessons),0) as lessons_length,
           courses_modules.created_at AT TIME ZONE $3 AS created_at,
           courses_modules.updated_at AT TIME ZONE $3 AS updated_at,
           courses_modules.deleted_at AT TIME ZONE $3 AS deleted_at
