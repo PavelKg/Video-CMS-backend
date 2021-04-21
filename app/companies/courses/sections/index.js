@@ -6,7 +6,8 @@ const feature = 'courses-section'
 const {
   getCourseSections: getCourseSectionsSchema,
   getCourseSectionById: getCourseSectionByIdSchema,
-  //getGroupsBindingSeries: getGroupsBindingSeriesSchema,
+  getSectionModules: getSectionModulesSchema,
+  updSectionModules: updSectionModulesSchema,
   getCourseSectionsModel: getCourseSectionsModelSchema,
   addCourseSection: addCourseSectionSchema,
   updCourseSection: updCourseSectionSchema,
@@ -30,6 +31,17 @@ module.exports = async function (fastify, opts) {
     {schema: getCourseSectionByIdSchema},
     getCourseSectionByIdHandler
   )
+  fastify.get(
+    '/:uuid/modules',
+    {schema: getSectionModulesSchema},
+    getSectionModulesHandler
+  )
+  fastify.put(
+    '/:uuid/modules',
+    {schema: updSectionModulesSchema},
+    updSectionModulesHandler
+  )
+
   fastify.post('/', {schema: addCourseSectionSchema}, addCourseSectionHandler)
   fastify.put(
     '/:uuid',
@@ -97,6 +109,46 @@ async function getCourseSectionByIdHandler(req, reply) {
   })
   const code = section.length === 1 ? 200 : 404
   reply.code(code).send(section[0])
+}
+
+async function getSectionModulesHandler(req, reply) {
+  const {params, autz} = req
+  const {cid, uuid} = params
+
+  const permits = autz.permits
+  const reqAccess = feature
+
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  const modules = await this.courseSectionsService.getSectionModules({
+    autz,
+    cid,
+    secid: uuid
+  })
+  const code = modules.length > 0 ? 200 : 404
+  reply.code(code).send(modules)
+}
+
+async function updSectionModulesHandler(req, reply) {
+  const {params, autz} = req
+  const {cid, uuid} = params
+  const module = {...req.body, cid, secid: uuid}
+
+  const permits = autz.permits
+  const reqAccess = feature
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  const modules = await this.courseSectionsService.updSectionModules({
+    autz,
+    ...module
+  })
+
+  const code = modules.length > 0 ? 200 : 404
+  reply.code(code).send()
 }
 
 async function addCourseSectionHandler(req, reply) {

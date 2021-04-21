@@ -39,6 +39,15 @@ const courseSectionsShort = {
   additionalProperties: false
 }
 
+const sectionModule = {
+  type: 'object',
+  properties: {
+    instructor_note: {},
+    lessons_length: {type: 'integer'},
+    modid: uuidObj
+  }
+}
+
 const getCourseSectionsModel = {
   tags: shemasTags,
   params: {
@@ -93,6 +102,27 @@ const getCourseSectionById = {
   }
 }
 
+const getSectionModules = {
+  tags: shemasTags,
+  params: {
+    type: 'object',
+    required: ['cid', 'uuid'],
+    properties: {
+      cid: {
+        type: 'integer'
+      },
+      uuid: uuidObj
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: {
+      type: 'array',
+      items: sectionModule
+    }
+  }
+}
+
 const addCourseSection = {
   tags: shemasTags,
   params: {
@@ -124,6 +154,36 @@ const updCourseSection = {
   body: courseSectionsShort
 }
 
+const updSectionModules = {
+  tags: shemasTags,
+  params: {
+    type: 'object',
+    required: ['cid', 'uuid'],
+    properties: {
+      cid: {
+        type: 'integer'
+      },
+      uuid: uuidObj
+    },
+
+    additionalProperties: false
+  },
+  body: {
+    type: 'object',
+    required: ['act', 'modid'],
+    properties: {
+      modid: uuidObj,
+      act: {type: 'string', enum: ['up', 'down', 'del', 'add']}
+    }
+  },
+  response: {
+    200: {
+      type: 'array',
+      items: sectionModule
+    }
+  }
+}
+
 const delCourseSection = {
   tags: shemasTags,
   params: {
@@ -143,6 +203,8 @@ module.exports = {
   getCourseSections,
   getCourseSectionsModel,
   getCourseSectionById,
+  getSectionModules,
+  updSectionModules,
   addCourseSection,
   updCourseSection,
   delCourseSection

@@ -35,6 +35,9 @@ const CoursesService = require('./companies/courses/service')
 const CourseSections = require('./companies/courses/sections')
 const CourseSectionsService = require('./companies/courses/sections/service')
 
+const CourseModules = require('./companies/courses/sections/modules')
+const CourseModulesService = require('./companies/courses/sections/modules/service')
+
 const Series = require('./companies/series')
 const SeriesService = require('./companies/series/service')
 
@@ -220,6 +223,7 @@ async function decorateFastifyInstance(fastify) {
   const groupService = new GroupService(db, histLoggerService)
   const coursesService = new CoursesService(db, histLoggerService)
   const courseSectionsService = new CourseSectionsService(db, histLoggerService)
+  const courseModulesService = new CourseModulesService(db, histLoggerService)
   const seriesService = new SeriesService(db, histLoggerService)
   const userService = new UserService(db, nodemailer, twilio, histLoggerService)
   const messageService = new MessageService(db, histLoggerService)
@@ -243,6 +247,7 @@ async function decorateFastifyInstance(fastify) {
   fastify.decorate('courseService', coursesService)
   fastify.decorate('seriesService', seriesService)
   fastify.decorate('courseSectionsService', courseSectionsService)
+  fastify.decorate('courseModulesService', courseModulesService)
   fastify.decorate('userService', userService)
   fastify.decorate('messageService', messageService)
   fastify.decorate('videoService', videoService)
@@ -295,6 +300,9 @@ module.exports = async function (fastify, opts) {
     .register(CourseSections, {
       prefix: '/api/companies/:cid/course-sections'
     })
+    .register(CourseModules, {
+      prefix: '/api/companies/:cid/course-modules'
+    })    
     .register(Series, {prefix: '/api/companies/:cid/series'})
     .register(User, {prefix: '/api/companies/:cid/users'})
     .register(Message, {prefix: '/api/messages'})

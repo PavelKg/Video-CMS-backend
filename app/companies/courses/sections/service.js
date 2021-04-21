@@ -308,6 +308,108 @@ class CourseSectionsService {
       this.histLogger.saveHistoryInfo(histData)
     }
   }
+
+  async getSectionModules(payload) {
+    const {autz, cid, secid} = payload
+    const {timezone, uid} = autz
+
+    if (autz.company_id !== cid) {
+      throw Error(errors.WRONG_ACCESS)
+    }
+
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `SELECT         
+          module_id as modid,
+          module_instructor_note as instructor_note,
+          coalesce(array_length(module_lessons,1),0) as lessons_length,
+          courses_modules.created_at AT TIME ZONE $3 AS created_at,
+          courses_modules.updated_at AT TIME ZONE $3 AS updated_at,
+          courses_modules.deleted_at AT TIME ZONE $3 AS deleted_at
+        FROM courses_sections, courses_modules
+        JOIN UNNEST(section_modules::uuid[]) 
+        WITH ORDINALITY t(module_id, ord) USING (module_id)
+        WHERE section_company_id=$1 and section_uuid=$2
+        ORDER  BY t.ord;`,
+        [cid, secid, timezone]
+      )
+
+      return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
+  }
+
+  async updSectionModules(payload) {
+    const {autz, cid, secid, modid, act} = payload
+    const {timezone, uid} = autz
+
+    if (autz.company_id !== cid || !autz.is_admin) {
+      throw Error(errors.WRONG_ACCESS)
+    }
+
+    let query = ''
+    switch (act) {
+      case 'up':
+        query = `
+          with elem as (
+            select array_position(section_modules, $3) as pos from courses_sections where section_uuid = $2
+          )
+          update courses_sections 
+          set section_modules[elem.pos-1:elem.pos] =  
+            ARRAY[section_modules[elem.pos], section_modules[elem.pos-1]]
+            from elem
+          where section_company_id=$1 AND deleted_at IS NULL AND
+          section_uuid = $2 and elem.pos>1
+          RETURNING * ;`
+        break
+      case 'down':
+        query = `
+          with elem as (
+            select array_position(section_modules, $3) as pos from courses_sections where section_uuid = $2
+          )
+          update courses_sections 
+          set section_modules[elem.pos:elem.pos+1] =  
+            ARRAY[section_modules[elem.pos+1], section_modules[elem.pos]]
+            from elem
+          where section_company_id=$1 AND deleted_at IS NULL AND
+          section_uuid = $2 and elem.pos<array_length(section_modules,1)
+          RETURNING * ;`
+
+        break
+      case 'add':
+        query = `
+            update courses_sections
+            set section_modules = array_append(section_modules, $3)   
+            where section_company_id=$1 AND deleted_at IS NULL AND
+            section_uuid = $2
+            RETURNING *`
+        break
+      case 'del':
+        query = `
+            update courses_sections
+            set section_modules = array_remove(section_modules, $3)   
+            where section_company_id=$1 AND deleted_at IS NULL AND
+            section_uuid = $2
+            RETURNING *`
+        break
+      default:
+        break
+    }
+
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(query, [cid, secid, modid])
+      return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
+  }
 }
 
 module.exports = CourseSectionsService
