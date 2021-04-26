@@ -1,7 +1,7 @@
 'use strict'
 
 const errors = require('../../../../errors')
-const feature = 'courses-section'
+const feature = 'courses'
 
 const {
   getCourseModules: getCourseModulesSchema,

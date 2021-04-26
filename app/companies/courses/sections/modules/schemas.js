@@ -1,6 +1,6 @@
 'use strict'
 
-const shemasTags = ['courses-modules']
+const shemasTags = ['courses', 'courses-modules']
 
 const uuidObj = {
   type: 'string',

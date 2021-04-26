@@ -1,6 +1,7 @@
 'use strict'
 
 //const courses = require('.')
+const shemasTags = ['courses']
 
 const uuidObj = {
   type: 'string',
@@ -57,7 +58,7 @@ const courseSection = {
 }
 
 const getCourseSections = {
-  tags: ['courses'],
+  tags: shemasTags,
   params: {
     type: 'object',
     required: ['cid', 'crid'],
@@ -81,7 +82,7 @@ const getCourseSections = {
 }
 
 const updCourseSections = {
-  tags: ['courses'],
+  tags: shemasTags,
   params: {
     type: 'object',
     required: ['cid', 'crid'],
@@ -113,7 +114,7 @@ const updCourseSections = {
 }
 
 const getCompanyCourses = {
-  tags: ['courses'],
+  tags: shemasTags,
   params: {
     type: 'object',
     required: ['cid'],
@@ -134,7 +135,7 @@ const getCompanyCourses = {
 }
 
 const getCompanyCourseById = {
-  tags: ['courses'],
+  tags: shemasTags,
   params: {
     type: 'object',
     required: ['cid', 'crid'],
@@ -155,7 +156,7 @@ const getCompanyCourseById = {
 }
 
 const addCourse = {
-  tags: ['courses'],
+  tags: shemasTags,
   params: {
     type: 'object',
     required: ['cid'],
@@ -170,7 +171,7 @@ const addCourse = {
 }
 
 const updCourse = {
-  tags: ['courses'],
+  tags: shemasTags,
   params: {
     type: 'object',
     required: ['cid', 'crid'],
@@ -186,7 +187,7 @@ const updCourse = {
 }
 
 const delCourse = {
-  tags: ['courses'],
+  tags: shemasTags,
   params: {
     type: 'object',
     required: ['cid', 'crid'],
