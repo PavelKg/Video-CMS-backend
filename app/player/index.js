@@ -10,13 +10,20 @@ const html_temp = `
     <meta property="og:image" content="{{og:image}}" />
     <meta property="og:image:type" content="image/png" />
     <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
+    <style type="text/css">
+ html, body {
+   height: 100%;
+   margin: 0;
+   overflow: hidden;
+ }
+</style>
   </head>
   <body>
     <video
     id="my-video"
     controls
     preload="auto"
-    width="100%" height="100%" class="video-js vjs-default-skin"
+    style="width=100%; height=100%;" class="video-js vjs-default-skin vjs-big-play-centered"
     
     poster="{{og:image}}"
     data-setup="{}"
