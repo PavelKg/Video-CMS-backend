@@ -23,7 +23,7 @@ const html_temp = `
     id="my-video"
     controls
     preload="auto"
-    style="width=100%; height=100%;" class="video-js vjs-default-skin vjs-big-play-centered"
+    style="width:100%; height:100%;" class="video-js vjs-default-skin vjs-big-play-centered"
     
     poster="{{og:image}}"
     data-setup="{}"
