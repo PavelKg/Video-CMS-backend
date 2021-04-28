@@ -16,7 +16,7 @@ const html_temp = `
     id="my-video"
     controls
     preload="auto"
-    width="960" height="540" class="video-js vjs-default-skin"
+    width="100%" height="100%" class="video-js vjs-default-skin"
     
     poster="{{og:image}}"
     data-setup="{}"
