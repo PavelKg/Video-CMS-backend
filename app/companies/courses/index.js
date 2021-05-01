@@ -78,7 +78,7 @@ async function getUsersCoursesHandler(req, reply) {
   }
 
   let category = /.*\/(.+)$/.exec(req.routerPath)[1]
-  category = category.charAt(0).toUpperCase() + category.substring(1)
+  //category = category.charAt(0).toUpperCase() + category.substring(1)
 
   return await this.courseService.usersCourses({autz, query, category})
 }
