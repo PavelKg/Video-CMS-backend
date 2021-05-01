@@ -21,7 +21,6 @@ const queryStringJsonSchema = {
 const courseObject = {
   type: 'object',
   properties: {
-    cid: {type: 'integer'},
     name: course_name,
     title: {type: 'string'},
     is_published: {type: 'boolean'},
@@ -37,14 +36,12 @@ const courseObject = {
 const course = {
   type: 'object',
   properties: {
-    name: course_name,
     title: {type: 'string'},
     tags: {type: 'string'},
     teachers: {type: 'array', items: {type: 'integer'}},
     details: {type: 'string'},
     is_published: {type: 'boolean'}
   },
-  required: ['name'],
   additionalProperties: false
 }
 
