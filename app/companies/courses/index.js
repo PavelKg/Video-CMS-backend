@@ -132,8 +132,8 @@ async function getCourseSectionsHandler(req, reply) {
   }
 
   const sections = await this.courseService.getCourseSections({autz, name})
-  const code = sections.length > 0 ? 200 : 404
-  reply.code(code).send(sections)
+  //const code = sections.length > 0 ? 200 : 404
+  reply.code(200).send(sections)
 }
 
 async function updCourseSectionsHandler(req, reply) {
