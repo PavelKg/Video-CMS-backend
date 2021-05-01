@@ -296,7 +296,7 @@ module.exports = async function (fastify, opts) {
     .register(Company, {prefix: '/api/companies/:cid/mng'})
     .register(Role, {prefix: '/api/companies/:cid/roles'})
     .register(Group, {prefix: '/api/companies/:cid/groups'})
-    .register(Courses, {prefix: '/api/companies/:cid/courses'})
+    .register(Courses, {prefix: '/api/companies/courses'})
     .register(CourseSections, {
       prefix: '/api/companies/:cid/course-sections'
     })

@@ -9,16 +9,11 @@ class CourseService {
     this.histLogger = histLogger
   }
 
-  async companyCourses(payload) {
-    const {autz, cid} = payload
-    const {timezone, uid} = autz
+  async courses(payload) {
+    const {autz, query} = payload
+    const {timezone, company_id: cid} = autz
 
-    const {
-      limit = 'ALL',
-      offset = 0,
-      sort = 'course_id',
-      filter = ''
-    } = payload.query
+    const {limit = 'ALL', offset = 0, sort = 'course_name', filter = ''} = query
 
     const qSort = db_api.sorting(sort, 'courses')
 
@@ -29,9 +24,8 @@ class CourseService {
     try {
       const {rows} = await client.query(
         `SELECT 
-        course_id as crid, 
-        course_company_id as cid,         
         course_name as name,
+        course_title as title,
         course_tags as tags, 
         course_teachers as teachers,
         course_details as details,
@@ -53,10 +47,90 @@ class CourseService {
     }
   }
 
-  async companyCourseById(payload) {
-    const {autz, cid, crid} = payload
-    const {timezone, uid} = autz
-    if (autz.company_id !== cid || !autz.is_admin) {
+  async usersCourses(payload) {
+    const {autz, query, category} = payload
+    const {timezone, company_id: cid, uid} = autz
+
+    const {limit = 'ALL', offset = 0, sort = 'course_name', filter = ''} = query
+
+    const qSort = db_api.sorting(sort, 'courses')
+
+    let qFilter = filter !== '' ? db_api.filtration(filter, 'courses') : ''
+    qFilter = db_api.setFilterTz(qFilter, timezone)
+
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `SELECT 
+        course_name as name,
+        course_title as title,
+        course_tags as tags, 
+        course_teachers as teachers,
+        course_details as details
+        FROM courses, companies
+        WHERE course_company_id=$1 AND companies.company_id=courses.course_company_id
+          AND EXISTS (
+            SELECT  -- SELECT list mostly irrelevant; can just be empty in Postgres
+            FROM   users_achievements
+            WHERE  course_name = ach_course_name AND ach_user_company_id=$1 
+              AND ach_user_uid=$3 AND COALESCE(ach_course_completed, false)=$4
+          )
+          --AND course_is_published=true 
+        ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
+        [cid, offset, uid, category === 'completed']
+      )
+      return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
+  }
+
+  async coursesCatalog(payload) {
+    const {autz, query} = payload
+    const {timezone, company_id: cid, uid} = autz
+
+    const {limit = 'ALL', offset = 0, sort = 'course_name', filter = ''} = query
+
+    const qSort = db_api.sorting(sort, 'courses')
+
+    let qFilter = filter !== '' ? db_api.filtration(filter, 'courses') : ''
+    qFilter = db_api.setFilterTz(qFilter, timezone)
+
+    const client = await this.db.connect()
+    try {
+      const {rows} = await client.query(
+        `SELECT 
+        course_name as name,
+        course_title as title,
+        course_tags as tags, 
+        course_teachers as teachers,
+        course_details as details
+        FROM courses, companies
+        WHERE course_company_id=$1 AND companies.company_id=courses.course_company_id
+          AND NOT EXISTS (
+            SELECT  -- SELECT list mostly irrelevant; can just be empty in Postgres
+            FROM   users_achievements
+            WHERE  course_name = ach_course_name and ach_user_company_id=$1 and ach_user_uid=$3
+          )
+          AND ((courses.deleted_at is NOT NULL AND companies.company_show_deleted=true) OR courses.deleted_at IS NULL)
+          AND course_is_published=true 
+        ${qFilter} ORDER BY ${qSort} LIMIT ${limit} OFFSET $2;`,
+        [cid, offset, uid]
+      )
+      return rows
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      client.release()
+    }
+  }
+
+  async courseById(payload) {
+    const {autz, name} = payload
+    const {timezone, company_id: cid} = autz
+    if (!autz.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
@@ -67,6 +141,7 @@ class CourseService {
         course_id as crid, 
         course_company_id as cid,         
         course_name as name,
+        course_title as title,
         course_tags as tags, 
         course_teachers as teachers,
         course_is_published as is_published,
@@ -75,8 +150,8 @@ class CourseService {
         courses.updated_at AT TIME ZONE $3 AS updated_at,
         courses.deleted_at AT TIME ZONE $3 AS deleted_at
         FROM courses
-        WHERE course_company_id=$1 and course_id=$2;`,
-        [cid, crid, timezone]
+        WHERE course_company_id=$1 and course_name=$2;`,
+        [cid, name, timezone]
       )
       return rows
     } catch (error) {
@@ -89,23 +164,23 @@ class CourseService {
   async addCourse(payload) {
     let client = undefined
     const {autz, course} = payload
-    const {cid, name, tags = [], teachers = []} = course
+    const {name, title, tags = [], teachers = []} = course
 
-    const {user_id, company_id, uid} = autz
+    const {user_id, company_id: cid, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'created',
       result: false,
       user_id,
       user_uid: uid,
-      cid: company_id,
+      cid: cid,
       object_name: name,
       details: 'Failure',
       target_data: {...course}
     }
 
     try {
-      if (autz.company_id !== cid || !autz.is_admin) {
+      if (!autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -123,17 +198,20 @@ class CourseService {
       }
 
       const {rows} = await client.query(
-        `INSERT INTO courses (course_company_id, course_name, course_tags, course_teachers) 
-        VALUES ($1, $2, $3, $4) 
+        `INSERT INTO courses (course_company_id, course_name, course_title, course_tags, course_teachers) 
+        VALUES ($1, $2, $3, $4, $5) 
         RETURNING *;`,
-        [cid, name, tags, teachers]
+        [cid, name, title, tags, teachers]
       )
       histData.result = typeof rows[0] === 'object'
-      histData.object_name = `cr_${rows[0].course_id}`
-      histData.target_data = {...histData.target_data, crid: rows[0].course_id}
+      histData.object_name = `cr-${rows[0].course_name}`
+      histData.target_data = {
+        ...histData.target_data,
+        name: rows[0].course_name
+      }
       histData.details = 'Success'
 
-      return rows[0].course_id
+      return rows[0].course_name
     } catch (error) {
       throw Error(error.message)
     } finally {
@@ -148,59 +226,59 @@ class CourseService {
     let client = undefined
     const {autz, course} = payload
     const {
-      crid,
-      cid,
       name,
+      title = '',
       tags = '',
       teachers = [],
       details = '',
       is_published = false
     } = course
 
-    const {user_id, company_id, uid} = autz
+    const {user_id, company_id: cid, uid} = autz
     let histData = {
       category: this.history_category,
       action: 'edited',
       result: false,
       user_id,
       user_uid: uid,
-      cid: company_id,
+      cid: cid,
       object_name: name,
       details: 'Failure [name]',
       target_data: {...course}
     }
 
     try {
-      if (autz.company_id !== cid || !autz.is_admin) {
+      if (!autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
       client = await this.db.connect()
 
-      const {rows: cntExName} = await client.query(
-        `SELECT count(*) cnt 
-        FROM courses 
-        WHERE course_name=$1 and course_company_id=$2 
-          and course_id<>$3 and deleted_at is null;`,
-        [name, cid, crid]
-      )
+      // const {rows: cntExName} = await client.query(
+      //   `SELECT count(*) cnt
+      //   FROM courses
+      //   WHERE course_name=$1 and course_company_id=$2
+      //     and course_id<>$3 and deleted_at is null;`,
+      //   [name]
+      // )
 
-      if (cntExName[0].cnt > 0) {
-        histData.details = `Error [Course name already exists]`
-        throw Error(errors.THIS_COURSE_NAME_IS_NOT_ALLOWED)
-      }
+      // if (cntExName[0].cnt > 0) {
+      //   histData.details = `Error [Course name already exists]`
+      //   throw Error(errors.THIS_COURSE_NAME_IS_NOT_ALLOWED)
+      // }
 
       const {rows} = await client.query(
         `UPDATE courses 
-          SET course_name=$3, course_tags=$4, course_teachers=$5, 
-            course_details=$6, course_is_published=$7 
-          WHERE course_company_id=$2 and course_id =$1
+          SET course_tags=$3, course_teachers=$4, 
+            course_details=$5, course_is_published=$6, 
+            course_title = $7
+          WHERE course_company_id=$1 and course_name =$2
           AND deleted_at IS NULL
           RETURNING *;`,
-        [crid, cid, name, tags, teachers, details, is_published]
+        [cid, name, tags, teachers, details, is_published, title]
       )
 
-      histData.object_name = `cr_${rows[0].course_id}`
+      histData.object_name = `cr-${rows[0].course_name}`
       histData.result = rows.length === 1
       histData.details = `[${name}] information updated`
       return rows.length
@@ -216,24 +294,24 @@ class CourseService {
 
   async delCourse(payload) {
     let client = undefined
-    const {autz, course} = payload
-    const {crid, cid} = course
+    const {autz, name} = payload
 
-    const {user_id, company_id, uid} = autz
+    const {user_id, company_id: cid, uid} = autz
+
     let histData = {
       category: this.history_category,
       action: 'deleted',
       result: false,
       user_id,
       user_uid: uid,
-      cid: company_id,
+      cid: cid,
       object_name: '',
       details: 'Failure',
-      target_data: {...course}
+      target_data: {name}
     }
 
     try {
-      if (autz.company_id !== cid || !autz.is_admin) {
+      if (!autz.is_admin) {
         throw Error(errors.WRONG_ACCESS)
       }
 
@@ -268,13 +346,13 @@ class CourseService {
       const {rows} = await client.query(
         `UPDATE courses 
         SET deleted_at = now()
-        WHERE course_company_id=$2 and course_id =$1 
+        WHERE course_company_id=$2 and course_name =$1 
         and deleted_at is null
         RETURNING *;`,
-        [crid, cid]
+        [name, cid]
       )
 
-      histData.object_name = `cr_${crid}`
+      histData.object_name = `cr-${name}`
       histData.result = rows.length === 1
       histData.details = 'Success'
       return rows.length
@@ -289,10 +367,10 @@ class CourseService {
   }
 
   async getCourseSections(payload) {
-    const {autz, cid, crid} = payload
-    const {timezone, uid} = autz
+    const {autz, name} = payload
+    const {timezone, company_id: cid} = autz
 
-    if (autz.company_id !== cid || !autz.is_admin) {
+    if (!autz.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
@@ -311,9 +389,9 @@ class CourseService {
         FROM courses, courses_sections
         JOIN UNNEST(course_sections::uuid[]) 
 		    WITH ORDINALITY t(section_uuid, ord) USING (section_uuid)
-        WHERE section_company_id=$1 and course_id=$2
+        WHERE section_company_id=$1 and course_name=$2
         ORDER  BY t.ord;`,
-        [cid, crid, timezone]
+        [cid, name, timezone]
       )
 
       return rows
@@ -325,10 +403,10 @@ class CourseService {
   }
 
   async updCourseSections(payload) {
-    const {autz, cid, crid, secid, act} = payload
-    const {timezone, uid} = autz
+    const {autz, name, secid, act} = payload
+    const {company_id: cid} = autz
 
-    if (autz.company_id !== cid || !autz.is_admin) {
+    if (!autz.is_admin) {
       throw Error(errors.WRONG_ACCESS)
     }
 
@@ -337,27 +415,27 @@ class CourseService {
       case 'up':
         query = `
           with elem as (
-            select array_position(course_sections, $3) as pos from courses where course_id = $2
+            select array_position(course_sections, $3) as pos from courses where course_name = $2
           )
           update courses 
           set course_sections[elem.pos-1:elem.pos] =  
             ARRAY[course_sections[elem.pos], course_sections[elem.pos-1]]
             from elem
           where course_company_id=$1 AND deleted_at IS NULL AND
-          course_id = $2 and elem.pos>1
+          course_name = $2 and elem.pos>1
           RETURNING * ;`
         break
       case 'down':
         query = `
           with elem as (
-            select array_position(course_sections, $3) as pos from courses where course_id = $2
+            select array_position(course_sections, $3) as pos from courses where course_name = $2
           )
           update courses 
           set course_sections[elem.pos:elem.pos+1] =  
             ARRAY[course_sections[elem.pos+1], course_sections[elem.pos]]
             from elem
           where course_company_id=$1 AND deleted_at IS NULL AND
-          course_id = $2 and elem.pos<array_length(course_sections,1)
+          course_name = $2 and elem.pos<array_length(course_sections,1)
           RETURNING * ;`
 
         break
@@ -366,7 +444,7 @@ class CourseService {
             update courses
             set course_sections = array_append(course_sections, $3)   
             where course_company_id=$1 AND deleted_at IS NULL AND
-            course_id = $2
+            course_name = $2
             RETURNING *`
         break
       case 'del':
@@ -374,7 +452,7 @@ class CourseService {
             update courses
             set course_sections = array_remove(course_sections, $3)   
             where course_company_id=$1 AND deleted_at IS NULL AND
-            course_id = $2
+            course_name = $2
             RETURNING *`
         break
       default:
@@ -383,7 +461,7 @@ class CourseService {
 
     const client = await this.db.connect()
     try {
-      const {rows} = await client.query(query, [cid, crid, secid])
+      const {rows} = await client.query(query, [cid, name, secid])
       return rows
     } catch (error) {
       throw Error(error.message)
