@@ -9,7 +9,7 @@ const uuidObj = {
     '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
 }
 
-const course_name = {type: 'string', pattern: '^[\\d\\w-]+$'}
+const course_name = {type: 'string', pattern: '^[a-z\\d-]+$'}
 
 const queryStringJsonSchema = {
   sort: {description: 'Fields sorting', type: 'string'},
@@ -33,6 +33,7 @@ const courseObject = {
   }
 }
 
+const course_add_props = {properties: {name: course_name}}
 const course = {
   type: 'object',
   properties: {
@@ -145,7 +146,7 @@ const addCourse = {
     properties: {},
     additionalProperties: false
   },
-  body: course
+  body: {...course, ...course_add_props}
 }
 
 const updCourse = {

@@ -278,7 +278,7 @@ class CourseService {
         [cid, name, tags, teachers, details, is_published, title]
       )
 
-      histData.object_name = `cr-${rows[0].course_name}`
+      histData.object_name = `cr-${name}`
       histData.result = rows.length === 1
       histData.details = `[${name}] information updated`
       return rows.length
