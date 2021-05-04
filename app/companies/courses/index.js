@@ -8,6 +8,7 @@ const {
   getCourseById: getCourseByIdSchema,
   getCourseSections: getCourseSectionsSchema,
   updCourseSections: updCourseSectionsSchema,
+  applyCourse: applyCourseSchema,
   addCourse: addCourseSchema,
   updCourse: updCourseSchema,
   delCourse: delCourseSchema
@@ -33,6 +34,12 @@ module.exports = async function (fastify, opts) {
     '/:name/sections',
     {schema: getCourseSectionsSchema},
     getCourseSectionsHandler
+  )
+
+  fastify.post(
+    '/:name/apply',
+    {schema: applyCourseSchema},
+    applyCourseSchemaHandler
   )
 
   fastify.put(
@@ -156,6 +163,30 @@ async function updCourseSectionsHandler(req, reply) {
   })
 
   const code = sections.length > 0 ? 200 : 404
+  reply.code(code).send()
+}
+
+async function applyCourseSchemaHandler(req, reply) {
+  const {
+    autz,
+    params: {name},
+    raw
+  } = req
+  //let url = raw.url
+
+  const act = 'apply'
+  const permits = autz.permits
+  const reqAccess = `${feature}.${act}`
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  // if (!url.match(/.*\/$/i)) {
+  //   url += '/'
+  // }
+  const res = await this.courseService.applyCourse({autz, name})
+  const code = res > 0 ? 201 : 404
+
   reply.code(code).send()
 }
 

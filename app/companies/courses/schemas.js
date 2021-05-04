@@ -138,6 +138,18 @@ const getCourseById = {
   }
 }
 
+const applyCourse = {
+  tags: shemasTags,
+  params: {
+    type: 'object',
+    required: ['name'],
+    properties: {
+      name: course_name
+    },
+    additionalProperties: false
+  }
+}
+
 const addCourse = {
   tags: shemasTags,
   params: {
@@ -179,6 +191,7 @@ module.exports = {
   getCourseById,
   getCourseSections,
   updCourseSections,
+  applyCourse,
   addCourse,
   updCourse,
   delCourse

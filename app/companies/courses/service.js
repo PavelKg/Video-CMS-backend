@@ -222,6 +222,82 @@ class CourseService {
     }
   }
 
+  async applyCourse(payload) {
+    let client = undefined
+    const {autz, name} = payload
+
+    const {user_id, company_id: cid, uid} = autz
+    let histData = {
+      category: this.history_category,
+      action: 'apply',
+      result: false,
+      user_id,
+      user_uid: uid,
+      cid: cid,
+      object_name: name,
+      details: 'Failure [name]',
+      target_data: {name}
+    }
+
+    try {
+      client = await this.db.connect()
+
+      const {rows: cntExName} = await client.query(
+        `SELECT count(*) cnt
+        FROM users_achievements
+        WHERE ach_course_name=$1 and ach_user_company_id=$2
+          and ach_user_uid=$3 and deleted_at is null;`,
+        [name, cid, uid]
+      )
+
+      if (cntExName[0].cnt > 0) {
+        histData.details = `Error [The course has already been applied]`
+        throw Error(errors.THE_COURSE_HAS_ALREADY_BEEN_APPLIED)
+      }
+
+      const {rows} = await client.query(
+        `WITH sec as (
+          SELECT section_uuid, section_title, section_description, section_modules, s_ord, course_name--, module_id, module_lessons
+          FROM courses c, courses_sections s
+          JOIN unnest(c.course_sections::uuid[]) WITH ORDINALITY  t(section_uuid, s_ord) USING (section_uuid)
+          WHERE course_name=$2 AND course_company_id=$1
+          ),
+          mod as (
+          SELECT section_uuid,  module_instructor_note,module_lessons, t.module_id, m_ord
+          FROM sec s, courses_modules m
+          JOIN unnest(s.section_modules::uuid[]) WITH ORDINALITY  t(module_id,  m_ord) USING (module_id))
+          
+          INSERT INTO users_achievements (ach_course_name, ach_user_uid, ach_user_company_id, ach_course_content)
+          SELECT course_name, uid, company_id, sections FROM (
+            SELECT $2 as course_name, $3 AS uid, $1 AS company_id, jsonb_agg(jsonb_build_object('id', section_uuid, 'title', section_title, 'description', section_description, 'modules', modules)) as sections from (
+              SELECT section_uuid,section_title, section_description, s_ord,
+                COALESCE(jsonb_agg(jsonb_build_object('id', module_id, 'instructor_note', module_instructor_note, 'lessons', module_lessons)) FILTER (WHERE module_id IS NOT NULL), '[]') as modules 
+              FROM (
+                SELECT * FROM sec
+                LEFT JOIN mod USING(section_uuid)
+              order by s_ord, m_ord	
+              ) abc
+              GROUP BY section_uuid,section_title, section_description,s_ord
+              order by s_ord) section_list) bbb
+          WHERE sections is not null 	
+          RETURNING *;`,
+        [cid, name, uid]
+      )
+
+      histData.object_name = `cr-${name}`
+      histData.result = rows.length === 1
+      histData.details = `[${name}] course applied`
+      return rows.length
+    } catch (error) {
+      throw Error(error.message)
+    } finally {
+      if (client) {
+        client.release()
+      }
+      this.histLogger.saveHistoryInfo(histData)
+    }
+  }
+
   async updCourse(payload) {
     let client = undefined
     const {autz, course} = payload
