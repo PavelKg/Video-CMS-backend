@@ -32,6 +32,9 @@ const GroupService = require('./companies/groups/service')
 const Courses = require('./companies/courses')
 const CoursesService = require('./companies/courses/service')
 
+const Test = require('./companies/tests')
+const TestService = require('./companies/tests/service')
+
 const CourseSections = require('./companies/courses/sections')
 const CourseSectionsService = require('./companies/courses/sections/service')
 
@@ -222,6 +225,7 @@ async function decorateFastifyInstance(fastify) {
   const roleService = new RoleService(db, histLoggerService)
   const groupService = new GroupService(db, histLoggerService)
   const coursesService = new CoursesService(db, histLoggerService)
+  const testService = new TestService(db, histLoggerService)
   const courseSectionsService = new CourseSectionsService(db, histLoggerService)
   const courseModulesService = new CourseModulesService(db, histLoggerService)
   const seriesService = new SeriesService(db, histLoggerService)
@@ -245,6 +249,7 @@ async function decorateFastifyInstance(fastify) {
   fastify.decorate('roleService', roleService)
   fastify.decorate('groupService', groupService)
   fastify.decorate('courseService', coursesService)
+  fastify.decorate('testService', testService)
   fastify.decorate('seriesService', seriesService)
   fastify.decorate('courseSectionsService', courseSectionsService)
   fastify.decorate('courseModulesService', courseModulesService)
@@ -297,12 +302,13 @@ module.exports = async function (fastify, opts) {
     .register(Role, {prefix: '/api/companies/:cid/roles'})
     .register(Group, {prefix: '/api/companies/:cid/groups'})
     .register(Courses, {prefix: '/api/companies/courses'})
+    .register(Test, {prefix: '/api/companies/tests'})
     .register(CourseSections, {
       prefix: '/api/companies/:cid/course-sections'
     })
     .register(CourseModules, {
       prefix: '/api/companies/:cid/course-modules'
-    })    
+    })
     .register(Series, {prefix: '/api/companies/:cid/series'})
     .register(User, {prefix: '/api/companies/:cid/users'})
     .register(Message, {prefix: '/api/messages'})

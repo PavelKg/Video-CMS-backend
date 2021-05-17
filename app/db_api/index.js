@@ -66,7 +66,13 @@ const sortableColumns = {
     'series_activity_start',
     'series_activity_finish'
   ],
-  courses: ['courses.created_at', 'courses.deleted_at', 'course_name', 'course_title'],
+  courses: [
+    'courses.created_at',
+    'courses.deleted_at',
+    'course_name',
+    'course_title'
+  ],
+  tests: ['tests.created_at', 'tests.deleted_at', 'test_uuid', 'test_title'],
   courses_section: [
     'section.created_at',
     'section.deleted_at',

@@ -25,9 +25,9 @@ const courseObject = {
     title: {type: 'string'},
     is_published: {type: 'boolean'},
     details: {type: 'string'},
-    created_at: {type: ['string', 'null']},
+    created_at: {type: 'string'},
     updated_at: {type: 'string'},
-    deleted_at: {type: 'string'},
+    deleted_at: {type: ['string', 'null']},
     tags: {type: 'string'},
     teachers: {type: 'array', items: {type: 'string'}}
   }
