@@ -6,6 +6,8 @@ const feature = 'tests'
 const {
   getTests: getTestsSchema,
   getTestById: getTestByIdSchema,
+  getTestContent: getTestContentSchema,
+  getTestAnswersTypes: getTestAnswersTypesSchema,
   addTest: addTestSchema,
   updTest: updTestSchema,
   updTestContent: updTestContentSchema,
@@ -19,6 +21,16 @@ module.exports = async function (fastify, opts) {
 
   fastify.get('/', {schema: getTestsSchema}, getTestsHandler)
   fastify.get('/:uuid', {schema: getTestByIdSchema}, getTestByIdHandler)
+  fastify.get(
+    '/:uuid/content',
+    {schema: getTestContentSchema},
+    getTestContentHandler
+  )
+  fastify.get(
+    '/answers-types',
+    {schema: getTestAnswersTypesSchema},
+    getTestAnswersTypesHandler
+  )
   fastify.post('/', {schema: addTestSchema}, addTestHandler)
   fastify.put('/:uuid', {schema: updTestSchema}, updTestHandler)
   fastify.put(
@@ -26,6 +38,7 @@ module.exports = async function (fastify, opts) {
     {schema: updTestContentSchema},
     updTestContentHandler
   )
+
   fastify.delete('/:uuid', {schema: delTestSchema}, delTestHandler)
 }
 
@@ -69,6 +82,43 @@ async function getTestByIdHandler(req, reply) {
   })
 
   const code = test.length === 1 ? 200 : 404
+  reply.code(code).send(test[0])
+}
+
+async function getTestAnswersTypesHandler(req, reply) {
+  const {autz} = req
+
+  const permits = autz.permits
+  const reqAccess = feature
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  return await this.testService.getTestAnswersTypes({
+    autz
+  })
+}
+
+async function getTestContentHandler(req, reply) {
+  const {
+    params: {uuid},
+    autz
+  } = req
+
+  const permits = autz.permits
+  const reqAccess = feature
+
+  if (!this.autzService.checkAccess(reqAccess, permits)) {
+    throw Error(errors.WRONG_ACCESS)
+  }
+
+  const test = await this.testService.getTestContent({
+    autz,
+    uuid
+  })
+
+  const code = test.length === 1 ? 200 : 404
+
   reply.code(code).send(test[0])
 }
 
@@ -132,7 +182,8 @@ async function updTestContentHandler(req, reply) {
 
   const updated = await this.testService.updTestContent({
     autz,
-    content: {uuid, content}
+    uuid,
+    content
   })
   const code = updated === 1 ? 200 : 404
   reply.code(code).send()

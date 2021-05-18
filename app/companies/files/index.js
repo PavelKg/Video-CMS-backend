@@ -112,7 +112,7 @@ async function gcsUploadSignedUrlHandler(req, reply) {
   const permits = autz.permits
   const reqAccess = `${feature}.${act}`
 
-  console.log(permits, {reqAccess})
+  //console.log(permits, {reqAccess})
   if (!this.autzService.checkAccess(reqAccess, permits)) {
     throw Error(errors.WRONG_ACCESS)
   }

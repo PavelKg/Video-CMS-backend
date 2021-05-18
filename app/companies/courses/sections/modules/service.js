@@ -123,7 +123,6 @@ class CourseModulesService {
           RETURNING *;`,
         [modid, cid, JSON.stringify(lessons)]
       )
-      console.log(rows)
       if (rows.length > 0) {
         histData.object_name = `cr-mod-${rows[0].module_id}`
         histData.details = `[${JSON.stringify(lessons)}] information updated`

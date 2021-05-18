@@ -15,6 +15,10 @@ const queryStringJsonSchema = {
   filter: {type: 'string'}
 }
 
+const testThumbnail = {
+  type: 'string'
+}
+
 const testObject = {
   type: 'object',
   properties: {
@@ -27,6 +31,7 @@ const testObject = {
     tags: {type: 'string'},
     description: {type: 'string'},
     is_public: {type: 'boolean'},
+    thumbnail: testThumbnail,
     groups: {type: 'array', items: {type: 'integer'}},
     series: {type: 'array', items: {type: 'integer'}}
   }
@@ -43,6 +48,7 @@ const testObjectShort = {
     title: {type: 'string'},
     description: {type: 'string'},
     is_public: {type: 'boolean'},
+    thumbnail: testThumbnail,
     groups: {type: 'array', items: {type: 'integer'}},
     series: {type: 'array', items: {type: 'integer'}}
   },
@@ -50,13 +56,11 @@ const testObjectShort = {
   required: ['uuid']
 }
 
-const testThumbnail = {
-  type: 'string'
-}
-
 const testContent = {
   type: 'object',
-  properties: {}
+  properties: {
+    
+  }
 }
 
 // const getCourseSectionsModel = {
@@ -105,6 +109,21 @@ const getTestById = {
   },
   response: {
     200: testObject
+  }
+}
+
+const getTestContent = {
+  tags: shemasTags,
+  params: {
+    type: 'object',
+    required: ['uuid'],
+    properties: {
+      uuid: uuidObj
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: testContent
   }
 }
 

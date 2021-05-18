@@ -269,7 +269,6 @@ class CourseSectionsService {
         [uuid, cid]
       )
 
-      console.log(courses)
       if (Array.isArray(courses) && courses[0].cnt > 0) {
         throw Error(errors.CANNOT_DELETE_THE_USED_COURSE_SECTION)
       }
