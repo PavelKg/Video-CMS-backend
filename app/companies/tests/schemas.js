@@ -53,7 +53,7 @@ const testObjectShort = {
     series: {type: 'array', items: {type: 'integer'}}
   },
   additionalProperties: false,
-  required: ['uuid']
+
 }
 
 const testContent = {
